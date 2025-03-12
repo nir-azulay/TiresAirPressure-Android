@@ -8,30 +8,69 @@ import com.example.tiresairpressuremanagement.domain.models.BleCommand
 import com.example.tiresairpressuremanagement.domain.models.BleDevice
 import com.example.tiresairpressuremanagement.domain.models.DeviceStatus
 import com.example.tiresairpressuremanagement.utils.BleConstants
+import com.example.tiresairpressuremanagement.utils.PermissionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.asStateFlow
+import androidx.lifecycle.ViewModelProvider
 
-class MainViewModel(application: Application) : AndroidViewModel(application) {
-    private val bleRepository = BleRepository(application)
+class MainViewModel(
+    private val bleRepository: BleRepository,
+    private val application: Application
+) : ViewModel() {
     
-    val isConnected: StateFlow<Boolean> = bleRepository.connectionState
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), false)
+    companion object {
+        fun provideFactory(
+            application: Application
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return MainViewModel(
+                    bleRepository = BleRepository(application),
+                    application = application
+                ) as T
+            }
+        }
+    }
     
-    val deviceStatus: StateFlow<DeviceStatus?> = bleRepository.deviceStatus
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), null)
+    private val _targetPressure = MutableStateFlow(30f)
+    val targetPressure: StateFlow<Float> = _targetPressure.asStateFlow()
     
-    val scanResults: StateFlow<List<BleDevice>> = bleRepository.scanResults
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
+    private val _isInflating = MutableStateFlow(false)
+    val isInflating: StateFlow<Boolean> = _isInflating.asStateFlow()
     
-    private val _targetPressure = MutableStateFlow(12f) // Default target pressure
-    val targetPressure: StateFlow<Float> = _targetPressure
+    private val _currentPressure = MutableStateFlow(0f)
+    val currentPressure: StateFlow<Float> = _currentPressure.asStateFlow()
+    
+    val isConnected = bleRepository.connectionState
+    val scanResults = bleRepository.scanResults
     
     private val _isScanning = MutableStateFlow(false)
-    val isScanning: StateFlow<Boolean> = _isScanning
+    val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
+    
+    private val _permissionGranted = MutableStateFlow(false)
+    val permissionGranted: StateFlow<Boolean> = _permissionGranted
     
     val predefinedPressures = BleConstants.PREDEFINED_PRESSURES
+    
+    init {
+        checkPermissions()
+        viewModelScope.launch {
+            bleRepository.deviceStatus.collect { status ->
+                status?.let {
+                    _currentPressure.value = it.pressure
+                }
+            }
+        }
+    }
+    
+    private fun checkPermissions() {
+        _permissionGranted.value = PermissionManager.hasRequiredPermissions(application)
+    }
     
     fun startScan() {
         _isScanning.value = true
@@ -43,7 +82,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         bleRepository.stopScan()
     }
     
-    fun connect(device: BleDevice) {
+    fun connectToDevice(device: BleDevice) {
         bleRepository.connect(device.address)
     }
     
@@ -55,13 +94,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _targetPressure.value = pressure
     }
     
-    fun startOperation() {
-        bleRepository.sendCommand(
-            BleCommand.Start(targetPressure = targetPressure.value)
-        )
+    fun increaseTargetPressure() {
+        _targetPressure.value += 0.5f
     }
     
-    fun stopOperation() {
+    fun decreaseTargetPressure() {
+        _targetPressure.value -= 0.5f
+    }
+    
+    fun toggleInflation() {
+        _isInflating.value = !_isInflating.value
+        if (_isInflating.value) {
+            startInflation()
+        } else {
+            stopInflation()
+        }
+    }
+    
+    private fun startInflation() {
+        bleRepository.sendCommand(BleCommand.StartTargetPressure(targetPressure = _targetPressure.value))
+    }
+    
+    private fun stopInflation() {
         bleRepository.sendCommand(BleCommand.Stop())
     }
     

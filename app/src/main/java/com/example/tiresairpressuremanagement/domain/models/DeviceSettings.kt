@@ -1,17 +1,37 @@
 package com.example.tiresairpressuremanagement.domain.models
 
+import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
+
+@JsonClass(generateAdapter = true)
 data class DeviceSettings(
-    val deviceName: String,
-    val wifiSsid: String,
-    val wifiPassword: String,
-    val relayCompressorPin: Int,
-    val relayFreePin: Int,
-    val sensorPin: Int,
-    val autoStart: Boolean,
-    val maxSecForStatus: Int,
-    val sensorValueAt0PSI: Int,
-    val sensorValueAt50PSI: Int,
-    val measureWait: Int,
-    val precision: Int,
-    val btPinCode: String
-) 
+    @Json(name = "operationMode") val operationMode: Int = 4,
+    @Json(name = "DeviceName") val deviceName: String,
+    @Json(name = "wifissid") val wifiSsid: String,
+    @Json(name = "wifipassword") val wifiPassword: String,
+    @Json(name = "RelayCompressorPin") val relayCompressorPin: Int,
+    @Json(name = "RelayFreePin") val relayFreePin: Int,
+    @Json(name = "SensorPin") val sensorPin: Int,
+    @Json(name = "AutoStart") val autoStart: Boolean,
+    @Json(name = "MaxSecForStatus") val maxSecForStatus: Int,
+    @Json(name = "SensorValueAt0PSI") val sensorValueAt0PSI: Int,
+    @Json(name = "SensorValueAt50PSI") val sensorValueAt50PSI: Int,
+    @Json(name = "MessureWait") val measureWait: Int,
+    @Json(name = "Precision") val precision: Int,
+    @Json(name = "BTPinCode") val btPinCode: String,
+    @Json(name = "CurrentPressure") val currentPressure: Float,
+    @Json(name = "Software_VER") val softwareVersion: String,
+    @Json(name = "IP") val ipAddress: String,
+    @Json(name = "SimulationMode") val simulationMode: Boolean
+)
+
+enum class PressureUnit {
+    PSI,
+    BAR,
+    KPA
+}
+
+enum class TemperatureUnit {
+    CELSIUS,
+    FAHRENHEIT
+} 

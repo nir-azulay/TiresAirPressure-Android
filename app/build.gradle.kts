@@ -78,6 +78,7 @@ dependencies {
     
     // JSON parsing
     implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
+    implementation("com.squareup.moshi:moshi-adapters:1.15.0")
     
     // Testing
     testImplementation(libs.junit)

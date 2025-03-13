@@ -5,45 +5,46 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 sealed class BleCommand {
-    abstract val command: Int
+    abstract val command: String
     abstract val type: String
     
-    @JsonClass(generateAdapter = true)
     data class Stop(
-        @Json(name = "command") override val command: Int = 1,
-        @Json(name = "type") override val type: String = "stop"
+        override val command: String = "stop",
+        override val type: String = "command"
     ) : BleCommand()
     
-    @JsonClass(generateAdapter = true)
     data class StartTargetPressure(
-        @Json(name = "command") override val command: Int = 2,
-        @Json(name = "targetPressure") val targetPressure: Float,
-        @Json(name = "type") override val type: String = "startTargetPressure"
+        override val command: String = "start",
+        val targetPressure: Float,
+        override val type: String = "command"
     ) : BleCommand()
     
-    @JsonClass(generateAdapter = true)
     data class UpdateSettings(
-        @Json(name = "command") override val command: Int = 3,
-        @Json(name = "DeviceName") val deviceName: String,
-        @Json(name = "wifissid") val wifiSsid: String,
-        @Json(name = "wifipassword") val wifiPassword: String,
-        @Json(name = "RelayCompressorPin") val relayCompressorPin: Int,
-        @Json(name = "RelayFreePin") val relayFreePin: Int,
-        @Json(name = "SensorPin") val sensorPin: Int,
-        @Json(name = "AutoStart") val autoStart: Boolean,
-        @Json(name = "MaxSecForStatus") val maxSecForStatus: Int,
-        @Json(name = "SensorValueAt0PSI") val sensorValueAt0PSI: Int,
-        @Json(name = "SensorValueAt50PSI") val sensorValueAt50PSI: Int,
-        @Json(name = "MessureWait") val measureWait: Int,
-        @Json(name = "Precision") val precision: Int,
-        @Json(name = "BTPinCode") val btPinCode: String,
-        @Json(name = "type") override val type: String = "updateSettings"
+        override val command: String = "updateSettings",
+        val deviceName: String,
+        val wifiSsid: String,
+        val wifiPassword: String,
+        val relayCompressorPin: Int,
+        val relayFreePin: Int,
+        val sensorPin: Int,
+        val autoStart: Boolean,
+        val maxSecForStatus: Int,
+        val sensorValueAt0PSI: Int,
+        val sensorValueAt50PSI: Int,
+        val measureWait: Float,
+        val precision: Float,
+        val btPinCode: String,
+        override val type: String = "settings"
     ) : BleCommand()
-
-    @JsonClass(generateAdapter = true)
+    
     data class SimulationMode(
-        @Json(name = "command") override val command: Int = 4,
-        @Json(name = "enabled") val enabled: Boolean,
-        @Json(name = "type") override val type: String = "simulationMode"
+        override val command: String = "simulationMode",
+        val enabled: Boolean,
+        override val type: String = "command"
+    ) : BleCommand()
+    
+    data class RequestSettings(
+        override val command: String = "getSettings",
+        override val type: String = "command"
     ) : BleCommand()
 } 

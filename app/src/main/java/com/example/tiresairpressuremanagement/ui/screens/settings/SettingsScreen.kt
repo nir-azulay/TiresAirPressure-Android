@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tiresairpressuremanagement.domain.models.PressureUnit
 import com.example.tiresairpressuremanagement.domain.models.TemperatureUnit
+import com.example.tiresairpressuremanagement.data.ble.ConnectionState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,12 +38,14 @@ fun SettingsScreen(
     val settings by viewModel.settings.collectAsState()
     val availableNetworks by viewModel.availableNetworks.collectAsState()
     val isConnected by viewModel.isConnected.collectAsState()
+    val connectionState by viewModel.connectionState.collectAsState()
+    val connectionStatus by viewModel.connectionStatus.collectAsState()
     var showDiscardDialog by remember { mutableStateOf(false) }
     var expandedWifiDropdown by remember { mutableStateOf(false) }
     
     // Log connection state
-    LaunchedEffect(isConnected) {
-        Log.d("SettingsScreen", "isConnected: $isConnected")
+    LaunchedEffect(connectionState) {
+        Log.d("SettingsScreen", "connectionState: $connectionState")
     }
     
     Column(
@@ -70,22 +73,50 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.width(48.dp))
         }
         
-        // הוספת הודעה אם לא מחובר, אבל עדיין להציג את כל השדות
-        if (!isConnected) {
-            Card(
+        // הוספת הודעת סטטוס חיבור
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = when (connectionState) {
+                    com.example.tiresairpressuremanagement.data.ble.ConnectionState.Connected -> MaterialTheme.colorScheme.primaryContainer
+                    com.example.tiresairpressuremanagement.data.ble.ConnectionState.Connecting -> MaterialTheme.colorScheme.tertiaryContainer
+                    com.example.tiresairpressuremanagement.data.ble.ConnectionState.Disconnected -> MaterialTheme.colorScheme.errorContainer
+                }
+            )
+        ) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "לא מחובר למכשיר. השינויים לא יישמרו.",
+                    text = "סטטוס חיבור: $connectionStatus",
                     style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer
+                    color = when (connectionState) {
+                        com.example.tiresairpressuremanagement.data.ble.ConnectionState.Connected -> MaterialTheme.colorScheme.onPrimaryContainer
+                        com.example.tiresairpressuremanagement.data.ble.ConnectionState.Connecting -> MaterialTheme.colorScheme.onTertiaryContainer
+                        com.example.tiresairpressuremanagement.data.ble.ConnectionState.Disconnected -> MaterialTheme.colorScheme.onErrorContainer
+                    }
                 )
+                
+                // כפתור רענון חיבור
+                if (connectionState != com.example.tiresairpressuremanagement.data.ble.ConnectionState.Connected) {
+                    IconButton(onClick = { viewModel.connectToSavedDeviceIfNeeded() }) {
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = "נסה להתחבר מחדש",
+                            tint = when (connectionState) {
+                                com.example.tiresairpressuremanagement.data.ble.ConnectionState.Connected -> MaterialTheme.colorScheme.onPrimaryContainer
+                                com.example.tiresairpressuremanagement.data.ble.ConnectionState.Connecting -> MaterialTheme.colorScheme.onTertiaryContainer
+                                com.example.tiresairpressuremanagement.data.ble.ConnectionState.Disconnected -> MaterialTheme.colorScheme.onErrorContainer
+                            }
+                        )
+                    }
+                }
             }
         }
         
@@ -315,7 +346,7 @@ fun SettingsScreen(
                 // Measure Wait
                 OutlinedTextField(
                     value = settings.measureWait.toString(),
-                    onValueChange = { viewModel.updateSettings(measureWait = it.toIntOrNull() ?: 2) },
+                    onValueChange = { viewModel.updateSettings(measureWait = it.toFloatOrNull() ?: 2f) },
                     label = { Text("זמן המתנה למדידה (שניות)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier
@@ -326,7 +357,7 @@ fun SettingsScreen(
                 // Precision
                 OutlinedTextField(
                     value = settings.precision.toString(),
-                    onValueChange = { viewModel.updateSettings(precision = it.toIntOrNull() ?: 1) },
+                    onValueChange = { viewModel.updateSettings(precision = it.toFloatOrNull() ?: 1f) },
                     label = { Text("דיוק (PSI)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier

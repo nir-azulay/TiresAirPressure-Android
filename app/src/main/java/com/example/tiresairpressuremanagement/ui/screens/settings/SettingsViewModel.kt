@@ -18,6 +18,9 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import com.example.tiresairpressuremanagement.data.ble.ConnectionState
 
 class SettingsViewModel(
     private val bleRepository: BleRepository,
@@ -25,6 +28,8 @@ class SettingsViewModel(
 ) : ViewModel() {
     
     companion object {
+        private const val TAG = "SettingsViewModel"
+        
         fun provideFactory(
             application: Application
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
@@ -52,8 +57,8 @@ class SettingsViewModel(
             maxSecForStatus = 30,
             sensorValueAt0PSI = 0,
             sensorValueAt50PSI = 1023,
-            measureWait = 2,
-            precision = 1,
+            measureWait = 2f,
+            precision = 1f,
             btPinCode = "1234",
             currentPressure = 0f,
             softwareVersion = "",
@@ -66,14 +71,183 @@ class SettingsViewModel(
     private val _availableNetworks = MutableStateFlow<List<String>>(emptyList())
     val availableNetworks: StateFlow<List<String>> = _availableNetworks
     
+    // Boolean connection state (true/false)
     val isConnected = bleRepository.connectionState
     
+    // Raw connection state (Connected, Connecting, Disconnected)
+    val connectionState = bleRepository.rawConnectionState
+    
+    // Create a derived state flow that provides more detailed connection information
+    val connectionStatus = connectionState.map { state ->
+        when (state) {
+            com.example.tiresairpressuremanagement.data.ble.ConnectionState.Connected -> "מחובר"
+            com.example.tiresairpressuremanagement.data.ble.ConnectionState.Connecting -> "מתחבר..."
+            com.example.tiresairpressuremanagement.data.ble.ConnectionState.Disconnected -> "מנותק"
+        }
+    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Lazily, "מנותק")
+    
     init {
+        Log.d(TAG, "Initializing SettingsViewModel")
+        
+        // Monitor connection state
         viewModelScope.launch {
-            isConnected.collect { connected ->
-                Log.d("SettingsViewModel", "Connection state changed: $connected")
+            connectionState.collect { state ->
+                Log.d(TAG, "Connection state changed: $state")
+                if (state == com.example.tiresairpressuremanagement.data.ble.ConnectionState.Connected) {
+                    // When connected, load settings from shared preferences
+                    loadSettingsFromSharedPreferences()
+                    // Request current settings from device
+                    requestDeviceSettings()
+                }
             }
         }
+        
+        // Monitor device status updates
+        viewModelScope.launch {
+            bleRepository.deviceStatus.collect { status ->
+                Log.d(TAG, "Device status update received: $status")
+                if (status != null) {
+                    // Update current pressure in settings
+                    _settings.update { currentSettings ->
+                        currentSettings.copy(
+                            currentPressure = status.pressure
+                        )
+                    }
+                }
+            }
+        }
+        
+        // Monitor device settings updates
+        viewModelScope.launch {
+            bleRepository.deviceSettings.collect { deviceSettings ->
+                Log.d(TAG, "Device settings update received: $deviceSettings")
+                if (deviceSettings != null) {
+                    // Update all settings
+                    _settings.value = deviceSettings
+                    Log.d(TAG, "Updated settings with device settings: $deviceSettings")
+                }
+            }
+        }
+        
+        // Load initial settings from shared preferences
+        loadSettingsFromSharedPreferences()
+        
+        // Try to connect to saved device if not already connected
+        tryConnectToSavedDevice()
+    }
+    
+    // Private method to try connecting to saved device
+    private fun tryConnectToSavedDevice() {
+        viewModelScope.launch {
+            if (connectionState.value != com.example.tiresairpressuremanagement.data.ble.ConnectionState.Connected) {
+                Log.d(TAG, "Not connected, trying to connect to saved device")
+                bleRepository.connectToSavedDevice()
+            }
+        }
+    }
+    
+    // Public method to reconnect to saved device
+    fun connectToSavedDeviceIfNeeded() {
+        viewModelScope.launch {
+            Log.d(TAG, "Manually trying to connect to saved device")
+            bleRepository.connectToSavedDevice()
+        }
+    }
+    
+    // Request current settings from the device
+    private fun requestDeviceSettings() {
+        Log.d(TAG, "Requesting device settings")
+        // Send a command to request settings from the device
+        try {
+            // First try the direct method
+            bleRepository.requestDeviceSettings()
+            
+            // As a fallback, also try sending the command directly
+            bleRepository.sendCommand(BleCommand.RequestSettings())
+        } catch (e: Exception) {
+            Log.e(TAG, "Error requesting device settings: ${e.message}")
+        }
+    }
+    
+    // Load settings from shared preferences
+    private fun loadSettingsFromSharedPreferences() {
+        Log.d(TAG, "Loading settings from shared preferences")
+        val sharedPreferences = application.getSharedPreferences("DeviceSettings", Context.MODE_PRIVATE)
+        
+        // Load all settings from shared preferences
+        val deviceName = sharedPreferences.getString("deviceName", "") ?: ""
+        val wifiSsid = sharedPreferences.getString("wifiSsid", "") ?: ""
+        val wifiPassword = sharedPreferences.getString("wifiPassword", "") ?: ""
+        val relayCompressorPin = sharedPreferences.getInt("relayCompressorPin", 0)
+        val relayFreePin = sharedPreferences.getInt("relayFreePin", 0)
+        val sensorPin = sharedPreferences.getInt("sensorPin", 0)
+        val autoStart = sharedPreferences.getBoolean("autoStart", false)
+        val maxSecForStatus = sharedPreferences.getInt("maxSecForStatus", 30)
+        val sensorValueAt0PSI = sharedPreferences.getInt("sensorValueAt0PSI", 0)
+        val sensorValueAt50PSI = sharedPreferences.getInt("sensorValueAt50PSI", 1023)
+        val measureWait = sharedPreferences.getFloat("measureWait", 2f)
+        val precision = sharedPreferences.getFloat("precision", 1f)
+        val btPinCode = sharedPreferences.getString("btPinCode", "1234") ?: "1234"
+        val currentPressure = sharedPreferences.getFloat("pressure", 0f)
+        val softwareVersion = sharedPreferences.getString("softwareVersion", "") ?: ""
+        val ipAddress = sharedPreferences.getString("ipAddress", "") ?: ""
+        val simulationMode = sharedPreferences.getBoolean("simulationMode", false)
+        
+        // Update settings state
+        _settings.value = DeviceSettings(
+            deviceName = deviceName,
+            wifiSsid = wifiSsid,
+            wifiPassword = wifiPassword,
+            relayCompressorPin = relayCompressorPin,
+            relayFreePin = relayFreePin,
+            sensorPin = sensorPin,
+            autoStart = autoStart,
+            maxSecForStatus = maxSecForStatus,
+            sensorValueAt0PSI = sensorValueAt0PSI,
+            sensorValueAt50PSI = sensorValueAt50PSI,
+            measureWait = measureWait,
+            precision = precision,
+            btPinCode = btPinCode,
+            currentPressure = currentPressure,
+            softwareVersion = softwareVersion,
+            ipAddress = ipAddress,
+            simulationMode = simulationMode
+        )
+        
+        Log.d(TAG, "Loaded settings from SharedPreferences: ${_settings.value}")
+    }
+    
+    // Save current pressure to shared preferences
+    private fun saveCurrentPressureToSharedPreferences(pressure: Float) {
+        val sharedPreferences = application.getSharedPreferences("DeviceSettings", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.putFloat("pressure", pressure)
+        editor.apply()
+    }
+    
+    // Save all settings to shared preferences
+    private fun saveSettingsToSharedPreferences() {
+        Log.d(TAG, "Saving settings to shared preferences")
+        val sharedPreferences = application.getSharedPreferences("DeviceSettings", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        
+        val currentSettings = _settings.value
+        editor.putString("deviceName", currentSettings.deviceName)
+        editor.putString("wifiSsid", currentSettings.wifiSsid)
+        editor.putString("wifiPassword", currentSettings.wifiPassword)
+        editor.putInt("relayCompressorPin", currentSettings.relayCompressorPin)
+        editor.putInt("relayFreePin", currentSettings.relayFreePin)
+        editor.putInt("sensorPin", currentSettings.sensorPin)
+        editor.putBoolean("autoStart", currentSettings.autoStart)
+        editor.putInt("maxSecForStatus", currentSettings.maxSecForStatus)
+        editor.putInt("sensorValueAt0PSI", currentSettings.sensorValueAt0PSI)
+        editor.putInt("sensorValueAt50PSI", currentSettings.sensorValueAt50PSI)
+        editor.putFloat("measureWait", currentSettings.measureWait)
+        editor.putFloat("precision", currentSettings.precision)
+        editor.putString("btPinCode", currentSettings.btPinCode)
+        editor.putBoolean("simulationMode", currentSettings.simulationMode)
+        
+        editor.apply()
     }
     
     fun scanWifiNetworks() {
@@ -93,8 +267,8 @@ class SettingsViewModel(
         maxSecForStatus: Int = _settings.value.maxSecForStatus,
         sensorValueAt0PSI: Int = _settings.value.sensorValueAt0PSI,
         sensorValueAt50PSI: Int = _settings.value.sensorValueAt50PSI,
-        measureWait: Int = _settings.value.measureWait,
-        precision: Int = _settings.value.precision,
+        measureWait: Float = _settings.value.measureWait,
+        precision: Float = _settings.value.precision,
         btPinCode: String = _settings.value.btPinCode
     ) {
         val newSettings = _settings.value.copy(
@@ -114,33 +288,29 @@ class SettingsViewModel(
         )
         _settings.value = newSettings
         
-        // שליחת ההגדרות החדשות למכשיר
-        bleRepository.sendCommand(
-            BleCommand.UpdateSettings(
-                deviceName = deviceName,
-                wifiSsid = wifiSsid,
-                wifiPassword = wifiPassword,
-                relayCompressorPin = relayCompressorPin,
-                relayFreePin = relayFreePin,
-                sensorPin = sensorPin,
-                autoStart = autoStart,
-                maxSecForStatus = maxSecForStatus,
-                sensorValueAt0PSI = sensorValueAt0PSI,
-                sensorValueAt50PSI = sensorValueAt50PSI,
-                measureWait = measureWait,
-                precision = precision,
-                btPinCode = btPinCode
-            )
-        )
+        // Save settings to shared preferences
+        saveSettingsToSharedPreferences()
     }
     
     fun setSimulationMode(enabled: Boolean) {
         _settings.value = _settings.value.copy(simulationMode = enabled)
         bleRepository.sendCommand(BleCommand.SimulationMode(enabled = enabled))
+        
+        // Save simulation mode to shared preferences
+        val sharedPreferences = application.getSharedPreferences("DeviceSettings", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.putBoolean("simulationMode", enabled)
+        editor.apply()
     }
     
     fun saveSettings(onSuccess: () -> Unit) {
         viewModelScope.launch {
+            Log.d(TAG, "Saving settings to device: ${_settings.value}")
+            
+            // Save settings to shared preferences first
+            saveSettingsToSharedPreferences()
+            
+            // Send settings to device
             bleRepository.sendCommand(
                 BleCommand.UpdateSettings(
                     deviceName = _settings.value.deviceName,
@@ -158,7 +328,8 @@ class SettingsViewModel(
                     btPinCode = _settings.value.btPinCode
                 )
             )
-            // מחכים קצת לפני שמנתקים כדי לתת למכשיר זמן לקבל את ההגדרות
+            
+            // Wait a bit before disconnecting to give the device time to receive the settings
             kotlinx.coroutines.delay(1000)
             bleRepository.disconnect()
             onSuccess()

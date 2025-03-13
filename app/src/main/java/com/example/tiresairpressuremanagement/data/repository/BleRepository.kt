@@ -5,6 +5,7 @@ import com.example.tiresairpressuremanagement.data.ble.BleManager
 import com.example.tiresairpressuremanagement.data.ble.ConnectionState
 import com.example.tiresairpressuremanagement.domain.models.BleCommand
 import com.example.tiresairpressuremanagement.domain.models.BleDevice
+import com.example.tiresairpressuremanagement.domain.models.DeviceSettings
 import com.example.tiresairpressuremanagement.domain.models.DeviceStatus
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -26,10 +27,16 @@ class BleRepository(context: Context) {
         }
         .stateIn(scope, kotlinx.coroutines.flow.SharingStarted.Lazily, false)
     
+    val rawConnectionState: StateFlow<ConnectionState> = bleManager.connectionState
+        .stateIn(scope, kotlinx.coroutines.flow.SharingStarted.Lazily, ConnectionState.Disconnected)
+    
     val deviceStatus: StateFlow<DeviceStatus?> = bleManager.deviceStatus
+    val deviceSettings: StateFlow<DeviceSettings?> = bleManager.deviceSettings
     val scanResults: StateFlow<List<BleDevice>> = bleManager.scanResults
     
     init {
+        connectToSavedDevice()
+        
         scope.launch {
             connectionState.collect { isConnected ->
                 Log.d("BleRepository", "Connection state changed: $isConnected")
@@ -55,5 +62,13 @@ class BleRepository(context: Context) {
     
     fun sendCommand(command: BleCommand) {
         bleManager.sendCommand(command)
+    }
+    
+    fun requestDeviceSettings() {
+        bleManager.requestDeviceSettings()
+    }
+    
+    fun connectToSavedDevice() {
+        bleManager.connectToSavedDevice()
     }
 } 

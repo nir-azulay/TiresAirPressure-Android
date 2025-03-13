@@ -91,12 +91,12 @@ fun MainScreen(
                 android.util.Log.d(TAG, "Target reached dialog dismissed")
                 showTargetReachedDialog = false 
             },
-            title = { Text("Target Pressure Reached") },
+            title = { Text("לחץ היעד הושג") },
             text = { 
                 Column {
-                    Text("Target pressure has been reached!")
-                    Text("Target: ${targetReachedInfo?.first} PSI")
-                    Text("Current: ${targetReachedInfo?.second} PSI")
+                    Text("לחץ היעד הושג בהצלחה!")
+                    Text("יעד: ${targetReachedInfo?.first} PSI")
+                    Text("נוכחי: ${targetReachedInfo?.second} PSI")
                 }
             },
             confirmButton = {
@@ -104,7 +104,7 @@ fun MainScreen(
                     android.util.Log.d(TAG, "Target reached dialog confirmed")
                     showTargetReachedDialog = false 
                 }) {
-                    Text("OK")
+                    Text("אישור")
                 }
             }
         )

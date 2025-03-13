@@ -1172,10 +1172,10 @@ class BleManager(private val context: Context) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 Log.d(TAG, "Creating notification channel for Android O+")
                 val channelId = "target_pressure_channel"
-                val channelName = "Target Pressure Notifications"
+                val channelName = "התראות לחץ יעד"
                 val importance = android.app.NotificationManager.IMPORTANCE_HIGH
                 val channel = android.app.NotificationChannel(channelId, channelName, importance)
-                channel.description = "Notifications for when target pressure is reached"
+                channel.description = "התראות כאשר לחץ היעד הושג"
                 channel.enableVibration(true)
                 channel.enableLights(true)
                 
@@ -1196,8 +1196,8 @@ class BleManager(private val context: Context) {
             // Create the notification using NotificationCompat.Builder for better compatibility
             val channelId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) "target_pressure_channel" else ""
             val notificationBuilder = NotificationCompat.Builder(context, channelId)
-                .setContentTitle("Target Pressure Reached")
-                .setContentText("Target: $targetPressure PSI, Current: $currentPressure PSI")
+                .setContentTitle("לחץ היעד הושג")
+                .setContentText("יעד: $targetPressure PSI, נוכחי: $currentPressure PSI")
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)

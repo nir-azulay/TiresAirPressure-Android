@@ -247,9 +247,70 @@ class SettingsViewModel(
     }
     
     fun scanWifiNetworks() {
-        wifiManager.startScan()
-        val results = wifiManager.scanResults
-        _availableNetworks.value = results.map { it.SSID }.distinct()
+        try {
+            Log.d(TAG, "Starting WiFi scan")
+            
+            // Get the current activity context
+            val context = application.applicationContext
+            
+            // Check if we have the necessary permissions
+            val permissionCheck = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                val locationPermission = context.checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                val wifiStatePermission = context.checkSelfPermission(android.Manifest.permission.ACCESS_WIFI_STATE)
+                val wifiChangePermission = context.checkSelfPermission(android.Manifest.permission.CHANGE_WIFI_STATE)
+                
+                locationPermission == android.content.pm.PackageManager.PERMISSION_GRANTED &&
+                wifiStatePermission == android.content.pm.PackageManager.PERMISSION_GRANTED &&
+                wifiChangePermission == android.content.pm.PackageManager.PERMISSION_GRANTED
+            } else {
+                true // On older Android versions, permissions are granted at install time
+            }
+            
+            if (!permissionCheck) {
+                Log.w(TAG, "Required permissions not granted, cannot scan WiFi networks")
+                _availableNetworks.value = listOf("Location and WiFi permissions required for scanning")
+                return
+            }
+            
+            // Check if WiFi is enabled
+            if (!wifiManager.isWifiEnabled) {
+                Log.w(TAG, "WiFi is disabled, cannot scan networks")
+                _availableNetworks.value = listOf("WiFi is disabled")
+                return
+            }
+            
+            // Start scan safely
+            val success = wifiManager.startScan()
+            if (!success) {
+                Log.w(TAG, "Failed to start WiFi scan")
+                _availableNetworks.value = listOf("Failed to start WiFi scan")
+                return
+            }
+            
+            // Get scan results safely
+            val results = try {
+                wifiManager.scanResults ?: emptyList()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error getting WiFi scan results: ${e.message}")
+                emptyList()
+            }
+            
+            // Filter out empty SSIDs and duplicates
+            val networks = results
+                .filter { !it.SSID.isNullOrEmpty() }
+                .map { it.SSID }
+                .distinct()
+            
+            Log.d(TAG, "Found ${networks.size} WiFi networks: $networks")
+            _availableNetworks.value = if (networks.isEmpty()) {
+                listOf("No networks found")
+            } else {
+                networks
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error scanning WiFi networks: ${e.message}", e)
+            _availableNetworks.value = listOf("Error scanning: ${e.message}")
+        }
     }
     
     fun updateSettings(

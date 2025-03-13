@@ -227,6 +227,19 @@ class MainActivity : ComponentActivity() {
         android.util.Log.d(TAG, "onDestroy called")
         bleManager.disconnect()
     }
+
+    // Method to check if we have all WiFi scanning permissions
+    fun hasWifiScanningPermissions(): Boolean {
+        val wifiPermissions = listOf(
+            Manifest.permission.ACCESS_WIFI_STATE,
+            Manifest.permission.CHANGE_WIFI_STATE,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+        
+        return wifiPermissions.all { permission ->
+            checkSelfPermission(permission) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+    }
 }
 
 enum class Screen {

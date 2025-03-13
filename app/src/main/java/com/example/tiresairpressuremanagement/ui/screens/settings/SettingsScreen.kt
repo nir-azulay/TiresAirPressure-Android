@@ -253,13 +253,26 @@ fun SettingsScreen(
                                     .padding(8.dp)
                             ) {
                                 items(availableNetworks) { network ->
+                                    // Check if this is an error message
+                                    val isErrorMessage = network.startsWith("Error") || 
+                                                        network.startsWith("Failed") || 
+                                                        network.startsWith("Location permission") ||
+                                                        network.startsWith("WiFi is disabled") ||
+                                                        network == "No networks found"
+                                    
                                     Text(
                                         text = network,
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clickable { viewModel.updateSettings(wifiSsid = network) }
+                                            .run {
+                                                if (!isErrorMessage) {
+                                                    this.clickable { viewModel.updateSettings(wifiSsid = network) }
+                                                } else {
+                                                    this
+                                                }
+                                            }
                                             .padding(12.dp),
-                                        color = Color.White
+                                        color = if (isErrorMessage) Color(0xFFFFA500) else Color.White // Orange for error messages
                                     )
                                     Divider(color = Color.White.copy(alpha = 0.1f))
                                 }

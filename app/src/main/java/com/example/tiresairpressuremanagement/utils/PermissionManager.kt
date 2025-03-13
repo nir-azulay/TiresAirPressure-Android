@@ -8,10 +8,13 @@ import androidx.core.content.ContextCompat
 
 object PermissionManager {
     fun requiredPermissions(): List<String> {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val basePermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             listOf(
                 Manifest.permission.BLUETOOTH_SCAN,
-                Manifest.permission.BLUETOOTH_CONNECT
+                Manifest.permission.BLUETOOTH_CONNECT,
+                // Location is still needed for WiFi scanning
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
             )
         } else {
             listOf(
@@ -21,6 +24,12 @@ object PermissionManager {
                 Manifest.permission.BLUETOOTH_ADMIN
             )
         }
+        
+        // Add WiFi permissions
+        return basePermissions + listOf(
+            Manifest.permission.ACCESS_WIFI_STATE,
+            Manifest.permission.CHANGE_WIFI_STATE
+        )
     }
 
     fun hasRequiredPermissions(context: Context): Boolean {

@@ -16,10 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -37,10 +33,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.example.tiresairpressuremanagement.R
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.foundation.Canvas
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalView
 import android.view.WindowManager
 
@@ -216,9 +209,6 @@ fun MainScreen(
         }
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize()) {
-            // Ford Raptor background image
-            FordRaptorBackground()
-            
             // Main content
             BoxWithConstraints(
                 modifier = Modifier
@@ -760,217 +750,4 @@ fun PresetPressureButton(
             color = Color.Black
         )
     }
-}
-
-@Composable
-fun FordRaptorBackground() {
-    // Create a simple truck shape using Canvas instead of loading an image
-    Canvas(
-        modifier = Modifier
-            .fillMaxSize()
-            .alpha(0.2f) // Increased opacity for better visibility
-    ) {
-        val width = size.width
-        val height = size.height
-        
-        // Draw a simple truck outline
-        drawTruckOutline(width, height)
-    }
-}
-
-private fun DrawScope.drawTruckOutline(width: Float, height: Float) {
-    // Scale factors
-    val scaleX = width / 800f
-    val scaleY = height / 400f
-    
-    // Truck body - more detailed shape for Ford Raptor
-    val bodyPath = Path().apply {
-        moveTo(150f * scaleX, 200f * scaleY)
-        lineTo(200f * scaleX, 150f * scaleY) // Hood start
-        lineTo(300f * scaleX, 140f * scaleY) // Hood line
-        lineTo(350f * scaleX, 150f * scaleY) // Windshield start
-        lineTo(500f * scaleX, 150f * scaleY) // Roof end
-        lineTo(550f * scaleX, 200f * scaleY) // Rear window
-        lineTo(600f * scaleX, 200f * scaleY) // Bed
-        lineTo(650f * scaleX, 250f * scaleY) // Rear end
-        lineTo(700f * scaleX, 250f * scaleY) // Rear bumper
-        lineTo(700f * scaleX, 300f * scaleY) // Bottom rear
-        lineTo(100f * scaleX, 300f * scaleY) // Bottom front
-        lineTo(100f * scaleX, 250f * scaleY) // Front bumper
-        close()
-    }
-    
-    // Cabin - more detailed
-    val cabinPath = Path().apply {
-        moveTo(300f * scaleX, 150f * scaleY)
-        lineTo(350f * scaleX, 100f * scaleY)
-        lineTo(450f * scaleX, 100f * scaleY)
-        lineTo(500f * scaleX, 150f * scaleY)
-    }
-    
-    // Windows - more detailed
-    val windowsPath = Path().apply {
-        // Front windshield
-        moveTo(320f * scaleX, 145f * scaleY)
-        lineTo(360f * scaleX, 110f * scaleY)
-        lineTo(440f * scaleX, 110f * scaleY)
-        lineTo(480f * scaleX, 145f * scaleY)
-        
-        // Side windows
-        moveTo(500f * scaleX, 150f * scaleY)
-        lineTo(500f * scaleX, 180f * scaleY)
-        
-        moveTo(300f * scaleX, 150f * scaleY)
-        lineTo(300f * scaleX, 180f * scaleY)
-    }
-    
-    // Wheels - larger with more detail
-    val frontWheelPath = Path().apply {
-        // Outer wheel
-        addOval(Rect(
-            left = 160f * scaleX,
-            top = 260f * scaleY,
-            right = 210f * scaleX,
-            bottom = 310f * scaleY
-        ))
-        
-        // Inner wheel detail
-        addOval(Rect(
-            left = 170f * scaleX,
-            top = 270f * scaleY,
-            right = 200f * scaleX,
-            bottom = 300f * scaleY
-        ))
-    }
-    
-    val rearWheelPath = Path().apply {
-        // Outer wheel
-        addOval(Rect(
-            left = 560f * scaleX,
-            top = 260f * scaleY,
-            right = 610f * scaleX,
-            bottom = 310f * scaleY
-        ))
-        
-        // Inner wheel detail
-        addOval(Rect(
-            left = 570f * scaleX,
-            top = 270f * scaleY,
-            right = 600f * scaleX,
-            bottom = 300f * scaleY
-        ))
-    }
-    
-    // Raptor-specific details
-    
-    // Lifted suspension - more pronounced
-    val suspensionPath = Path().apply {
-        // Front suspension
-        moveTo(170f * scaleX, 280f * scaleY)
-        lineTo(140f * scaleX, 240f * scaleY)
-        
-        moveTo(200f * scaleX, 280f * scaleY)
-        lineTo(230f * scaleX, 240f * scaleY)
-        
-        // Rear suspension
-        moveTo(570f * scaleX, 280f * scaleY)
-        lineTo(540f * scaleX, 240f * scaleY)
-        
-        moveTo(600f * scaleX, 280f * scaleY)
-        lineTo(630f * scaleX, 240f * scaleY)
-    }
-    
-    // Distinctive Ford Raptor grille
-    val grillePath = Path().apply {
-        // Grille outline - wider and more prominent
-        addRect(Rect(
-            left = 110f * scaleX,
-            top = 210f * scaleY,
-            right = 190f * scaleX,
-            bottom = 250f * scaleY
-        ))
-        
-        // "FORD" text position in grille
-        moveTo(120f * scaleX, 230f * scaleY)
-        lineTo(180f * scaleX, 230f * scaleY)
-        
-        // Horizontal grille lines
-        for (i in 0..4) {
-            val y = 215f * scaleY + i * 7f * scaleY
-            moveTo(115f * scaleX, y)
-            lineTo(185f * scaleX, y)
-        }
-    }
-    
-    // Light bar on roof
-    val lightBarPath = Path().apply {
-        addRect(Rect(
-            left = 380f * scaleX,
-            top = 95f * scaleY,
-            right = 420f * scaleX,
-            bottom = 105f * scaleY
-        ))
-    }
-    
-    // Draw all paths with thicker lines for better visibility
-    drawPath(
-        path = bodyPath,
-        color = Color.Black,
-        style = Stroke(width = 4f)
-    )
-    
-    drawPath(
-        path = cabinPath,
-        color = Color.Black,
-        style = Stroke(width = 3f)
-    )
-    
-    drawPath(
-        path = windowsPath,
-        color = Color.Black,
-        style = Stroke(width = 3f)
-    )
-    
-    drawPath(
-        path = frontWheelPath,
-        color = Color.Black,
-        style = Stroke(width = 4f)
-    )
-    
-    drawPath(
-        path = rearWheelPath,
-        color = Color.Black,
-        style = Stroke(width = 4f)
-    )
-    
-    // Draw Raptor-specific details
-    drawPath(
-        path = suspensionPath,
-        color = Color.Black,
-        style = Stroke(width = 3f)
-    )
-    
-    drawPath(
-        path = grillePath,
-        color = Color.Black,
-        style = Stroke(width = 3f)
-    )
-    
-    drawPath(
-        path = lightBarPath,
-        color = Color.Black,
-        style = Stroke(width = 3f)
-    )
-    
-    // Add "RAPTOR" text on the side of the truck
-    val textY = 180f * scaleY
-    val textStartX = 380f * scaleX
-    val textWidth = 150f * scaleX
-    
-    drawLine(
-        start = Offset(textStartX, textY),
-        end = Offset(textStartX + textWidth, textY),
-        color = Color.Black,
-        strokeWidth = 3f
-    )
 } 

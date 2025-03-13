@@ -44,6 +44,7 @@ sealed class BleCommand {
         val measureWait: Float,
         val precision: Float,
         val btPinCode: String,
+        val simulationMode: Boolean,
         override val type: String = "settings"
     ) : BleCommand()
     

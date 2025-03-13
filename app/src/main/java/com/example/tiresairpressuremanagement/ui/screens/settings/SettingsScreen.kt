@@ -449,6 +449,62 @@ fun SettingsScreen(
                 }
             }
             
+            // Simulation Mode Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFF1E2530) // Dark blue-gray color from MainScreen
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "מצב סימולציה",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "הפעל מצב סימולציה",
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        
+                        Switch(
+                            checked = settings.simulationMode,
+                            onCheckedChange = { viewModel.setSimulationMode(it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color(0xFF3F51B5),
+                                checkedTrackColor = Color(0xFF3F51B5).copy(alpha = 0.5f),
+                                uncheckedThumbColor = Color.Gray,
+                                uncheckedTrackColor = Color.Gray.copy(alpha = 0.5f)
+                            )
+                        )
+                    }
+                    
+                    Text(
+                        text = "מצב סימולציה מאפשר בדיקת האפליקציה ללא חיבור למכשיר אמיתי",
+                        color = Color.White.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+            
             // Save button
             Button(
                 onClick = {

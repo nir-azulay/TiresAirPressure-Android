@@ -326,7 +326,8 @@ class SettingsViewModel(
         sensorValueAt50PSI: Int = _settings.value.sensorValueAt50PSI,
         measureWait: Float = _settings.value.measureWait,
         precision: Float = _settings.value.precision,
-        btPinCode: String = _settings.value.btPinCode
+        btPinCode: String = _settings.value.btPinCode,
+        simulationMode: Boolean = _settings.value.simulationMode
     ) {
         val newSettings = _settings.value.copy(
             deviceName = deviceName,
@@ -341,7 +342,8 @@ class SettingsViewModel(
             sensorValueAt50PSI = sensorValueAt50PSI,
             measureWait = measureWait,
             precision = precision,
-            btPinCode = btPinCode
+            btPinCode = btPinCode,
+            simulationMode = simulationMode
         )
         _settings.value = newSettings
         
@@ -382,7 +384,8 @@ class SettingsViewModel(
                     sensorValueAt50PSI = _settings.value.sensorValueAt50PSI,
                     measureWait = _settings.value.measureWait,
                     precision = _settings.value.precision,
-                    btPinCode = _settings.value.btPinCode
+                    btPinCode = _settings.value.btPinCode,
+                    simulationMode = _settings.value.simulationMode
                 )
             )
             

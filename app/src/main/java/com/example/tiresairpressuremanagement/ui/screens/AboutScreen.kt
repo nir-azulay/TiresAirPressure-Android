@@ -56,7 +56,7 @@ fun AboutScreen(
         ) {
             // App Name
             Text(
-                text = "ניהול לחץ אוויר בצמיגים",
+                text = "ניהול לחץ אוויר",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center

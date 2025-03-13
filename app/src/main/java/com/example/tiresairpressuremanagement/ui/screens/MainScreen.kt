@@ -191,7 +191,7 @@ fun MainScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("ניהול לחץ אוויר בצמיגים") },
+                title = { Text("ניהול לחץ אוויר") },
                 actions = {
                     IconButton(onClick = onSettingsClick) {
                         Icon(Icons.Default.Settings, contentDescription = "הגדרות")

@@ -36,4 +36,11 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
+
+    <!-- Splash Screen Theme -->
+    <style name="Theme.TiresAirPressureManagement.Splash" parent="Theme.TiresAirPressureManagement">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="android:statusBarColor">@color/md_theme_light_primary</item>
+        <item name="android:navigationBarColor">@color/md_theme_light_primary</item>
+    </style>
 </resources>

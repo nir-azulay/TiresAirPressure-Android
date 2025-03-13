@@ -33,11 +33,16 @@ import android.Manifest
 import android.util.Log
 import com.example.tiresairpressuremanagement.ui.screens.main.MainViewModel
 import com.example.tiresairpressuremanagement.ui.screens.AboutScreen
+import com.example.tiresairpressuremanagement.ui.screens.SplashScreen
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     private var showPermissionDialog by mutableStateOf(false)
     private lateinit var bleManager: BleManager
     private val TAG = "MainActivity"
+    
+    // Track if we're attempting to connect to a saved device
+    private var isConnectingToSavedDevice = false
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -63,6 +68,9 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Apply the splash theme before super.onCreate to ensure it's used during startup
+        setTheme(R.style.Theme_TiresAirPressureManagement)
+        
         super.onCreate(savedInstanceState)
         android.util.Log.d(TAG, "onCreate called")
         
@@ -98,21 +106,66 @@ class MainActivity : ComponentActivity() {
         val savedDeviceAddress = sharedPreferences.getString("selectedDeviceAddress", null)
         if (savedDeviceAddress != null) {
             android.util.Log.d(TAG, "Found saved device: $savedDeviceAddress")
+            isConnectingToSavedDevice = true
             bleManager.connectToSavedDevice()
         } else {
             android.util.Log.d(TAG, "No saved device found")
+            isConnectingToSavedDevice = false
         }
     }
 
     @Composable
     private fun AppContent() {
-        // מצב המסך הנוכחי
-        var currentScreen by remember { mutableStateOf(Screen.CONNECTION) }
+        // מצב המסך הנוכחי - start with SPLASH screen
+        var currentScreen by remember { mutableStateOf(Screen.SPLASH) }
+        
+        // Track connection state
+        val connectionState by bleManager.connectionState.collectAsState()
+        
+        // Effect to handle connection state changes
+        LaunchedEffect(connectionState) {
+            if (isConnectingToSavedDevice) {
+                when (connectionState) {
+                    ConnectionState.Connected -> {
+                        // If connected successfully, go to main screen
+                        currentScreen = Screen.MAIN
+                        isConnectingToSavedDevice = false
+                    }
+                    ConnectionState.Disconnected -> {
+                        // If connection failed and we were trying to connect, go to connection screen
+                        if (currentScreen == Screen.SPLASH) {
+                            // Only change if we're still on splash screen
+                            delay(3000) // Wait for splash screen animation
+                            currentScreen = Screen.CONNECTION
+                            isConnectingToSavedDevice = false
+                        }
+                    }
+                    else -> {} // Do nothing for other states
+                }
+            }
+        }
         
         Surface(
             color = MaterialTheme.colorScheme.background
         ) {
             when (currentScreen) {
+                Screen.SPLASH -> {
+                    SplashScreen(
+                        onTimeout = {
+                            // If we're still connecting, stay on splash screen
+                            if (connectionState != ConnectionState.Connecting) {
+                                // If connected, go to main, otherwise go to connection screen
+                                currentScreen = if (connectionState == ConnectionState.Connected) {
+                                    Screen.MAIN
+                                } else {
+                                    Screen.CONNECTION
+                                }
+                            }
+                        },
+                        connectionInProgress = connectionState == ConnectionState.Connecting
+                    )
+                }
+                
                 Screen.MAIN -> {
                     android.util.Log.d(TAG, "Displaying MainScreen")
                     // Create the ViewModel with the existing BleManager instance
@@ -243,6 +296,7 @@ class MainActivity : ComponentActivity() {
 }
 
 enum class Screen {
+    SPLASH,
     MAIN,
     CONNECTION,
     SETTINGS,

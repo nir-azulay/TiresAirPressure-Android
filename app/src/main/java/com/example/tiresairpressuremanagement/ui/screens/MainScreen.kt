@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.dp
 import com.example.tiresairpressuremanagement.data.ble.BleManager
 import com.example.tiresairpressuremanagement.data.ble.ConnectionState
 import com.example.tiresairpressuremanagement.domain.models.BleCommand
+import kotlinx.coroutines.flow.collectLatest
 
 private const val TAG = "MainScreen"
 
@@ -22,6 +23,14 @@ fun MainScreen(
     var targetPressure by remember { mutableStateOf(30f) }
     var isInflating by remember { mutableStateOf(false) }
     
+    // Define min and max pressure values
+    val minPressure = 5f
+    val maxPressure = 40f
+    
+    // State for target reached dialog
+    var showTargetReachedDialog by remember { mutableStateOf(false) }
+    var targetReachedInfo by remember { mutableStateOf<Pair<Float, Float>?>(null) }
+    
     // Log when MainScreen is composed
     DisposableEffect(Unit) {
         android.util.Log.d(TAG, "MainScreen composed with connection state: $connectionState")
@@ -32,7 +41,16 @@ fun MainScreen(
     
     // Log device status changes
     LaunchedEffect(deviceStatus) {
-        android.util.Log.d(TAG, "Device status updated: $deviceStatus")
+        android.util.Log.d(TAG, "Device status updated in MainScreen: $deviceStatus")
+        android.util.Log.d(TAG, "Current pressure value: ${deviceStatus?.pressure ?: "null"}")
+        android.util.Log.d(TAG, "Operation mode: ${deviceStatus?.operationMode ?: "null"}")
+        
+        // If device status shows stopped mode, update inflation state
+        deviceStatus?.let { status ->
+            if (status.operationMode == 1) { // MODE_STOP
+                isInflating = false
+            }
+        }
     }
     
     // Log connection state changes
@@ -42,6 +60,54 @@ fun MainScreen(
             android.util.Log.d(TAG, "Device disconnected, resetting inflation state")
             isInflating = false
         }
+    }
+    
+    // Collect target reached events
+    LaunchedEffect(Unit) {
+        android.util.Log.d(TAG, "Setting up target reached event collector")
+        try {
+            bleManager.targetReachedEvent.collectLatest { (targetPressureValue, currentPressureValue) ->
+                android.util.Log.d(TAG, "Target reached event received in MainScreen: target=$targetPressureValue, current=$currentPressureValue")
+                
+                // Update UI state
+                isInflating = false
+                android.util.Log.d(TAG, "Updated inflation state to false")
+                
+                // Show dialog with target reached information
+                targetReachedInfo = Pair(targetPressureValue, currentPressureValue)
+                showTargetReachedDialog = true
+                android.util.Log.d(TAG, "Set showTargetReachedDialog to true with info: $targetReachedInfo")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Error collecting target reached events: ${e.message}", e)
+        }
+    }
+    
+    // Target reached dialog
+    if (showTargetReachedDialog && targetReachedInfo != null) {
+        android.util.Log.d(TAG, "Showing target reached dialog with info: $targetReachedInfo")
+        AlertDialog(
+            onDismissRequest = { 
+                android.util.Log.d(TAG, "Target reached dialog dismissed")
+                showTargetReachedDialog = false 
+            },
+            title = { Text("Target Pressure Reached") },
+            text = { 
+                Column {
+                    Text("Target pressure has been reached!")
+                    Text("Target: ${targetReachedInfo?.first} PSI")
+                    Text("Current: ${targetReachedInfo?.second} PSI")
+                }
+            },
+            confirmButton = {
+                Button(onClick = { 
+                    android.util.Log.d(TAG, "Target reached dialog confirmed")
+                    showTargetReachedDialog = false 
+                }) {
+                    Text("OK")
+                }
+            }
+        )
     }
     
     Column(
@@ -128,14 +194,14 @@ fun MainScreen(
                         .padding(vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Button(onClick = { if (targetPressure > 8f) targetPressure -= 1f }) {
+                    Button(onClick = { if (targetPressure > minPressure) targetPressure -= 1f }) {
                         Text("-")
                     }
                     Text(
                         text = "$targetPressure PSI",
                         style = MaterialTheme.typography.headlineMedium
                     )
-                    Button(onClick = { if (targetPressure < 38f) targetPressure += 1f }) {
+                    Button(onClick = { if (targetPressure < maxPressure) targetPressure += 1f }) {
                         Text("+")
                     }
                 }

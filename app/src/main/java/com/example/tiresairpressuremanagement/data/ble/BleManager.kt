@@ -27,6 +27,14 @@ import android.media.MediaPlayer
 import com.example.tiresairpressuremanagement.R
 import android.bluetooth.BluetoothStatusCodes
 import org.json.JSONObject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import androidx.core.app.NotificationCompat
+import android.app.PendingIntent
+import android.content.Intent
 
 class BleManager(private val context: Context) {
     private val TAG = "BleManager"
@@ -54,6 +62,10 @@ class BleManager(private val context: Context) {
     
     private val _scanResults = MutableStateFlow<List<BleDevice>>(emptyList())
     val scanResults: StateFlow<List<BleDevice>> = _scanResults
+    
+    // Add a flow for target reached events (targetPressure, currentPressure)
+    private val _targetReachedEvent = MutableSharedFlow<Pair<Float, Float>>(replay = 1, extraBufferCapacity = 1)
+    val targetReachedEvent: SharedFlow<Pair<Float, Float>> = _targetReachedEvent
     
     private val bluetoothManager: BluetoothManager by lazy {
         context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
@@ -389,7 +401,7 @@ class BleManager(private val context: Context) {
                 BleConstants.NOTIFICATION_CHARACTERISTIC_UUID -> {
                     val value = characteristic.value
                     val jsonString = String(value)
-                    Log.d(TAG, "Received JSON: $jsonString")
+                    Log.d(TAG, "Received JSON (deprecated API): $jsonString")
                     
                     // Process the complete message directly
                     processMessage(jsonString)
@@ -410,7 +422,7 @@ class BleManager(private val context: Context) {
             when (characteristic.uuid) {
                 BleConstants.NOTIFICATION_CHARACTERISTIC_UUID -> {
                     val jsonString = String(value)
-                    Log.d(TAG, "Received JSON: $jsonString")
+                    Log.d(TAG, "Received JSON (new API): $jsonString")
                     
                     // Process the complete message directly
                     processMessage(jsonString)
@@ -878,7 +890,13 @@ class BleManager(private val context: Context) {
     private fun onDeviceStatusReceived(deviceStatus: DeviceStatus) {
         android.util.Log.d(TAG, "Received device status: $deviceStatus")
         saveDeviceSettings(deviceStatus)
-        _deviceStatus.value = deviceStatus
+        
+        // Update the StateFlow on the main thread to ensure proper UI updates
+        CoroutineScope(Dispatchers.Main).launch {
+            android.util.Log.d(TAG, "Updating _deviceStatus StateFlow with: $deviceStatus")
+            _deviceStatus.value = deviceStatus
+            android.util.Log.d(TAG, "StateFlow updated, new value: ${_deviceStatus.value}")
+        }
     }
     
     // Call this function when full device settings are received
@@ -944,6 +962,18 @@ class BleManager(private val context: Context) {
             try {
                 val jsonObject = JSONObject(jsonString)
                 
+                // Check if it's a target reached notification
+                if (jsonObject.has("type") && jsonObject.getString("type") == "target_reached") {
+                    Log.d(TAG, "Detected target reached notification")
+                    
+                    val targetPressure = jsonObject.optString("targetPressure", "0").toFloatOrNull() ?: 0f
+                    val currentPressure = jsonObject.optString("currentPressure", "0").toFloatOrNull() ?: 0f
+                    
+                    // Handle target reached notification
+                    onTargetPressureReached(targetPressure, currentPressure)
+                    return
+                }
+                
                 // Check if it's a settings response (has DeviceName)
                 if (jsonObject.has("DeviceName")) {
                     Log.d(TAG, "Detected settings response with DeviceName")
@@ -962,17 +992,35 @@ class BleManager(private val context: Context) {
                     return
                 }
                 
-                // If it has CurrentPressure and operationMode, it's a status update
-                if (jsonObject.has("CurrentPressure") && jsonObject.has("operationMode")) {
-                    Log.d(TAG, "Detected status update with CurrentPressure and operationMode")
+                // Check for status update with different possible field names
+                val hasPressureField = jsonObject.has("CurrentPressure") || jsonObject.has("Pressure")
+                val hasOperationMode = jsonObject.has("operationMode")
+                
+                if (hasPressureField && hasOperationMode) {
+                    Log.d(TAG, "Detected status update with pressure and operationMode")
                     
-                    val pressure = jsonObject.optString("CurrentPressure", "0").toFloatOrNull() ?: 0f
+                    // Try to get pressure from either field name
+                    val pressure = when {
+                        jsonObject.has("CurrentPressure") -> {
+                            val value = jsonObject.optString("CurrentPressure", "0").toFloatOrNull() ?: 0f
+                            Log.d(TAG, "Using CurrentPressure field: $value")
+                            value
+                        }
+                        jsonObject.has("Pressure") -> {
+                            val value = jsonObject.optString("Pressure", "0").toFloatOrNull() ?: 0f
+                            Log.d(TAG, "Using Pressure field: $value")
+                            value
+                        }
+                        else -> 0f
+                    }
+                    
                     val operationMode = jsonObject.optInt("operationMode", 4)
                     
                     val deviceStatus = DeviceStatus(
                         pressure = pressure,
                         operationMode = operationMode
                     )
+                    Log.d(TAG, "Created DeviceStatus: $deviceStatus")
                     onDeviceStatusReceived(deviceStatus)
                     return
                 }
@@ -1061,6 +1109,112 @@ class BleManager(private val context: Context) {
         }
     }
     
+    // Call this function when target pressure is reached
+    private fun onTargetPressureReached(targetPressure: Float, currentPressure: Float) {
+        android.util.Log.d(TAG, "Target pressure reached: target=$targetPressure, current=$currentPressure")
+        
+        // Update device status with the current pressure
+        val deviceStatus = DeviceStatus(
+            pressure = currentPressure,
+            operationMode = DeviceStatus.MODE_STOP
+        )
+        onDeviceStatusReceived(deviceStatus)
+        
+        // Play a notification sound
+        playTargetReachedSound()
+        
+        // Show a notification
+        showTargetReachedNotification(targetPressure, currentPressure)
+        
+        // Broadcast an event that can be observed by the UI
+        try {
+            android.util.Log.d(TAG, "Attempting to emit target reached event: ($targetPressure, $currentPressure)")
+            val emitResult = _targetReachedEvent.tryEmit(Pair(targetPressure, currentPressure))
+            android.util.Log.d(TAG, "Event emission result: $emitResult")
+            
+            // Use coroutine scope to ensure the event is emitted
+            CoroutineScope(Dispatchers.Main).launch {
+                android.util.Log.d(TAG, "Emitting target reached event via coroutine")
+                _targetReachedEvent.emit(Pair(targetPressure, currentPressure))
+                android.util.Log.d(TAG, "Event emitted via coroutine")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Error emitting target reached event: ${e.message}", e)
+        }
+    }
+    
+    // Play a sound when target pressure is reached
+    private fun playTargetReachedSound() {
+        try {
+            // Create a new MediaPlayer for the target reached sound
+            // Using connection_sound.wav temporarily - replace with target_reached_sound.wav when available
+            val targetReachedSound = MediaPlayer.create(context, R.raw.connection_sound)
+            targetReachedSound.setOnCompletionListener { mp -> mp.release() }
+            targetReachedSound.start()
+            
+            Log.d(TAG, "Playing target reached sound")
+            
+            // TODO: Replace with a dedicated target reached sound file
+            // Add a file named target_reached_sound.wav or target_reached_sound.mp3 to the res/raw directory
+        } catch (e: Exception) {
+            Log.e(TAG, "Error playing target reached sound: ${e.message}")
+        }
+    }
+    
+    // Show a notification when target pressure is reached
+    private fun showTargetReachedNotification(targetPressure: Float, currentPressure: Float) {
+        try {
+            Log.d(TAG, "Showing target reached notification: target=$targetPressure, current=$currentPressure")
+            
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            
+            // Create a notification channel (required for Android 8.0+)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Log.d(TAG, "Creating notification channel for Android O+")
+                val channelId = "target_pressure_channel"
+                val channelName = "Target Pressure Notifications"
+                val importance = android.app.NotificationManager.IMPORTANCE_HIGH
+                val channel = android.app.NotificationChannel(channelId, channelName, importance)
+                channel.description = "Notifications for when target pressure is reached"
+                channel.enableVibration(true)
+                channel.enableLights(true)
+                
+                // Register the channel with the system
+                notificationManager.createNotificationChannel(channel)
+                Log.d(TAG, "Notification channel created: $channelId")
+            }
+            
+            // Create an intent for when the notification is tapped
+            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            val pendingIntent = PendingIntent.getActivity(
+                context, 
+                0, 
+                intent, 
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+            
+            // Create the notification using NotificationCompat.Builder for better compatibility
+            val channelId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) "target_pressure_channel" else ""
+            val notificationBuilder = NotificationCompat.Builder(context, channelId)
+                .setContentTitle("Target Pressure Reached")
+                .setContentText("Target: $targetPressure PSI, Current: $currentPressure PSI")
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(pendingIntent)
+                .setVibrate(longArrayOf(0, 500, 200, 500))
+            
+            // Show the notification
+            Log.d(TAG, "Showing notification with ID: 1")
+            notificationManager.notify(1, notificationBuilder.build())
+            Log.d(TAG, "Notification shown successfully")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error showing notification: ${e.message}", e)
+            e.printStackTrace()
+        }
+    }
+    
     companion object {
         const val REQUEST_BLUETOOTH_PERMISSIONS = 1001
     }
@@ -1076,6 +1230,13 @@ enum class ConnectionState {
 class DeviceSettingsResponseAdapter {
     @FromJson
     fun fromJson(jsonObject: Map<String, Any?>): DeviceSettingsResponse {
+        // Get pressure from either "CurrentPressure" or "Pressure" field
+        val pressure = when {
+            jsonObject.containsKey("Pressure") -> (jsonObject["Pressure"] as? String) ?: "0"
+            jsonObject.containsKey("CurrentPressure") -> (jsonObject["CurrentPressure"] as? String) ?: "0"
+            else -> "0"
+        }
+        
         return DeviceSettingsResponse(
             operationMode = (jsonObject["operationMode"] as? Number)?.toInt() ?: 4,
             deviceName = (jsonObject["DeviceName"] as? String) ?: "",
@@ -1091,7 +1252,7 @@ class DeviceSettingsResponseAdapter {
             measureWait = (jsonObject["MessureWait"] as? String) ?: "2",
             precision = (jsonObject["Precision"] as? String) ?: "1",
             btPinCode = (jsonObject["BTPinCode"] as? String) ?: "1234",
-            pressure = (jsonObject["CurrentPressure"] as? String) ?: "0",
+            pressure = pressure,
             softwareVersion = (jsonObject["Software_VER"] as? String) ?: "",
             ipAddress = (jsonObject["IP"] as? String) ?: "",
             simulationMode = (jsonObject["SimulationMode"] as? String) ?: "0"

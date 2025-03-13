@@ -28,6 +28,9 @@ import com.example.tiresairpressuremanagement.ui.screens.MainScreen
 import com.example.tiresairpressuremanagement.ui.screens.settings.SettingsScreen
 import com.example.tiresairpressuremanagement.ui.screens.settings.SettingsViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import android.os.Build
+import android.Manifest
+import android.util.Log
 
 class MainActivity : ComponentActivity() {
     private var showPermissionDialog by mutableStateOf(false)
@@ -46,6 +49,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // Request notification permission for Android 13+
+    private val requestNotificationLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            Log.d("MainActivity", "Notification permission granted")
+        } else {
+            Log.d("MainActivity", "Notification permission denied")
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         android.util.Log.d(TAG, "onCreate called")
@@ -55,6 +69,11 @@ class MainActivity : ComponentActivity() {
         
         // בקשת הרשאות אם צריך
         checkAndRequestPermissions()
+        
+        // Request notification permission for Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestNotificationPermission()
+        }
         
         setContent {
             android.util.Log.d(TAG, "Setting content")
@@ -151,6 +170,13 @@ class MainActivity : ComponentActivity() {
         } else {
             // אם כל ההרשאות כבר קיימות, ננסה להתחבר למכשיר השמור
             tryConnectToSavedDevice()
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Log.d("MainActivity", "Requesting notification permission for Android 13+")
+            requestNotificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 

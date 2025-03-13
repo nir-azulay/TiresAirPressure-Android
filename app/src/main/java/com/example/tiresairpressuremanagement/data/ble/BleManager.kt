@@ -12,11 +12,13 @@ import com.example.tiresairpressuremanagement.domain.models.BleCommand
 import com.example.tiresairpressuremanagement.domain.models.BleDevice
 import com.example.tiresairpressuremanagement.domain.models.DeviceSettings
 import com.example.tiresairpressuremanagement.domain.models.DeviceStatus
+import com.example.tiresairpressuremanagement.domain.models.DeviceSettingsResponse
 import com.example.tiresairpressuremanagement.utils.BleConstants
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Types
+import com.squareup.moshi.FromJson
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.util.*
@@ -32,8 +34,13 @@ class BleManager(private val context: Context) {
     private var notifyCharacteristic: BluetoothGattCharacteristic? = null
     private var commandCharacteristic: BluetoothGattCharacteristic? = null
     
+    // Simplified message handling now that MTU size is correct
+    private var settingsRequestAttempts = 0
+    private val MAX_SETTINGS_REQUEST_ATTEMPTS = 3
+    
     private val moshi = Moshi.Builder()
         .add(KotlinJsonAdapterFactory())
+        .add(DeviceSettingsResponseAdapter())
         .build()
     
     private val _connectionState = MutableStateFlow(ConnectionState.Disconnected)
@@ -41,6 +48,9 @@ class BleManager(private val context: Context) {
     
     private val _deviceStatus = MutableStateFlow<DeviceStatus?>(null)
     val deviceStatus: StateFlow<DeviceStatus?> = _deviceStatus
+    
+    private val _deviceSettings = MutableStateFlow<DeviceSettings?>(null)
+    val deviceSettings: StateFlow<DeviceSettings?> = _deviceSettings
     
     private val _scanResults = MutableStateFlow<List<BleDevice>>(emptyList())
     val scanResults: StateFlow<List<BleDevice>> = _scanResults
@@ -162,19 +172,23 @@ class BleManager(private val context: Context) {
                     // השמעת צליל
                     mediaPlayer.start()
                     
-                    // Important: Discover services before updating connection state
-                    android.util.Log.d(TAG, "Starting service discovery")
-                    val discoverStarted = gatt.discoverServices()
-                    android.util.Log.d(TAG, "Service discovery started: $discoverStarted")
-                    
-                    if (discoverStarted == false) {
-                        android.util.Log.e(TAG, "Failed to start service discovery")
-                        disconnect()
-                        return
+                    // Request larger MTU size before discovering services
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        android.util.Log.d(TAG, "Requesting larger MTU size")
+                        val mtuSize = 517 // Request exactly 517 bytes MTU size to match the BLE device's configuration
+                        val mtuResult = gatt.requestMtu(mtuSize)
+                        android.util.Log.d(TAG, "MTU request result: $mtuResult")
+                        // Service discovery will be started in onMtuChanged callback
+                        
+                        // If MTU request fails, proceed with service discovery
+                        if (!mtuResult) {
+                            android.util.Log.d(TAG, "MTU request failed, proceeding with service discovery")
+                            startServiceDiscovery(gatt)
+                        }
+                    } else {
+                        // For older Android versions, just discover services
+                        startServiceDiscovery(gatt)
                     }
-                    
-                    // עדכון מצב החיבור יתבצע רק לאחר גילוי השירותים
-                    // _connectionState.value = ConnectionState.Connected will be set after service discovery
                 }
                 BluetoothGatt.STATE_DISCONNECTED -> {
                     android.util.Log.d(TAG, "Disconnected from GATT server")
@@ -208,6 +222,18 @@ class BleManager(private val context: Context) {
             }
         }
         
+        override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
+            android.util.Log.d(TAG, "onMtuChanged: mtu=$mtu, status=$status")
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                android.util.Log.d(TAG, "MTU size changed successfully to $mtu")
+            } else {
+                android.util.Log.e(TAG, "Failed to change MTU size, status: $status")
+            }
+            
+            // Now discover services
+            startServiceDiscovery(gatt)
+        }
+        
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
             Log.d(TAG, "onServicesDiscovered: status=$status")
             
@@ -217,28 +243,51 @@ class BleManager(private val context: Context) {
                 // Debug all services and characteristics
                 debugBleServices(gatt)
                 
+                // Look for our specific service
                 val service = gatt.getService(BleConstants.SERVICE_UUID)
                 Log.d(TAG, "Looking for service UUID: ${BleConstants.SERVICE_UUID}")
                 
                 if (service != null) {
                     Log.d(TAG, "Found required service: ${BleConstants.SERVICE_UUID}")
+                    
+                    // Try to find our characteristics
                     notifyCharacteristic = service.getCharacteristic(BleConstants.NOTIFICATION_CHARACTERISTIC_UUID)
                     commandCharacteristic = service.getCharacteristic(BleConstants.COMMAND_CHARACTERISTIC_UUID)
                     
                     Log.d(TAG, "Notify characteristic found: ${notifyCharacteristic != null}")
                     Log.d(TAG, "Command characteristic found: ${commandCharacteristic != null}")
                     
+                    // Check if we found both characteristics
                     if (notifyCharacteristic != null && commandCharacteristic != null) {
                         Log.d(TAG, "Found all required characteristics")
+                        
+                        // Log the properties of the notify characteristic
+                        val notifyProps = notifyCharacteristic!!.properties
+                        Log.d(TAG, "Notify characteristic properties: $notifyProps")
+                        Log.d(TAG, "Has NOTIFY: ${(notifyProps and BluetoothGattCharacteristic.PROPERTY_NOTIFY) != 0}")
+                        Log.d(TAG, "Has INDICATE: ${(notifyProps and BluetoothGattCharacteristic.PROPERTY_INDICATE) != 0}")
+                        Log.d(TAG, "Has READ: ${(notifyProps and BluetoothGattCharacteristic.PROPERTY_READ) != 0}")
+                        
+                        // Log the properties of the command characteristic
+                        val commandProps = commandCharacteristic!!.properties
+                        Log.d(TAG, "Command characteristic properties: $commandProps")
+                        Log.d(TAG, "Has WRITE: ${(commandProps and BluetoothGattCharacteristic.PROPERTY_WRITE) != 0}")
+                        Log.d(TAG, "Has WRITE_NO_RESPONSE: ${(commandProps and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) != 0}")
                         
                         // Update connection state first
                         _connectionState.value = ConnectionState.Connected
                         Log.d(TAG, "Connection state set to CONNECTED")
                         
+                        // Reset settings request attempts
+                        settingsRequestAttempts = 0
+                        
                         // Then enable notifications
                         try {
                             enableNotifications(gatt, notifyCharacteristic!!)
                             Log.d(TAG, "Notifications enabled successfully")
+                            
+                            // Schedule a delayed settings request in case we don't receive settings automatically
+                            scheduleSettingsRequest()
                         } catch (e: Exception) {
                             Log.e(TAG, "Failed to enable notifications", e)
                             disconnect()
@@ -251,8 +300,66 @@ class BleManager(private val context: Context) {
                         disconnect()
                     }
                 } else {
-                    Log.e(TAG, "Required service not found!")
-                    disconnect()
+                    // If we didn't find our specific service, try to find any service with notify characteristics
+                    Log.d(TAG, "Required service not found, looking for any service with notify characteristics")
+                    
+                    var foundNotifyCharacteristic = false
+                    
+                    // Loop through all services
+                    for (service in gatt.services) {
+                        Log.d(TAG, "Checking service: ${service.uuid}")
+                        
+                        // Loop through all characteristics in this service
+                        for (characteristic in service.characteristics) {
+                            val props = characteristic.properties
+                            
+                            // Check if this characteristic has notify property
+                            if ((props and BluetoothGattCharacteristic.PROPERTY_NOTIFY) != 0) {
+                                Log.d(TAG, "Found characteristic with NOTIFY property: ${characteristic.uuid}")
+                                
+                                // Try to use this characteristic for notifications
+                                notifyCharacteristic = characteristic
+                                foundNotifyCharacteristic = true
+                                
+                                // Look for a characteristic with write property in the same service
+                                for (cmdChar in service.characteristics) {
+                                    val cmdProps = cmdChar.properties
+                                    if ((cmdProps and BluetoothGattCharacteristic.PROPERTY_WRITE) != 0 ||
+                                        (cmdProps and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) != 0) {
+                                        Log.d(TAG, "Found characteristic with WRITE property: ${cmdChar.uuid}")
+                                        commandCharacteristic = cmdChar
+                                        break
+                                    }
+                                }
+                                
+                                break
+                            }
+                        }
+                        
+                        if (foundNotifyCharacteristic) {
+                            break
+                        }
+                    }
+                    
+                    if (foundNotifyCharacteristic) {
+                        Log.d(TAG, "Found alternative notify characteristic, trying to use it")
+                        
+                        // Update connection state
+                        _connectionState.value = ConnectionState.Connected
+                        Log.d(TAG, "Connection state set to CONNECTED")
+                        
+                        // Enable notifications
+                        try {
+                            enableNotifications(gatt, notifyCharacteristic!!)
+                            Log.d(TAG, "Notifications enabled successfully")
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to enable notifications", e)
+                            disconnect()
+                        }
+                    } else {
+                        Log.e(TAG, "No notify characteristics found in any service")
+                        disconnect()
+                    }
                 }
             } else {
                 Log.e(TAG, "Service discovery failed with status: $status")
@@ -276,20 +383,19 @@ class BleManager(private val context: Context) {
             gatt: BluetoothGatt,
             characteristic: BluetoothGattCharacteristic
         ) {
+            android.util.Log.d(TAG, "onCharacteristicChanged (deprecated) called for characteristic: ${characteristic.uuid}")
+            
             when (characteristic.uuid) {
                 BleConstants.NOTIFICATION_CHARACTERISTIC_UUID -> {
                     val value = characteristic.value
                     val jsonString = String(value)
-                    try {
-                        val deviceStatus = moshi.adapter(DeviceStatus::class.java).fromJson(jsonString)
-                        if (deviceStatus != null) {
-                            onDeviceSettingsReceived(deviceStatus)
-                        } else {
-                            Log.e(TAG, "Device status is null")
-                        }
-                    } catch (e: Exception) {
-                        android.util.Log.e(TAG, "Error parsing device status: ${e.message}")
-                    }
+                    Log.d(TAG, "Received JSON: $jsonString")
+                    
+                    // Process the complete message directly
+                    processMessage(jsonString)
+                }
+                else -> {
+                    android.util.Log.d(TAG, "Received notification from unknown characteristic: ${characteristic.uuid}")
                 }
             }
         }
@@ -299,19 +405,18 @@ class BleManager(private val context: Context) {
             characteristic: BluetoothGattCharacteristic,
             value: ByteArray
         ) {
+            android.util.Log.d(TAG, "onCharacteristicChanged (new API) called for characteristic: ${characteristic.uuid}")
+            
             when (characteristic.uuid) {
                 BleConstants.NOTIFICATION_CHARACTERISTIC_UUID -> {
                     val jsonString = String(value)
-                    try {
-                        val deviceStatus = moshi.adapter(DeviceStatus::class.java).fromJson(jsonString)
-                        if (deviceStatus != null) {
-                            onDeviceSettingsReceived(deviceStatus)
-                        } else {
-                            Log.e(TAG, "Device status is null")
-                        }
-                    } catch (e: Exception) {
-                        android.util.Log.e(TAG, "Error parsing device status: ${e.message}")
-                    }
+                    Log.d(TAG, "Received JSON: $jsonString")
+                    
+                    // Process the complete message directly
+                    processMessage(jsonString)
+                }
+                else -> {
+                    android.util.Log.d(TAG, "Received notification from unknown characteristic: ${characteristic.uuid}")
                 }
             }
         }
@@ -388,6 +493,8 @@ class BleManager(private val context: Context) {
         }
         
         try {
+            // No need to clear buffer anymore
+            
             val device = adapter.getRemoteDevice(deviceAddress)
             if (device != null) {
                 android.util.Log.d(TAG, "Got remote device, connecting...")
@@ -403,13 +510,18 @@ class BleManager(private val context: Context) {
                 
                 // Small delay before connecting
                 try {
-                    Thread.sleep(100)
+                    Thread.sleep(500) // Increased delay for better stability
                 } catch (e: InterruptedException) {
                     android.util.Log.e(TAG, "Sleep interrupted", e)
                 }
                 
+                // Set connection state to connecting
+                _connectionState.value = ConnectionState.Connecting
+                android.util.Log.d(TAG, "Connection state set to CONNECTING")
+                
                 // Connect with autoConnect = false for immediate connection
                 bluetoothGatt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    android.util.Log.d(TAG, "Using Android M+ connection API with LE transport")
                     device.connectGatt(
                         context,
                         false, // Use false for immediate connection
@@ -417,22 +529,56 @@ class BleManager(private val context: Context) {
                         BluetoothDevice.TRANSPORT_LE
                     )
                 } else {
+                    android.util.Log.d(TAG, "Using legacy connection API")
                     device.connectGatt(context, false, gattCallback)
                 }
                 
                 if (bluetoothGatt == null) {
                     android.util.Log.e(TAG, "Failed to create GATT connection")
+                    _connectionState.value = ConnectionState.Disconnected
+                    scheduleReconnect(deviceAddress)
                     return
                 }
                 
                 android.util.Log.d(TAG, "Connection request sent to device")
                 stopScan() // Stop scanning after connection attempt
+                
+                // Schedule a connection timeout
+                scheduleConnectionTimeout(deviceAddress)
             } else {
                 android.util.Log.e(TAG, "Failed to get remote device")
+                _connectionState.value = ConnectionState.Disconnected
             }
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Error connecting to device", e)
+            _connectionState.value = ConnectionState.Disconnected
+            scheduleReconnect(deviceAddress)
         }
+    }
+    
+    // Schedule a connection timeout to prevent hanging in connecting state
+    private fun scheduleConnectionTimeout(deviceAddress: String) {
+        android.util.Log.d(TAG, "Scheduling connection timeout")
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            if (_connectionState.value == ConnectionState.Connecting) {
+                android.util.Log.e(TAG, "Connection timeout occurred")
+                disconnect()
+                
+                // Try to reconnect
+                scheduleReconnect(deviceAddress)
+            }
+        }, 10000) // 10 second timeout
+    }
+    
+    // Schedule a reconnection attempt
+    private fun scheduleReconnect(deviceAddress: String) {
+        android.util.Log.d(TAG, "Scheduling reconnection attempt")
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            if (_connectionState.value != ConnectionState.Connected) {
+                android.util.Log.d(TAG, "Attempting to reconnect to device: $deviceAddress")
+                connect(deviceAddress)
+            }
+        }, 3000) // Wait 3 seconds before reconnecting
     }
     
     fun disconnect() {
@@ -503,6 +649,12 @@ class BleManager(private val context: Context) {
                         put("type", command.type)
                     }.toString()
                 }
+                is BleCommand.RequestSettings -> {
+                    JSONObject().apply {
+                        put("command", command.command)
+                        put("type", command.type)
+                    }.toString()
+                }
             }
             
             Log.d(TAG, "Sending command: $jsonString")
@@ -566,6 +718,14 @@ class BleManager(private val context: Context) {
     private fun enableNotifications(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
         android.util.Log.d(TAG, "Enabling notifications for characteristic: ${characteristic.uuid}")
         
+        // Check if the characteristic has the NOTIFY property
+        val properties = characteristic.properties
+        if ((properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY) == 0) {
+            android.util.Log.e(TAG, "Characteristic does not have NOTIFY property")
+            throw Exception("Characteristic does not have NOTIFY property")
+        }
+        android.util.Log.d(TAG, "Characteristic has NOTIFY property")
+        
         // First enable the local notifications
         val success = gatt.setCharacteristicNotification(characteristic, true)
         if (success == false) {
@@ -574,13 +734,39 @@ class BleManager(private val context: Context) {
         }
         android.util.Log.d(TAG, "Local notifications enabled successfully")
         
-        // Then write to the descriptor if needed
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        // Then write to the descriptor
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // For Android 13+, we need to use the new API
             try {
+                android.util.Log.d(TAG, "Using Android 13+ API to enable notifications")
+                val descriptorUuid = BleConstants.CLIENT_CONFIG_DESCRIPTOR_UUID
+                val status = gatt.writeDescriptor(
+                    BluetoothGattDescriptor(
+                        descriptorUuid,
+                        BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE
+                    ),
+                    BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                )
+                android.util.Log.d(TAG, "Descriptor write status: $status")
+                if (status != BluetoothStatusCodes.SUCCESS) {
+                    android.util.Log.e(TAG, "Failed to write to descriptor: $status")
+                    // Don't throw an exception here, some devices don't require descriptor write
+                    android.util.Log.d(TAG, "Continuing anyway, as some devices don't require descriptor write")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e(TAG, "Error writing descriptor (new API): ${e.message}")
+                android.util.Log.d(TAG, "Continuing anyway, as some devices don't require descriptor write")
+            }
+        } else {
+            // For older Android versions, use the deprecated API
+            try {
+                android.util.Log.d(TAG, "Using older Android API to enable notifications")
                 val descriptor = characteristic.getDescriptor(BleConstants.CLIENT_CONFIG_DESCRIPTOR_UUID)
                 if (descriptor == null) {
                     android.util.Log.e(TAG, "Notification descriptor not found")
-                    throw Exception("Notification descriptor not found")
+                    // Don't throw an exception here, some devices don't require descriptor write
+                    android.util.Log.d(TAG, "Continuing anyway, as some devices don't require descriptor write")
+                    return
                 }
                 
                 @Suppress("DEPRECATION")
@@ -589,13 +775,22 @@ class BleManager(private val context: Context) {
                 val writeSuccess = gatt.writeDescriptor(descriptor)
                 if (writeSuccess == false) {
                     android.util.Log.e(TAG, "Failed to write to descriptor")
-                    throw Exception("Failed to write to descriptor")
+                    // Don't throw an exception here, some devices don't require descriptor write
+                    android.util.Log.d(TAG, "Continuing anyway, as some devices don't require descriptor write")
                 }
                 android.util.Log.d(TAG, "Descriptor write initiated")
             } catch (e: Exception) {
-                android.util.Log.e(TAG, "Error writing descriptor", e)
-                throw e
+                android.util.Log.e(TAG, "Error writing descriptor (old API): ${e.message}")
+                android.util.Log.d(TAG, "Continuing anyway, as some devices don't require descriptor write")
             }
+        }
+        
+        // Request a settings update to trigger a notification
+        try {
+            android.util.Log.d(TAG, "Requesting settings update to trigger notification")
+            sendCommand(BleCommand.RequestSettings())
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Error requesting settings: ${e.message}")
         }
     }
     
@@ -653,11 +848,51 @@ class BleManager(private val context: Context) {
         editor.apply()
     }
 
-    // Call this function when device settings are received
-    private fun onDeviceSettingsReceived(deviceStatus: DeviceStatus) {
+    private fun saveFullDeviceSettings(settings: DeviceSettingsResponse) {
+        val sharedPreferences = context.getSharedPreferences("DeviceSettings", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        
+        // Save all settings
+        editor.putString("deviceName", settings.deviceName)
+        editor.putString("wifiSsid", settings.wifiSsid)
+        editor.putString("wifiPassword", settings.wifiPassword)
+        editor.putInt("relayCompressorPin", settings.relayCompressorPin.toIntOrNull() ?: 0)
+        editor.putInt("relayFreePin", settings.relayFreePin.toIntOrNull() ?: 0)
+        editor.putInt("sensorPin", settings.sensorPin.toIntOrNull() ?: 0)
+        editor.putBoolean("autoStart", settings.autoStart == "1" || settings.autoStart.lowercase() == "true")
+        editor.putInt("maxSecForStatus", settings.maxSecForStatus.toIntOrNull() ?: 30)
+        editor.putInt("sensorValueAt0PSI", settings.sensorValueAt0PSI.toIntOrNull() ?: 0)
+        editor.putInt("sensorValueAt50PSI", settings.sensorValueAt50PSI.toIntOrNull() ?: 1023)
+        editor.putFloat("measureWait", settings.measureWait.toFloatOrNull() ?: 2f)
+        editor.putFloat("precision", settings.precision.toFloatOrNull() ?: 1f)
+        editor.putString("btPinCode", settings.btPinCode)
+        editor.putFloat("pressure", settings.pressure.toFloatOrNull() ?: 0f)
+        editor.putString("softwareVersion", settings.softwareVersion)
+        editor.putString("ipAddress", settings.ipAddress)
+        editor.putBoolean("simulationMode", settings.simulationMode == "1" || settings.simulationMode.lowercase() == "true")
+        
+        editor.apply()
+    }
+
+    // Call this function when device status is received
+    private fun onDeviceStatusReceived(deviceStatus: DeviceStatus) {
         android.util.Log.d(TAG, "Received device status: $deviceStatus")
         saveDeviceSettings(deviceStatus)
         _deviceStatus.value = deviceStatus
+    }
+    
+    // Call this function when full device settings are received
+    private fun onDeviceFullSettingsReceived(settingsResponse: DeviceSettingsResponse) {
+        android.util.Log.d(TAG, "Received full device settings: $settingsResponse")
+        saveFullDeviceSettings(settingsResponse)
+        
+        // Update both device status and device settings
+        _deviceStatus.value = DeviceStatus(
+            pressure = settingsResponse.pressure.toFloatOrNull() ?: 0f,
+            operationMode = settingsResponse.operationMode
+        )
+        
+        _deviceSettings.value = settingsResponse.toDeviceSettings()
     }
     
     fun saveSelectedDevice(deviceAddress: String) {
@@ -700,6 +935,132 @@ class BleManager(private val context: Context) {
                bluetoothGatt?.device?.address == deviceAddress
     }
     
+    // Simplified message processing now that we receive complete messages
+    private fun processMessage(jsonString: String) {
+        try {
+            Log.d(TAG, "Processing JSON message: $jsonString")
+            
+            // Try direct JSONObject parsing first which is more forgiving with malformed JSON
+            try {
+                val jsonObject = JSONObject(jsonString)
+                
+                // Check if it's a settings response (has DeviceName)
+                if (jsonObject.has("DeviceName")) {
+                    Log.d(TAG, "Detected settings response with DeviceName")
+                    
+                    // Convert JSONObject to Map for our adapter
+                    val jsonMap = mutableMapOf<String, Any?>()
+                    val keys = jsonObject.keys()
+                    while (keys.hasNext()) {
+                        val key = keys.next()
+                        jsonMap[key] = jsonObject.get(key)
+                    }
+                    
+                    val settingsAdapter = DeviceSettingsResponseAdapter()
+                    val settingsResponse = settingsAdapter.fromJson(jsonMap)
+                    onDeviceFullSettingsReceived(settingsResponse)
+                    return
+                }
+                
+                // If it has CurrentPressure and operationMode, it's a status update
+                if (jsonObject.has("CurrentPressure") && jsonObject.has("operationMode")) {
+                    Log.d(TAG, "Detected status update with CurrentPressure and operationMode")
+                    
+                    val pressure = jsonObject.optString("CurrentPressure", "0").toFloatOrNull() ?: 0f
+                    val operationMode = jsonObject.optInt("operationMode", 4)
+                    
+                    val deviceStatus = DeviceStatus(
+                        pressure = pressure,
+                        operationMode = operationMode
+                    )
+                    onDeviceStatusReceived(deviceStatus)
+                    return
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error parsing with JSONObject: ${e.message}")
+            }
+            
+            // Fallback to Moshi parsing
+            try {
+                val settingsResponse = moshi.adapter(DeviceSettingsResponse::class.java).fromJson(jsonString)
+                if (settingsResponse != null) {
+                    onDeviceFullSettingsReceived(settingsResponse)
+                    return
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error parsing settings with Moshi: ${e.message}")
+            }
+            
+            // If that fails, try to parse as DeviceStatus
+            try {
+                val deviceStatus = moshi.adapter(DeviceStatus::class.java).fromJson(jsonString)
+                if (deviceStatus != null) {
+                    onDeviceStatusReceived(deviceStatus)
+                    return
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error parsing device status with Moshi: ${e.message}")
+            }
+            
+            Log.e(TAG, "Failed to parse device data: $jsonString")
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Error parsing device data: ${e.message}, JSON: $jsonString")
+            // Log the JSON for debugging
+            android.util.Log.e(TAG, "Raw JSON: $jsonString")
+        }
+    }
+    
+    // Schedule a delayed settings request in case we don't receive settings automatically
+    private fun scheduleSettingsRequest() {
+        Log.d(TAG, "Scheduling delayed settings request")
+        
+        // Use a handler to delay the request
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            // Check if we've already received settings
+            if (_deviceSettings.value == null && settingsRequestAttempts < MAX_SETTINGS_REQUEST_ATTEMPTS) {
+                Log.d(TAG, "No settings received yet, sending request (attempt ${settingsRequestAttempts + 1})")
+                requestDeviceSettings()
+                settingsRequestAttempts++
+                
+                // Schedule another request if needed
+                if (settingsRequestAttempts < MAX_SETTINGS_REQUEST_ATTEMPTS) {
+                    scheduleSettingsRequest()
+                }
+            } else if (_deviceSettings.value != null) {
+                Log.d(TAG, "Settings already received, no need to request")
+            } else {
+                Log.d(TAG, "Max settings request attempts reached")
+            }
+        }, 3000) // Wait 3 seconds before requesting settings
+    }
+    
+    // Helper method to start service discovery
+    private fun startServiceDiscovery(gatt: BluetoothGatt) {
+        android.util.Log.d(TAG, "Starting service discovery")
+        val discoverStarted = gatt.discoverServices()
+        android.util.Log.d(TAG, "Service discovery started: $discoverStarted")
+        
+        if (discoverStarted == false) {
+            android.util.Log.e(TAG, "Failed to start service discovery")
+            disconnect()
+        }
+    }
+    
+    // Method to manually request settings from the device
+    fun requestDeviceSettings() {
+        Log.d(TAG, "Manually requesting device settings")
+        if (_connectionState.value == ConnectionState.Connected && commandCharacteristic != null) {
+            try {
+                sendCommand(BleCommand.RequestSettings())
+                Log.d(TAG, "Settings request sent")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error requesting settings: ${e.message}")
+            }
+        } else {
+            Log.e(TAG, "Cannot request settings: not connected or command characteristic is null")
+        }
+    }
+    
     companion object {
         const val REQUEST_BLUETOOTH_PERMISSIONS = 1001
     }
@@ -707,5 +1068,33 @@ class BleManager(private val context: Context) {
 
 enum class ConnectionState {
     Connected,
+    Connecting,
     Disconnected
+}
+
+// Custom adapter for DeviceSettingsResponse to handle the specific JSON format
+class DeviceSettingsResponseAdapter {
+    @FromJson
+    fun fromJson(jsonObject: Map<String, Any?>): DeviceSettingsResponse {
+        return DeviceSettingsResponse(
+            operationMode = (jsonObject["operationMode"] as? Number)?.toInt() ?: 4,
+            deviceName = (jsonObject["DeviceName"] as? String) ?: "",
+            wifiSsid = (jsonObject["wifissid"] as? String) ?: "",
+            wifiPassword = (jsonObject["wifipassword"] as? String) ?: "",
+            relayCompressorPin = (jsonObject["RelayCompressorPin"] as? String) ?: "0",
+            relayFreePin = (jsonObject["RelayFreePin"] as? String) ?: "0",
+            sensorPin = (jsonObject["SensorPin"] as? String) ?: "0",
+            autoStart = (jsonObject["AutoStart"] as? String) ?: "0",
+            maxSecForStatus = (jsonObject["MaxSecForStatus"] as? String) ?: "30",
+            sensorValueAt0PSI = (jsonObject["SensorValueAt0PSI"] as? String) ?: "0",
+            sensorValueAt50PSI = (jsonObject["SensorValueAt50PSI"] as? String) ?: "1023",
+            measureWait = (jsonObject["MessureWait"] as? String) ?: "2",
+            precision = (jsonObject["Precision"] as? String) ?: "1",
+            btPinCode = (jsonObject["BTPinCode"] as? String) ?: "1234",
+            pressure = (jsonObject["CurrentPressure"] as? String) ?: "0",
+            softwareVersion = (jsonObject["Software_VER"] as? String) ?: "",
+            ipAddress = (jsonObject["IP"] as? String) ?: "",
+            simulationMode = (jsonObject["SimulationMode"] as? String) ?: "0"
+        )
+    }
 } 

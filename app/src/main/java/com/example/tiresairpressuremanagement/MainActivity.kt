@@ -25,7 +25,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Arrangement
 import com.example.tiresairpressuremanagement.ui.screens.ConnectionManagementScreen
 import com.example.tiresairpressuremanagement.ui.screens.MainScreen
-import com.example.tiresairpressuremanagement.ui.screens.SettingsScreen
+import com.example.tiresairpressuremanagement.ui.screens.settings.SettingsScreen
+import com.example.tiresairpressuremanagement.ui.screens.settings.SettingsViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 class MainActivity : ComponentActivity() {
     private var showPermissionDialog by mutableStateOf(false)
@@ -115,8 +117,14 @@ class MainActivity : ComponentActivity() {
                 }
                 Screen.SETTINGS -> {
                     android.util.Log.d(TAG, "Displaying SettingsScreen")
+                    // Create the ViewModel
+                    val viewModel: SettingsViewModel = viewModel(
+                        factory = SettingsViewModel.provideFactory(application)
+                    )
+                    // Use the correct SettingsScreen with ViewModel
                     SettingsScreen(
-                        onBack = {
+                        viewModel = viewModel,
+                        onBackClick = {
                             android.util.Log.d(TAG, "User clicked back from settings")
                             currentScreen = Screen.MAIN
                         }

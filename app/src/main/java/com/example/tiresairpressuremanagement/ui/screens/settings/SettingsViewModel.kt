@@ -391,7 +391,20 @@ class SettingsViewModel(
             
             // Wait a bit before disconnecting to give the device time to receive the settings
             kotlinx.coroutines.delay(1000)
+            
+            // Disconnect from the device
+            Log.d(TAG, "Disconnecting from device after sending settings")
             bleRepository.disconnect()
+            
+            // Wait for 3 seconds to allow the device to restart
+            Log.d(TAG, "Waiting 3 seconds for device to restart...")
+            kotlinx.coroutines.delay(3000)
+            
+            // Try to reconnect to the device
+            Log.d(TAG, "Attempting to reconnect to device after restart")
+            bleRepository.connectToSavedDevice()
+            
+            // Call the success callback
             onSuccess()
         }
     }

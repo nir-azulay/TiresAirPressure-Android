@@ -44,6 +44,7 @@ fun SettingsScreen(
     val connectionStatus by viewModel.connectionStatus.collectAsState()
     var showDiscardDialog by remember { mutableStateOf(false) }
     var expandedWifiDropdown by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
     
     // Log connection state
     LaunchedEffect(connectionState) {
@@ -71,6 +72,27 @@ fun SettingsScreen(
                     Text("המשך עריכה")
                 }
             }
+        )
+    }
+    
+    // Saving settings dialog with progress indicator
+    if (isSaving) {
+        AlertDialog(
+            onDismissRequest = { /* Do nothing, prevent dismissal */ },
+            title = { Text("שומר הגדרות...") },
+            text = { 
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text("המכשיר יתאפס ויתחבר מחדש אוטומטית")
+                }
+            },
+            confirmButton = { }
         )
     }
     
@@ -508,7 +530,9 @@ fun SettingsScreen(
             // Save button
             Button(
                 onClick = {
+                    isSaving = true
                     viewModel.saveSettings { 
+                        isSaving = false
                         onBackClick()
                     }
                 },

@@ -16,15 +16,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
+// Modern blue-based color scheme
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF2196F3),      // Blue
-    secondary = Color(0xFF03DAC6),     // Teal
-    tertiary = Color(0xFF3700B3),      // Deep Purple
-    background = Color(0xFF000000),    // Pure Black for AMOLED
-    surface = Color(0xFF121212),       // Dark Gray
-    error = Color(0xFFCF6679),         // Red
+    primary = Color(0xFF1976D2),      // Deeper Blue
+    secondary = Color(0xFF26A69A),     // Teal
+    tertiary = Color(0xFF7E57C2),      // Purple
+    background = Color(0xFF121212),    // Dark Gray
+    surface = Color(0xFF1E1E1E),       // Slightly lighter dark gray
+    error = Color(0xFFE57373),         // Soft Red
     onPrimary = Color.White,
-    onSecondary = Color.Black,
+    onSecondary = Color.White,
     onTertiary = Color.White,
     onBackground = Color.White,
     onSurface = Color.White,
@@ -32,17 +33,17 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF2196F3),
-    secondary = Color(0xFF03DAC6),
-    tertiary = Color(0xFF3700B3),
+    primary = Color(0xFF1976D2),      // Deeper Blue
+    secondary = Color(0xFF26A69A),     // Teal
+    tertiary = Color(0xFF7E57C2),      // Purple
     background = Color.White,
-    surface = Color(0xFFF5F5F5),
-    error = Color(0xFFB00020),
+    surface = Color(0xFFF5F5F5),       // Light Gray
+    error = Color(0xFFE53935),         // Red
     onPrimary = Color.White,
-    onSecondary = Color.Black,
+    onSecondary = Color.White,
     onTertiary = Color.White,
-    onBackground = Color.Black,
-    onSurface = Color.Black,
+    onBackground = Color(0xFF121212),
+    onSurface = Color(0xFF121212),
     onError = Color.White
 )
 
@@ -65,7 +66,7 @@ fun TiresAirPressureManagementTheme(
         SideEffect {
             val window = (view.context as Activity).window
             window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
 

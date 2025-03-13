@@ -15,11 +15,15 @@ import kotlinx.coroutines.Dispatchers
 import android.util.Log
 import kotlinx.coroutines.launch
 
-class BleRepository(context: Context) {
-    private val bleManager = BleManager(context)
+class BleRepository(
+    context: Context,
+    private val bleManager: BleManager? = null
+) {
+    // Use provided BleManager or create a new one if null
+    private val _bleManager = bleManager ?: BleManager(context)
     private val scope = CoroutineScope(Dispatchers.Main)
     
-    val connectionState: StateFlow<Boolean> = bleManager.connectionState
+    val connectionState: StateFlow<Boolean> = _bleManager.connectionState
         .map { 
             val isConnected = it == ConnectionState.Connected
             Log.d("BleRepository", "Connection state: $it, isConnected: $isConnected")
@@ -27,15 +31,16 @@ class BleRepository(context: Context) {
         }
         .stateIn(scope, kotlinx.coroutines.flow.SharingStarted.Lazily, false)
     
-    val rawConnectionState: StateFlow<ConnectionState> = bleManager.connectionState
+    val rawConnectionState: StateFlow<ConnectionState> = _bleManager.connectionState
         .stateIn(scope, kotlinx.coroutines.flow.SharingStarted.Lazily, ConnectionState.Disconnected)
     
-    val deviceStatus: StateFlow<DeviceStatus?> = bleManager.deviceStatus
-    val deviceSettings: StateFlow<DeviceSettings?> = bleManager.deviceSettings
-    val scanResults: StateFlow<List<BleDevice>> = bleManager.scanResults
+    val deviceStatus: StateFlow<DeviceStatus?> = _bleManager.deviceStatus
+    val deviceSettings: StateFlow<DeviceSettings?> = _bleManager.deviceSettings
+    val scanResults: StateFlow<List<BleDevice>> = _bleManager.scanResults
     
     init {
-        connectToSavedDevice()
+        // Don't automatically connect to saved device
+        // This will prevent reconnection when creating a new repository
         
         scope.launch {
             connectionState.collect { isConnected ->
@@ -45,30 +50,30 @@ class BleRepository(context: Context) {
     }
     
     fun startScan() {
-        bleManager.startScan()
+        _bleManager.startScan()
     }
     
     fun stopScan() {
-        bleManager.stopScan()
+        _bleManager.stopScan()
     }
     
     fun connect(address: String) {
-        bleManager.connect(address)
+        _bleManager.connect(address)
     }
     
     fun disconnect() {
-        bleManager.disconnect()
+        _bleManager.disconnect()
     }
     
     fun sendCommand(command: BleCommand) {
-        bleManager.sendCommand(command)
+        _bleManager.sendCommand(command)
     }
     
     fun requestDeviceSettings() {
-        bleManager.requestDeviceSettings()
+        _bleManager.requestDeviceSettings()
     }
     
     fun connectToSavedDevice() {
-        bleManager.connectToSavedDevice()
+        _bleManager.connectToSavedDevice()
     }
 } 

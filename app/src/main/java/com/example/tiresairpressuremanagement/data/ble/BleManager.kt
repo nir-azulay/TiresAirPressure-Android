@@ -1146,18 +1146,34 @@ class BleManager(private val context: Context) {
     // Play a sound when target pressure is reached
     private fun playTargetReachedSound() {
         try {
-            // Create a new MediaPlayer for the target reached sound
-            // Using connection_sound.wav temporarily - replace with target_reached_sound.wav when available
-            val targetReachedSound = MediaPlayer.create(context, R.raw.connection_sound)
-            targetReachedSound.setOnCompletionListener { mp -> mp.release() }
-            targetReachedSound.start()
+            // Try to use the dedicated target reached sound first
+            var targetReachedSound = MediaPlayer.create(context, R.raw.target_reached_sound)
+            
+            // If the target_reached_sound.wav doesn't exist yet, fall back to connection_sound.wav
+            if (targetReachedSound == null) {
+                Log.d(TAG, "Target reached sound file not found, using connection sound instead")
+                targetReachedSound = MediaPlayer.create(context, R.raw.connection_sound)
+            }
+            
+            // IMPORTANT: To use a custom sound:
+            // 1. Download a more appropriate sound (car horn, air pressure complete, etc.)
+            // 2. Rename it to target_reached_sound.wav
+            // 3. Place it in the app/src/main/res/raw/ directory
+            
+            targetReachedSound?.setOnCompletionListener { mp -> mp.release() }
+            targetReachedSound?.start()
             
             Log.d(TAG, "Playing target reached sound")
-            
-            // TODO: Replace with a dedicated target reached sound file
-            // Add a file named target_reached_sound.wav or target_reached_sound.mp3 to the res/raw directory
         } catch (e: Exception) {
             Log.e(TAG, "Error playing target reached sound: ${e.message}")
+            // Fallback to connection sound if there was an error
+            try {
+                val fallbackSound = MediaPlayer.create(context, R.raw.connection_sound)
+                fallbackSound?.setOnCompletionListener { mp -> mp.release() }
+                fallbackSound?.start()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error playing fallback sound: ${e.message}")
+            }
         }
     }
     

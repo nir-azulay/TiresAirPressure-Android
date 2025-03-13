@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import com.example.tiresairpressuremanagement.data.ble.ConnectionState
+import com.example.tiresairpressuremanagement.data.ble.BleManager
 
 class SettingsViewModel(
     private val bleRepository: BleRepository,
@@ -31,12 +32,13 @@ class SettingsViewModel(
         private const val TAG = "SettingsViewModel"
         
         fun provideFactory(
-            application: Application
+            application: Application,
+            bleManager: BleManager
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return SettingsViewModel(
-                    bleRepository = BleRepository(application),
+                    bleRepository = BleRepository(application, bleManager),
                     application = application
                 ) as T
             }
@@ -132,25 +134,19 @@ class SettingsViewModel(
         // Load initial settings from shared preferences
         loadSettingsFromSharedPreferences()
         
-        // Try to connect to saved device if not already connected
-        tryConnectToSavedDevice()
+        // Removed: Don't try to connect to saved device in init
+        // This will prevent reconnection when navigating to settings
     }
     
-    // Private method to try connecting to saved device
-    private fun tryConnectToSavedDevice() {
-        viewModelScope.launch {
-            if (connectionState.value != com.example.tiresairpressuremanagement.data.ble.ConnectionState.Connected) {
-                Log.d(TAG, "Not connected, trying to connect to saved device")
-                bleRepository.connectToSavedDevice()
-            }
-        }
-    }
-    
-    // Public method to reconnect to saved device
+    // Public method to reconnect to saved device if needed
     fun connectToSavedDeviceIfNeeded() {
         viewModelScope.launch {
-            Log.d(TAG, "Manually trying to connect to saved device")
-            bleRepository.connectToSavedDevice()
+            if (connectionState.value != com.example.tiresairpressuremanagement.data.ble.ConnectionState.Connected) {
+                Log.d(TAG, "Manually trying to connect to saved device")
+                bleRepository.connectToSavedDevice()
+            } else {
+                Log.d(TAG, "Already connected, no need to reconnect")
+            }
         }
     }
     

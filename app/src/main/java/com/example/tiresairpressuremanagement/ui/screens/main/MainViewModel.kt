@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tiresairpressuremanagement.data.repository.BleRepository
+import com.example.tiresairpressuremanagement.data.ble.BleManager
 import com.example.tiresairpressuremanagement.domain.models.BleCommand
 import com.example.tiresairpressuremanagement.domain.models.BleDevice
 import com.example.tiresairpressuremanagement.domain.models.DeviceStatus
@@ -17,21 +18,23 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.asStateFlow
 import androidx.lifecycle.ViewModelProvider
+import android.content.Context
 
 class MainViewModel(
     private val bleRepository: BleRepository,
-    private val application: Application
+    private val applicationContext: Context
 ) : ViewModel() {
     
     companion object {
         fun provideFactory(
-            application: Application
+            application: Application,
+            bleManager: BleManager? = null
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return MainViewModel(
-                    bleRepository = BleRepository(application),
-                    application = application
+                    bleRepository = BleRepository(application, bleManager),
+                    applicationContext = application
                 ) as T
             }
         }
@@ -69,7 +72,7 @@ class MainViewModel(
     }
     
     private fun checkPermissions() {
-        _permissionGranted.value = PermissionManager.hasRequiredPermissions(application)
+        _permissionGranted.value = PermissionManager.hasRequiredPermissions(applicationContext)
     }
     
     fun startScan() {

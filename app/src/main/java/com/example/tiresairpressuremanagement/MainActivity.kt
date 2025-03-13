@@ -31,6 +31,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import android.os.Build
 import android.Manifest
 import android.util.Log
+import com.example.tiresairpressuremanagement.ui.screens.main.MainViewModel
+import com.example.tiresairpressuremanagement.ui.screens.AboutScreen
 
 class MainActivity : ComponentActivity() {
     private var showPermissionDialog by mutableStateOf(false)
@@ -83,6 +85,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // Add method to handle configuration changes
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        android.util.Log.d(TAG, "Configuration changed: ${newConfig.orientation}")
+        // No need to recreate the activity or reconnect BLE
+        // The activity will not be destroyed and recreated
+    }
+
     private fun tryConnectToSavedDevice() {
         val sharedPreferences = getSharedPreferences("DeviceSettings", Context.MODE_PRIVATE)
         val savedDeviceAddress = sharedPreferences.getString("selectedDeviceAddress", null)
@@ -105,6 +115,10 @@ class MainActivity : ComponentActivity() {
             when (currentScreen) {
                 Screen.MAIN -> {
                     android.util.Log.d(TAG, "Displaying MainScreen")
+                    // Create the ViewModel with the existing BleManager instance
+                    val viewModel: MainViewModel = viewModel(
+                        factory = MainViewModel.provideFactory(application, bleManager)
+                    )
                     MainScreen(
                         bleManager = bleManager,
                         onDisconnect = {
@@ -115,7 +129,12 @@ class MainActivity : ComponentActivity() {
                         onSettingsClick = {
                             android.util.Log.d(TAG, "User clicked settings")
                             currentScreen = Screen.SETTINGS
-                        }
+                        },
+                        onAboutClick = {
+                            android.util.Log.d(TAG, "User clicked about")
+                            currentScreen = Screen.ABOUT
+                        },
+                        viewModel = viewModel
                     )
                 }
                 Screen.CONNECTION -> {
@@ -136,15 +155,24 @@ class MainActivity : ComponentActivity() {
                 }
                 Screen.SETTINGS -> {
                     android.util.Log.d(TAG, "Displaying SettingsScreen")
-                    // Create the ViewModel
+                    // Create the ViewModel with the existing BleManager instance
                     val viewModel: SettingsViewModel = viewModel(
-                        factory = SettingsViewModel.provideFactory(application)
+                        factory = SettingsViewModel.provideFactory(application, bleManager)
                     )
                     // Use the correct SettingsScreen with ViewModel
                     SettingsScreen(
                         viewModel = viewModel,
                         onBackClick = {
                             android.util.Log.d(TAG, "User clicked back from settings")
+                            currentScreen = Screen.MAIN
+                        }
+                    )
+                }
+                Screen.ABOUT -> {
+                    android.util.Log.d(TAG, "Displaying AboutScreen")
+                    AboutScreen(
+                        onBackClick = {
+                            android.util.Log.d(TAG, "User clicked back from about")
                             currentScreen = Screen.MAIN
                         }
                     )
@@ -204,7 +232,8 @@ class MainActivity : ComponentActivity() {
 enum class Screen {
     MAIN,
     CONNECTION,
-    SETTINGS
+    SETTINGS,
+    ABOUT
 }
 
 @Composable

@@ -226,16 +226,16 @@ fun MainScreen(
                             .fillMaxSize()
                             .padding(horizontal = 16.dp)
                             .verticalScroll(rememberScrollState()),
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalAlignment = Alignment.Top,
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         // Left column - Pressure gauge and connection status
                         Column(
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(end = 8.dp),
+                                .padding(end = 8.dp, top = 16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.SpaceEvenly
+                            verticalArrangement = Arrangement.Top
                         ) {
                             // Connection status indicator
                             ConnectionStatusCard(connectionState)
@@ -253,9 +253,9 @@ fun MainScreen(
                         Column(
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(start = 8.dp),
+                                .padding(start = 8.dp, top = 16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.SpaceEvenly
+                            verticalArrangement = Arrangement.Top
                         ) {
                             // Target pressure selector
                             TargetPressureCard(

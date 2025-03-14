@@ -312,7 +312,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = settings.wifiPassword,
                         onValueChange = { viewModel.updateSettings(wifiPassword = it) },
-                        label = { Text("סיסמה", color = Color.White.copy(alpha = 0.7f)) },
+                        label = { Text(stringResource(R.string.wifi_password), color = Color.White.copy(alpha = 0.7f)) },
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -353,7 +353,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = settings.relayCompressorPin.toString(),
                         onValueChange = { viewModel.updateSettings(relayCompressorPin = it.toIntOrNull() ?: 0) },
-                        label = { Text("Relay Compressor Pin", color = Color.White.copy(alpha = 0.7f)) },
+                        label = { Text(stringResource(R.string.relay_compressor_pin), color = Color.White.copy(alpha = 0.7f)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -370,7 +370,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = settings.relayFreePin.toString(),
                         onValueChange = { viewModel.updateSettings(relayFreePin = it.toIntOrNull() ?: 0) },
-                        label = { Text("Relay Free Pin", color = Color.White.copy(alpha = 0.7f)) },
+                        label = { Text(stringResource(R.string.relay_free_pin), color = Color.White.copy(alpha = 0.7f)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -387,7 +387,84 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = settings.sensorPin.toString(),
                         onValueChange = { viewModel.updateSettings(sensorPin = it.toIntOrNull() ?: 0) },
-                        label = { Text("Sensor Pin", color = Color.White.copy(alpha = 0.7f)) },
+                        label = { Text(stringResource(R.string.sensor_pin), color = Color.White.copy(alpha = 0.7f)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFFBBDEFB),
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        )
+                    )
+                    
+                    // Max Sec For Status
+                    OutlinedTextField(
+                        value = settings.maxSecForStatus.toString(),
+                        onValueChange = { viewModel.updateSettings(maxSecForStatus = it.toIntOrNull() ?: 30) },
+                        label = { Text(stringResource(R.string.max_sec_for_status), color = Color.White.copy(alpha = 0.7f)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFFBBDEFB),
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        )
+                    )
+                    
+                    // Measure Wait
+                    OutlinedTextField(
+                        value = settings.measureWait.toString(),
+                        onValueChange = { viewModel.updateSettings(measureWait = it.toFloatOrNull() ?: 2f) },
+                        label = { Text(stringResource(R.string.measure_wait), color = Color.White.copy(alpha = 0.7f)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFFBBDEFB),
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        )
+                    )
+                    
+                    // Auto Start
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.auto_start),
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        
+                        Switch(
+                            checked = settings.autoStart,
+                            onCheckedChange = { viewModel.updateSettings(autoStart = it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color(0xFF3F51B5),
+                                checkedTrackColor = Color(0xFF3F51B5).copy(alpha = 0.5f),
+                                uncheckedThumbColor = Color.Gray,
+                                uncheckedTrackColor = Color.Gray.copy(alpha = 0.5f)
+                            )
+                        )
+                    }
+                    
+                    // Bluetooth PIN Code
+                    OutlinedTextField(
+                        value = settings.btPinCode,
+                        onValueChange = { viewModel.updateSettings(btPinCode = it) },
+                        label = { Text(stringResource(R.string.bt_pin_code), color = Color.White.copy(alpha = 0.7f)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -428,7 +505,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = settings.sensorValueAt0PSI.toString(),
                         onValueChange = { viewModel.updateSettings(sensorValueAt0PSI = it.toIntOrNull() ?: 0) },
-                        label = { Text("ערך חיישן ב-0 PSI", color = Color.White.copy(alpha = 0.7f)) },
+                        label = { Text(stringResource(R.string.sensor_value_at_0_psi), color = Color.White.copy(alpha = 0.7f)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -445,7 +522,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = settings.sensorValueAt50PSI.toString(),
                         onValueChange = { viewModel.updateSettings(sensorValueAt50PSI = it.toIntOrNull() ?: 1023) },
-                        label = { Text("ערך חיישן ב-50 PSI", color = Color.White.copy(alpha = 0.7f)) },
+                        label = { Text(stringResource(R.string.sensor_value_at_50_psi), color = Color.White.copy(alpha = 0.7f)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -462,7 +539,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = settings.precision.toString(),
                         onValueChange = { viewModel.updateSettings(precision = it.toFloatOrNull() ?: 1f) },
-                        label = { Text("דיוק (PSI)", color = Color.White.copy(alpha = 0.7f)) },
+                        label = { Text(stringResource(R.string.precision_psi), color = Color.White.copy(alpha = 0.7f)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         modifier = Modifier
                             .fillMaxWidth()

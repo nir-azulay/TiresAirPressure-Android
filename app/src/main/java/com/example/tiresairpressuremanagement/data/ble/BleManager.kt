@@ -651,6 +651,7 @@ class BleManager(private val context: Context) {
                         put("MessureWait", command.measureWait)
                         put("Precision", command.precision)
                         put("BTPinCode", command.btPinCode)
+                        put("SimulationMode", command.simulationMode)
                         put("type", command.type)
                     }.toString()
                 }

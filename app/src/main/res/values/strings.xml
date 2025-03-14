@@ -116,4 +116,15 @@
     <string name="enable_simulation_mode">הפעל מצב סימולציה</string>
     <string name="simulation_mode_description">מצב סימולציה מאפשר בדיקת האפליקציה ללא חיבור למכשיר אמיתי</string>
     <string name="save_settings">שמור הגדרות</string>
+    <string name="wifi_password">סיסמה</string>
+    <string name="relay_compressor_pin">Relay Compressor Pin</string>
+    <string name="relay_free_pin">Relay Free Pin</string>
+    <string name="sensor_pin">Sensor Pin</string>
+    <string name="sensor_value_at_0_psi">ערך חיישן ב-0 PSI</string>
+    <string name="sensor_value_at_50_psi">ערך חיישן ב-50 PSI</string>
+    <string name="precision_psi">דיוק (PSI)</string>
+    <string name="max_sec_for_status">זמן מקסימלי לסטטוס (שניות)</string>
+    <string name="measure_wait">זמן המתנה למדידה (שניות)</string>
+    <string name="auto_start">התחלה אוטומטית</string>
+    <string name="bt_pin_code">קוד PIN לבלוטות\'</string>
 </resources>

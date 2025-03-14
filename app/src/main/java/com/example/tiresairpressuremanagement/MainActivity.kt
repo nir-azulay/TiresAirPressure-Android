@@ -80,9 +80,18 @@ class MainActivity : ComponentActivity() {
         // בקשת הרשאות אם צריך
         checkAndRequestPermissions()
         
-        // Request notification permission for Android 13+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requestNotificationPermission()
+        // בדיקה אם זו הפתיחה הראשונה של האפליקציה
+        val sharedPreferences = getSharedPreferences("AppSettings", Context.MODE_PRIVATE)
+        val isFirstLaunch = sharedPreferences.getBoolean("isFirstLaunch", true)
+        
+        if (isFirstLaunch) {
+            // שמירת העובדה שזו לא הפתיחה הראשונה יותר
+            sharedPreferences.edit().putBoolean("isFirstLaunch", false).apply()
+            
+            // בקשת הרשאת התראות
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                requestNotificationPermission()
+            }
         }
         
         setContent {

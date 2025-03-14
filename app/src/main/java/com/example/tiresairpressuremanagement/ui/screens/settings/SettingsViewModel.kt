@@ -408,4 +408,13 @@ class SettingsViewModel(
             onSuccess()
         }
     }
+    
+    /**
+     * מנקה את רשימת הרשתות האלחוטיות הזמינות
+     * משמש לסגירת רשימת הרשתות לאחר בחירת רשת
+     */
+    fun clearAvailableNetworks() {
+        Log.d(TAG, "Clearing available networks list")
+        _availableNetworks.value = emptyList()
+    }
 } 

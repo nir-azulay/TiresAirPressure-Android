@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.dp
 import com.example.tiresairpressuremanagement.data.ble.BleManager
 import com.example.tiresairpressuremanagement.data.ble.ConnectionState
 import com.example.tiresairpressuremanagement.domain.models.BleDevice
+import androidx.compose.ui.res.stringResource
+import com.example.tiresairpressuremanagement.R
 
 private const val TAG = "ConnectionScreen"
 
@@ -58,7 +60,7 @@ fun ConnectionManagementScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("חיפוש מכשירים") },
+                title = { Text(stringResource(R.string.search_devices)) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
@@ -109,9 +111,9 @@ fun ConnectionManagementScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = when (connectionState) {
-                            ConnectionState.Connected -> "מחובר"
-                            ConnectionState.Connecting -> "מתחבר..."
-                            ConnectionState.Disconnected -> "מנותק"
+                            ConnectionState.Connected -> stringResource(R.string.connected)
+                            ConnectionState.Connecting -> stringResource(R.string.connecting)
+                            ConnectionState.Disconnected -> stringResource(R.string.disconnected)
                         },
                         color = when (connectionState) {
                             ConnectionState.Connected -> Color(0xFF4CAF50) // Green
@@ -145,12 +147,12 @@ fun ConnectionManagementScreen(
                 ) {
                     Icon(
                         Icons.Default.Search,
-                        contentDescription = "סרוק",
+                        contentDescription = stringResource(R.string.scan_devices),
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        "סרוק מכשירים",
+                        stringResource(R.string.scan_devices),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -174,7 +176,8 @@ fun ConnectionManagementScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = if (devices.isEmpty()) "לא נמצאו מכשירים" else "מכשירים זמינים: ${devices.size}",
+                        text = if (devices.isEmpty()) stringResource(R.string.no_devices_found_message) 
+                               else stringResource(R.string.available_devices_count, devices.size),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -189,7 +192,7 @@ fun ConnectionManagementScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "לחץ על 'סרוק מכשירים' כדי לחפש.",
+                                text = stringResource(R.string.scan_devices_hint),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = Color.White.copy(alpha = 0.7f),
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -247,7 +250,7 @@ private fun DeviceItem(
             
             Column {
                 Text(
-                    text = device.name ?: "מכשיר לא ידוע",
+                    text = device.name ?: stringResource(R.string.unknown_device),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -260,7 +263,7 @@ private fun DeviceItem(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "עוצמת אות: ${device.rssi} dBm",
+                    text = stringResource(R.string.signal_strength_format, device.rssi),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFFBBDEFB) // Light blue color from MainScreen
                 )

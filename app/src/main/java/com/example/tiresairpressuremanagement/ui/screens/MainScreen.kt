@@ -32,6 +32,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import com.example.tiresairpressuremanagement.R
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalView
@@ -162,12 +163,12 @@ fun MainScreen(
                 android.util.Log.d(TAG, "Target reached dialog dismissed")
                 showTargetReachedDialog = false 
             },
-            title = { Text("לחץ היעד הושג") },
+            title = { Text(stringResource(R.string.target_reached_title)) },
             text = { 
                 Column {
-                    Text("לחץ היעד הושג בהצלחה!")
-                    Text("יעד: ${targetReachedInfo?.first} PSI")
-                    Text("נוכחי: ${targetReachedInfo?.second} PSI")
+                    Text(stringResource(R.string.target_reached_message))
+                    Text(stringResource(R.string.target_value, targetReachedInfo?.first ?: 0f))
+                    Text(stringResource(R.string.current_value, targetReachedInfo?.second ?: 0f))
                 }
             },
             confirmButton = {
@@ -175,7 +176,7 @@ fun MainScreen(
                     android.util.Log.d(TAG, "Target reached dialog confirmed")
                     showTargetReachedDialog = false 
                 }) {
-                    Text("אישור")
+                    Text(stringResource(R.string.ok))
                 }
             }
         )
@@ -184,20 +185,20 @@ fun MainScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("ניהול לחץ אוויר") },
+                title = { Text(stringResource(R.string.app_name)) },
                 actions = {
                     IconButton(onClick = onSettingsClick) {
-                        Icon(Icons.Default.Settings, contentDescription = "הגדרות")
+                        Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.settings))
                     }
                     IconButton(onClick = { 
                         isInflating = false
                         bleManager.disconnect()
                         onDisconnect()
                     }) {
-                        Icon(Icons.Default.BluetoothDisabled, contentDescription = "נתק מכשיר")
+                        Icon(Icons.Default.BluetoothDisabled, contentDescription = stringResource(R.string.disconnect_device))
                     }
                     IconButton(onClick = onAboutClick) {
-                        Icon(Icons.Default.Info, contentDescription = "אודות")
+                        Icon(Icons.Default.Info, contentDescription = stringResource(R.string.about))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -390,9 +391,9 @@ private fun ConnectionStatusCard(connectionState: ConnectionState) {
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = when (connectionState) {
-                    ConnectionState.Connected -> "מחובר"
-                    ConnectionState.Connecting -> "מתחבר..."
-                    ConnectionState.Disconnected -> "מנותק"
+                    ConnectionState.Connected -> stringResource(R.string.connected)
+                    ConnectionState.Connecting -> stringResource(R.string.connecting)
+                    ConnectionState.Disconnected -> stringResource(R.string.disconnected)
                 },
                 color = when (connectionState) {
                     ConnectionState.Connected -> Color(0xFF4CAF50) // Green
@@ -434,7 +435,7 @@ private fun PressureGaugeCard(
                     .padding(horizontal = 16.dp)
             ) {
                 Text(
-                    text = "לחץ נוכחי",
+                    text = stringResource(R.string.current_pressure),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Normal,
                     color = Color.White
@@ -446,7 +447,7 @@ private fun PressureGaugeCard(
                     color = Color.White
                 )
                 Text(
-                    text = "PSI",
+                    text = stringResource(R.string.pressure_unit),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -521,7 +522,7 @@ private fun TargetPressureCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "לחץ יעד",
+                text = stringResource(R.string.target_pressure),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
@@ -558,7 +559,7 @@ private fun TargetPressureCard(
                 ) {
                     Icon(
                         Icons.Default.Remove,
-                        contentDescription = "הפחת",
+                        contentDescription = stringResource(R.string.decrease),
                         tint = Color.Black,
                         modifier = Modifier.size(24.dp)
                     )
@@ -566,7 +567,7 @@ private fun TargetPressureCard(
                 
                 // Current target pressure
                 Text(
-                    text = String.format("%.1f PSI", targetPressure),
+                    text = stringResource(R.string.pressure_format, targetPressure),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -580,7 +581,7 @@ private fun TargetPressureCard(
                 ) {
                     Icon(
                         Icons.Default.Add,
-                        contentDescription = "הוסף",
+                        contentDescription = stringResource(R.string.increase),
                         tint = Color.Black,
                         modifier = Modifier.size(24.dp)
                     )
@@ -612,19 +613,19 @@ private fun InflationControlButton(
             if (isInflating) {
                 Icon(
                     Icons.Default.Stop,
-                    contentDescription = "עצור",
+                    contentDescription = stringResource(R.string.stop),
                     modifier = Modifier.size(24.dp)
                 )
             } else {
                 Icon(
                     Icons.Default.PlayArrow,
-                    contentDescription = "התחל",
+                    contentDescription = stringResource(R.string.start),
                     modifier = Modifier.size(24.dp)
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = if (isInflating) "עצור" else "התחל",
+                text = if (isInflating) stringResource(R.string.stop) else stringResource(R.string.start),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -663,7 +664,7 @@ private fun InflationStatusIndicator(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = if (isDeflating) "...מרוקן" else "...מנפח",
+                text = if (isDeflating) stringResource(R.string.mode_deflating) else stringResource(R.string.mode_inflating),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold
@@ -692,7 +693,7 @@ private fun PresetPressureCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "לחצים מוגדרים מראש",
+                text = stringResource(R.string.preset_pressures),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,

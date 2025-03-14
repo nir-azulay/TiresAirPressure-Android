@@ -22,11 +22,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.tiresairpressuremanagement.R
 import com.example.tiresairpressuremanagement.domain.models.PressureUnit
 import com.example.tiresairpressuremanagement.domain.models.TemperatureUnit
 import com.example.tiresairpressuremanagement.data.ble.ConnectionState
@@ -55,8 +57,8 @@ fun SettingsScreen(
     if (showDiscardDialog) {
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
-            title = { Text("לצאת ללא שמירה?") },
-            text = { Text("השינויים שביצעת לא יישמרו.") },
+            title = { Text(stringResource(R.string.exit_without_save)) },
+            text = { Text(stringResource(R.string.changes_not_saved)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -64,12 +66,12 @@ fun SettingsScreen(
                         onBackClick()
                     }
                 ) {
-                    Text("צא ללא שמירה")
+                    Text(stringResource(R.string.exit_without_saving))
                 }
             },
             dismissButton = {
                 OutlinedButton(onClick = { showDiscardDialog = false }) {
-                    Text("המשך עריכה")
+                    Text(stringResource(R.string.continue_editing))
                 }
             }
         )
@@ -79,7 +81,7 @@ fun SettingsScreen(
     if (isSaving) {
         AlertDialog(
             onDismissRequest = { /* Do nothing, prevent dismissal */ },
-            title = { Text("שומר הגדרות...") },
+            title = { Text(stringResource(R.string.saving_settings)) },
             text = { 
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -89,7 +91,7 @@ fun SettingsScreen(
                         modifier = Modifier.padding(16.dp),
                         color = MaterialTheme.colorScheme.primary
                     )
-                    Text("המכשיר יתאפס ויתחבר מחדש אוטומטית")
+                    Text(stringResource(R.string.device_will_reset))
                 }
             },
             confirmButton = { }
@@ -99,10 +101,10 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("הגדרות") },
+                title = { Text(stringResource(R.string.settings)) },
                 navigationIcon = {
                     IconButton(onClick = { showDiscardDialog = true }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "חזור")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -141,7 +143,7 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "סטטוס חיבור: $connectionStatus",
+                        text = stringResource(R.string.connection_status, connectionStatus),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = when (connectionState) {
@@ -156,7 +158,7 @@ fun SettingsScreen(
                         IconButton(onClick = { viewModel.connectToSavedDeviceIfNeeded() }) {
                             Icon(
                                 Icons.Default.Refresh,
-                                contentDescription = "נסה להתחבר מחדש",
+                                contentDescription = stringResource(R.string.try_reconnect),
                                 tint = when (connectionState) {
                                     ConnectionState.Connected -> Color(0xFF4CAF50) // Green
                                     ConnectionState.Connecting -> Color(0xFFFFC107) // Amber
@@ -183,7 +185,7 @@ fun SettingsScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = "הגדרות מכשיר",
+                        text = stringResource(R.string.device_settings_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -193,7 +195,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = settings.deviceName,
                         onValueChange = { viewModel.updateSettings(deviceName = it) },
-                        label = { Text("שם המכשיר", color = Color.White.copy(alpha = 0.7f)) },
+                        label = { Text(stringResource(R.string.device_name), color = Color.White.copy(alpha = 0.7f)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp),
@@ -222,7 +224,7 @@ fun SettingsScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = "הגדרות WiFi",
+                        text = stringResource(R.string.wifi_settings),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -255,7 +257,7 @@ fun SettingsScreen(
                             containerColor = Color(0xFF3F51B5)
                         )
                     ) {
-                        Text("סרוק רשתות זמינות")
+                        Text(stringResource(R.string.scan_networks))
                     }
                     
                     // Available networks list
@@ -288,7 +290,11 @@ fun SettingsScreen(
                                             .fillMaxWidth()
                                             .run {
                                                 if (!isErrorMessage) {
-                                                    this.clickable { viewModel.updateSettings(wifiSsid = network) }
+                                                    this.clickable { 
+                                                        viewModel.updateSettings(wifiSsid = network)
+                                                        // סגירת הרשימה על ידי איפוס רשימת הרשתות הזמינות
+                                                        viewModel.clearAvailableNetworks()
+                                                    }
                                                 } else {
                                                     this
                                                 }
@@ -336,7 +342,7 @@ fun SettingsScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = "הגדרות חומרה",
+                        text = stringResource(R.string.hardware_settings),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -411,7 +417,7 @@ fun SettingsScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = "הגדרות כיול",
+                        text = stringResource(R.string.calibration_settings),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -486,7 +492,7 @@ fun SettingsScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = "מצב סימולציה",
+                        text = stringResource(R.string.simulation_mode),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -501,7 +507,7 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "הפעל מצב סימולציה",
+                            text = stringResource(R.string.enable_simulation_mode),
                             color = Color.White,
                             style = MaterialTheme.typography.bodyLarge
                         )
@@ -519,7 +525,7 @@ fun SettingsScreen(
                     }
                     
                     Text(
-                        text = "מצב סימולציה מאפשר בדיקת האפליקציה ללא חיבור למכשיר אמיתי",
+                        text = stringResource(R.string.simulation_mode_description),
                         color = Color.White.copy(alpha = 0.7f),
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(top = 4.dp)
@@ -546,7 +552,7 @@ fun SettingsScreen(
                 shape = MaterialTheme.shapes.medium
             ) {
                 Text(
-                    "שמור הגדרות",
+                    stringResource(R.string.save_settings),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )

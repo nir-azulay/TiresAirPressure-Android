@@ -221,7 +221,11 @@ fun MainScreen(
             )
         }
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF121212)) // רקע כהה
+        ) {
             // Main content
             BoxWithConstraints(
                 modifier = Modifier
@@ -258,7 +262,8 @@ fun MainScreen(
                                 screenHeight = screenHeight,
                                 currentPressureAnimated = currentPressureAnimated,
                                 targetPressure = targetPressure,
-                                maxPressure = maxPressure
+                                maxPressure = maxPressure,
+                                isLandscape = true
                             )
                         }
                         
@@ -323,7 +328,8 @@ fun MainScreen(
                             screenHeight = screenHeight,
                             currentPressureAnimated = currentPressureAnimated,
                             targetPressure = targetPressure,
-                            maxPressure = maxPressure
+                            maxPressure = maxPressure,
+                            isLandscape = false
                         )
                         
                         // Target pressure selector
@@ -423,12 +429,19 @@ private fun PressureGaugeCard(
     screenHeight: androidx.compose.ui.unit.Dp,
     currentPressureAnimated: Animatable<Float, AnimationVector1D>,
     targetPressure: Float,
-    maxPressure: Float
+    maxPressure: Float,
+    isLandscape: Boolean = false
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height((screenHeight * 0.35f).coerceAtLeast(180.dp)),
+            .height(
+                if (isLandscape) {
+                    (screenHeight * 0.65f).coerceAtLeast(220.dp)
+                } else {
+                    (screenHeight * 0.35f).coerceAtLeast(180.dp)
+                }
+            ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFF1E2530) // Dark blue-gray color from screenshot

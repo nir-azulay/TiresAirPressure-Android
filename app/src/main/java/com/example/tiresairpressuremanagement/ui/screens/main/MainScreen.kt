@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,6 +26,8 @@ import com.example.tiresairpressuremanagement.utils.BleConstants
 import android.app.Application
 import androidx.compose.ui.platform.LocalContext
 import android.util.Log
+
+private const val TAG = "MainScreen"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,35 +58,39 @@ fun MainScreen(
                 .padding(bottom = 16.dp),
             horizontalArrangement = Arrangement.End
         ) {
-            IconButton(onClick = onNavigateToSettings) {
+            IconButton(
+                onClick = onNavigateToSettings,
+                modifier = Modifier.padding(8.dp)
+            ) {
                 Icon(
                     imageVector = Icons.Default.Settings,
-                    contentDescription = "הגדרות",
-                    tint = MaterialTheme.colorScheme.primary
+                    contentDescription = stringResource(R.string.settings_icon)
                 )
             }
         }
         
         if (!isConnected) {
             Text(
-                text = "לא מחובר למכשיר",
-                style = MaterialTheme.typography.bodyLarge,
+                text = stringResource(R.string.not_connected),
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(16.dp)
             )
-            Button(onClick = {
-                Log.d("MainScreen", "Starting device scan")
-                viewModel.startScan()
-            }) {
-                Text("סרוק מכשירים")
+            Button(
+                onClick = {
+                    Log.d(TAG, "Starting device scan")
+                    viewModel.startScan()
+                },
+                modifier = Modifier.padding(8.dp)
+            ) {
+                Text(stringResource(R.string.scan_devices))
             }
             if (scanResults.isNotEmpty()) {
-                Log.d("MainScreen", "Scan results: ${scanResults.size} devices found")
+                Log.d(TAG, "Scan results: ${scanResults.size} devices found")
                 LazyColumn {
                     items(scanResults) { device ->
                         OutlinedButton(
                             onClick = {
-                                Log.d("MainScreen", "Connecting to device: ${device.name ?: device.address}")
+                                Log.d(TAG, "Connecting to device: ${device.name ?: device.address}")
                                 viewModel.connectToDevice(device)
                             },
                             modifier = Modifier
@@ -95,12 +102,16 @@ fun MainScreen(
                     }
                 }
             } else {
-                Log.d("MainScreen", "No devices found during scan")
+                Log.d(TAG, "No devices found during scan")
+                Text(
+                    text = stringResource(R.string.no_devices_found),
+                    modifier = Modifier.padding(16.dp)
+                )
             }
         } else {
             // Pressure Display
             Text(
-                text = String.format("%.1f PSI", currentPressure),
+                text = stringResource(R.string.pressure_format, currentPressure),
                 fontSize = 48.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -121,7 +132,7 @@ fun MainScreen(
                 }
                 
                 Text(
-                    text = String.format("%.1f PSI", targetPressure),
+                    text = stringResource(R.string.pressure_format, targetPressure),
                     fontSize = 24.sp
                 )
                 
@@ -164,7 +175,7 @@ fun MainScreen(
                 )
             ) {
                 Text(
-                    text = if (isInflating) "עצור" else "התחל",
+                    text = stringResource(if (isInflating) R.string.stop else R.string.start),
                     fontSize = 20.sp
                 )
             }
@@ -175,11 +186,11 @@ fun MainScreen(
     if (showPressureReachedDialog) {
         AlertDialog(
             onDismissRequest = { showPressureReachedDialog = false },
-            title = { Text("הודעה") },
-            text = { Text("הגעת ללחץ היעד!") },
+            title = { Text(stringResource(R.string.message)) },
+            text = { Text(stringResource(R.string.pressure_reached)) },
             confirmButton = {
                 TextButton(onClick = { showPressureReachedDialog = false }) {
-                    Text("אישור")
+                    Text(stringResource(R.string.ok))
                 }
             }
         )
@@ -199,7 +210,7 @@ private fun ConnectionStatus(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = if (isConnected) "מחובר" else "מנותק",
+            text = if (isConnected) stringResource(R.string.connected) else stringResource(R.string.disconnected),
             style = MaterialTheme.typography.titleMedium,
             color = if (isConnected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
         )
@@ -208,7 +219,7 @@ private fun ConnectionStatus(
             onClick = onScanClick,
             enabled = !isConnected
         ) {
-            Text(if (isScanning) "עצור סריקה" else "סרוק מכשירים")
+            Text(if (isScanning) stringResource(R.string.stop_scan) else stringResource(R.string.scan_devices))
         }
     }
 }
@@ -221,13 +232,13 @@ private fun ScanResultsList(
 ) {
     if (scanResults.isEmpty()) {
         Text(
-            text = "מחפש מכשירים...",
+            text = stringResource(R.string.no_devices_found),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(16.dp)
         )
     } else {
         Text(
-            text = "מכשירים זמינים:",
+            text = stringResource(R.string.available_devices),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -278,15 +289,15 @@ private fun CurrentPressureDisplay(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "%.1f PSI".format(currentPressure),
+            text = stringResource(R.string.pressure_format, currentPressure),
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold
         )
         
         Text(
             text = when (operationMode) {
-                BleConstants.MODE_INFLATE -> "מנפח..."
-                BleConstants.MODE_DEFLATE -> "מרוקן..."
+                BleConstants.MODE_INFLATE -> stringResource(R.string.mode_inflating)
+                BleConstants.MODE_DEFLATE -> stringResource(R.string.mode_deflating)
                 else -> ""
             },
             style = MaterialTheme.typography.titleMedium,
@@ -307,7 +318,7 @@ private fun TargetPressureControl(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "לחץ יעד:",
+            text = stringResource(R.string.target_pressure),
             style = MaterialTheme.typography.titleMedium
         )
         
@@ -319,16 +330,16 @@ private fun TargetPressureControl(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             IconButton(onClick = { onPressureChange(targetPressure - 0.5f) }) {
-                Icon(Icons.Default.Remove, contentDescription = "הפחת לחץ")
+                Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.decrease_pressure))
             }
             
             Text(
-                text = "%.1f PSI".format(targetPressure),
+                text = stringResource(R.string.pressure_format, targetPressure),
                 style = MaterialTheme.typography.headlineMedium
             )
             
             IconButton(onClick = { onPressureChange(targetPressure + 0.5f) }) {
-                Icon(Icons.Default.Add, contentDescription = "הגדל לחץ")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.increase_pressure))
             }
         }
         
@@ -342,7 +353,7 @@ private fun TargetPressureControl(
                 OutlinedButton(
                     onClick = { onPressureChange(pressure.toFloat()) }
                 ) {
-                    Text("$pressure PSI")
+                    Text(stringResource(R.string.pressure_format, pressure))
                 }
             }
         }
@@ -366,7 +377,7 @@ private fun StartStopButton(
         )
     ) {
         Text(
-            text = if (isOperating) "עצור" else "התחל",
+            text = stringResource(if (isOperating) R.string.stop else R.string.start),
             style = MaterialTheme.typography.titleLarge
         )
     }

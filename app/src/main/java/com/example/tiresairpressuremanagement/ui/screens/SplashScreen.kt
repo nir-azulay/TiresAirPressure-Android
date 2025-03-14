@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,7 +54,7 @@ fun SplashScreen(
         // Background logo image that fills the entire screen
         Image(
             painter = painterResource(id = R.drawable.splash_logo),
-            contentDescription = "App Logo",
+            contentDescription = stringResource(R.string.app_logo),
             modifier = Modifier
                 .fillMaxSize()
                 .alpha(0.7f), // Increased opacity significantly
@@ -84,7 +85,7 @@ fun SplashScreen(
         ) {
             // App name
             Text(
-                text = "ניהול לחץ בצמיגים",
+                text = stringResource(R.string.app_name),
                 color = Color.White,
                 fontSize = 36.sp,
                 fontWeight = FontWeight.Bold,
@@ -104,7 +105,7 @@ fun SplashScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 Text(
-                    text = "מתחבר למכשיר...",
+                    text = stringResource(R.string.connecting),
                     color = Color.White,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Medium

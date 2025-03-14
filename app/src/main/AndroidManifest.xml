@@ -33,12 +33,14 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.TiresAirPressureManagement"
+        android:localeConfig="@xml/locales_config"
         tools:targetApi="31">
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
-            android:theme="@style/Theme.TiresAirPressureManagement.Splash">
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|locale"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.TiresAirPressureManagement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

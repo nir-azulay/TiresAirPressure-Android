@@ -17,7 +17,8 @@ object NavDestinations {
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    startDestination: String = NavDestinations.MAIN_SCREEN
+    startDestination: String = NavDestinations.MAIN_SCREEN,
+    onLanguageChanged: (java.util.Locale) -> Unit
 ) {
     NavHost(
         navController = navController,
@@ -37,7 +38,8 @@ fun NavGraph(
                 viewModel = viewModel,
                 onBackClick = {
                     navController.popBackStack()
-                }
+                },
+                onLanguageChanged = onLanguageChanged
             )
         }
     }

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Air Pressure Management</string>
+    
+    <!-- General -->
+    <string name="settings">Settings</string>
+    <string name="back">Back</string>
+    <string name="close">Close</string>
+    <string name="ok">OK</string>
+    <string name="message">Message</string>
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
+    <string name="scan_devices">Scan Devices</string>
+    <string name="stop_scan">Stop Scan</string>
+    <string name="scanning">Scanning for devices...</string>
+    <string name="available_devices">Available Devices:</string>
+    <string name="not_connected">Not Connected</string>
+    <string name="connected">Connected</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="connecting">Connecting to device...</string>
+    <string name="app_version">App Version</string>
+    <string name="version_number">1.0.0</string>
+    <string name="disconnect_device">Disconnect Device</string>
+    <string name="about">About</string>
+    <string name="current_pressure">Current: %1$.1f PSI</string>
+    <string name="current_pressure_label">Current Pressure</string>
+    <string name="target_pressure_label">Target Pressure</string>
+    <string name="pressure_format_with_unit">%.1f PSI</string>
+    <string name="preset_pressures">Preset Pressures</string>
+    
+    <!-- Dialogs -->
+    <string name="discard_changes_title">Discard Changes?</string>
+    <string name="discard_changes_message">Your changes will not be saved.</string>
+    <string name="discard_changes">Discard Changes</string>
+    <string name="continue_editing">Continue Editing</string>
+    <string name="saving_settings">Saving Settings...</string>
+    <string name="device_will_reset">The device will reset and reconnect automatically</string>
+    
+    <!-- Pressure -->
+    <string name="target_pressure">Target Pressure:</string>
+    <string name="pressure_format">%.1f</string>
+    <string name="pressure_unit">PSI</string>
+    <string name="pressure_reached">Target pressure reached!</string>
+    <string name="increase_pressure">Increase Pressure</string>
+    <string name="decrease_pressure">Decrease Pressure</string>
+    
+    <!-- Permissions -->
+    <string name="permissions_required">Permissions Required</string>
+    <string name="permissions_explanation">To use the app, we need Bluetooth permissions to scan and connect to devices. Without these permissions, we cannot manage tire air pressure.</string>
+    <string name="grant_permissions">Grant Permissions</string>
+    
+    <!-- Operation Modes -->
+    <string name="mode_inflating">Inflating...</string>
+    <string name="mode_deflating">Deflating...</string>
+    
+    <!-- Descriptions -->
+    <string name="app_logo">App Logo</string>
+    <string name="settings_icon">Settings</string>
+    
+    <!-- Language -->
+    <string name="language">Language</string>
+    <string name="language_hebrew">עברית</string>
+    <string name="language_english">English</string>
+    
+    <!-- Settings -->
+    <string name="reconnect">Try to reconnect</string>
+    <string name="device_settings_title">Device Settings</string>
+    <string name="device_name">Device Name</string>
+    <string name="wifi_settings">WiFi Settings</string>
+    <string name="wifi_ssid">SSID</string>
+    <string name="scan_networks">Scan Available Networks</string>
+    <string name="wifi_password">Password</string>
+    <string name="hardware_settings">Hardware Settings</string>
+    <string name="relay_compressor_pin">Relay Compressor Pin</string>
+    <string name="relay_free_pin">Relay Free Pin</string>
+    <string name="sensor_pin">Sensor Pin</string>
+    <string name="calibration_settings">Calibration Settings</string>
+    <string name="sensor_value_at_0_psi">Sensor Value at 0 PSI</string>
+    <string name="sensor_value_at_50_psi">Sensor Value at 50 PSI</string>
+    <string name="precision_psi">Precision (PSI)</string>
+    <string name="simulation_mode">Simulation Mode</string>
+    <string name="enable_simulation_mode">Enable Simulation Mode</string>
+    <string name="simulation_mode_description">Simulation mode allows testing the app without connecting to a real device</string>
+    
+    <!-- About Screen -->
+    <string name="developed_by">Developed by</string>
+    <string name="developer_name">Nir Azulay</string>
+    <string name="developer_email">nir.azulay@gmail.com</string>
+    <string name="version_info">Version 1.0</string>
+    <string name="copyright_info">© 2025 All Rights Reserved</string>
+    
+    <!-- Logs -->
+    <string name="on_create_called">onCreate called</string>
+    <string name="setting_content">Setting content</string>
+    <string name="configuration_changed">Configuration changed: %1$s</string>
+    <string name="found_saved_device">Found saved device: %1$s</string>
+    <string name="no_saved_device">No saved device found</string>
+    <string name="displaying_main_screen">Displaying MainScreen</string>
+    <string name="user_initiated_disconnect">User initiated disconnect</string>
+    <string name="user_clicked_settings">User clicked settings</string>
+    <string name="user_clicked_about">User clicked about</string>
+    <string name="device_connected_callback">Device connected callback in MainActivity</string>
+    <string name="displaying_settings_screen">Displaying SettingsScreen</string>
+    <string name="user_clicked_back_from_settings">User clicked back from settings</string>
+    <string name="displaying_about_screen">Displaying AboutScreen</string>
+    <string name="user_clicked_back_from_about">User clicked back from about</string>
+    <string name="requesting_notification_permission">Requesting notification permission for Android 13+</string>
+    <string name="on_resume_called">onResume called</string>
+    <string name="on_pause_called">onPause called</string>
+    <string name="on_destroy_called">onDestroy called</string>
+    <string name="notification_permission_granted">Notification permission granted</string>
+    <string name="notification_permission_denied">Notification permission denied</string>
+    <string name="starting_device_scan">Starting device scan</string>
+    <string name="scan_results">Scan results: %1$d devices found</string>
+    <string name="connecting_to_device">Connecting to device: %1$s</string>
+    <string name="no_devices_found">No devices found during scan</string>
+    
+    <!-- Settings -->
+    <string name="app_settings">AppSettings</string>
+    <string name="device_settings">DeviceSettings</string>
+    <string name="is_first_launch">isFirstLaunch</string>
+    <string name="selected_device_address">selectedDeviceAddress</string>
+    <string name="language_preference">language_preference</string>
+    <string name="connection_status">Connection Status: %1$s</string>
+    <string name="save_settings">Save Settings</string>
+</resources> 

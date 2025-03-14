@@ -66,6 +66,22 @@ class MainViewModel(
             bleRepository.deviceStatus.collect { status ->
                 status?.let {
                     _currentPressure.value = it.pressure
+                    
+                    // Sync inflation state with device operation mode
+                    when (it.operationMode) {
+                        DeviceStatus.MODE_INFLATE, DeviceStatus.MODE_DEFLATE -> {
+                            if (!_isInflating.value) {
+                                android.util.Log.d("MainViewModel", "Syncing UI: Device is in INFLATE/DEFLATE mode, updating to inflating state")
+                                _isInflating.value = true
+                            }
+                        }
+                        DeviceStatus.MODE_STOP -> {
+                            if (_isInflating.value) {
+                                android.util.Log.d("MainViewModel", "Syncing UI: Device is in STOP mode, updating to stopped state")
+                                _isInflating.value = false
+                            }
+                        }
+                    }
                 }
             }
         }

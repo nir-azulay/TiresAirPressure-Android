@@ -24,6 +24,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tiresairpressuremanagement.data.ble.BleManager
 import com.example.tiresairpressuremanagement.data.ble.ConnectionState
 import com.example.tiresairpressuremanagement.domain.models.BleCommand
+import com.example.tiresairpressuremanagement.domain.models.DeviceStatus
 import com.example.tiresairpressuremanagement.ui.screens.main.MainViewModel
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.foundation.rememberScrollState
@@ -117,10 +118,21 @@ fun MainScreen(
         android.util.Log.d(TAG, "Current pressure value: ${deviceStatus?.pressure ?: "null"}")
         android.util.Log.d(TAG, "Operation mode: ${deviceStatus?.operationMode ?: "null"}")
         
-        // If device status shows stopped mode, update inflation state
+        // Update inflation state based on operation mode
         deviceStatus?.let { status ->
-            if (status.operationMode == 1) { // MODE_STOP
-                isInflating = false
+            when (status.operationMode) {
+                DeviceStatus.MODE_STOP -> {
+                    if (isInflating) {
+                        android.util.Log.d(TAG, "Device is in STOP mode, updating UI to stopped state")
+                        isInflating = false
+                    }
+                }
+                DeviceStatus.MODE_INFLATE, DeviceStatus.MODE_DEFLATE -> {
+                    if (!isInflating) {
+                        android.util.Log.d(TAG, "Device is in INFLATE/DEFLATE mode, updating UI to inflating state")
+                        isInflating = true
+                    }
+                }
             }
         }
     }

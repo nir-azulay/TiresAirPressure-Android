@@ -17,7 +17,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -32,10 +31,10 @@ fun AboutScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.about)) },
+                title = { Text("אודות") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
+                        Icon(Icons.Default.ArrowBack, contentDescription = "חזור")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -57,7 +56,7 @@ fun AboutScreen(
         ) {
             // App Name
             Text(
-                text = stringResource(R.string.app_name),
+                text = "ניהול לחץ אוויר",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
@@ -82,7 +81,7 @@ fun AboutScreen(
                     // Developer profile picture
                     Image(
                         painter = painterResource(id = R.drawable.profile_nir),
-                        contentDescription = stringResource(R.string.developer_name),
+                        contentDescription = "ניר אזולאי",
                         modifier = Modifier
                             .size(150.dp)
                             .clip(CircleShape),
@@ -92,7 +91,7 @@ fun AboutScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     Text(
-                        text = stringResource(R.string.developed_by),
+                        text = "פותח על ידי",
                         fontSize = 18.sp,
                         color = Color.White,
                         fontWeight = FontWeight.Medium
@@ -101,7 +100,7 @@ fun AboutScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     
                     Text(
-                        text = stringResource(R.string.developer_name),
+                        text = "ניר אזולאי",
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -119,7 +118,7 @@ fun AboutScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = stringResource(R.string.developer_email),
+                            text = "nir.azulay@gmail.com",
                             fontSize = 16.sp,
                             color = Color.White
                         )
@@ -131,13 +130,13 @@ fun AboutScreen(
             
             // Version Info
             Text(
-                text = stringResource(R.string.version_info),
+                text = "גרסה 1.0",
                 fontSize = 16.sp,
                 color = Color.Gray
             )
             
             Text(
-                text = stringResource(R.string.copyright_info),
+                text = "© 2023 כל הזכויות שמורות",
                 fontSize = 14.sp,
                 color = Color.Gray,
                 modifier = Modifier.padding(top = 8.dp)

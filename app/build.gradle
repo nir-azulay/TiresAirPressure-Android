@@ -21,21 +21,10 @@ android {
         }
     }
 
-    signingConfigs {
-        release {
-            storeFile file("../my-release-key.jks")
-            storePassword "REDACTED"
-            keyAlias "my-alias"
-            keyPassword "REDACTED"
-        }
-    }
-
     buildTypes {
         release {
-            minifyEnabled true
-            shrinkResources true
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
         }
     }
     compileOptions {

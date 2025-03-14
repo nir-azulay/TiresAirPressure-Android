@@ -30,20 +30,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tiresairpressuremanagement.domain.models.PressureUnit
 import com.example.tiresairpressuremanagement.domain.models.TemperatureUnit
 import com.example.tiresairpressuremanagement.data.ble.ConnectionState
-import android.content.Context
-import androidx.compose.ui.platform.LocalContext
-import java.util.Locale
-import androidx.compose.ui.res.stringResource
-import com.example.tiresairpressuremanagement.R
-
-private const val TAG = "SettingsScreen"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
-    onBackClick: () -> Unit,
-    onLanguageChanged: (Locale) -> Unit
+    onBackClick: () -> Unit
 ) {
     val settings by viewModel.settings.collectAsState()
     val availableNetworks by viewModel.availableNetworks.collectAsState()
@@ -53,32 +45,18 @@ fun SettingsScreen(
     var showDiscardDialog by remember { mutableStateOf(false) }
     var expandedWifiDropdown by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
-    val context = LocalContext.current
-    val sharedPreferences = context.getSharedPreferences(
-        context.getString(R.string.app_settings),
-        Context.MODE_PRIVATE
-    )
-    
-    var currentLanguage by remember {
-        mutableStateOf(
-            sharedPreferences.getString(
-                context.getString(R.string.language_preference),
-                Locale.getDefault().language
-            ) ?: Locale.getDefault().language
-        )
-    }
     
     // Log connection state
     LaunchedEffect(connectionState) {
-        Log.d(TAG, "connectionState: $connectionState")
+        Log.d("SettingsScreen", "connectionState: $connectionState")
     }
     
     // Discard changes dialog
     if (showDiscardDialog) {
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
-            title = { Text(stringResource(R.string.discard_changes_title)) },
-            text = { Text(stringResource(R.string.discard_changes_message)) },
+            title = { Text("לצאת ללא שמירה?") },
+            text = { Text("השינויים שביצעת לא יישמרו.") },
             confirmButton = {
                 Button(
                     onClick = {
@@ -86,12 +64,12 @@ fun SettingsScreen(
                         onBackClick()
                     }
                 ) {
-                    Text(stringResource(R.string.discard_changes))
+                    Text("צא ללא שמירה")
                 }
             },
             dismissButton = {
                 OutlinedButton(onClick = { showDiscardDialog = false }) {
-                    Text(stringResource(R.string.continue_editing))
+                    Text("המשך עריכה")
                 }
             }
         )
@@ -101,7 +79,7 @@ fun SettingsScreen(
     if (isSaving) {
         AlertDialog(
             onDismissRequest = { /* Do nothing, prevent dismissal */ },
-            title = { Text(stringResource(R.string.saving_settings)) },
+            title = { Text("שומר הגדרות...") },
             text = { 
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -111,7 +89,7 @@ fun SettingsScreen(
                         modifier = Modifier.padding(16.dp),
                         color = MaterialTheme.colorScheme.primary
                     )
-                    Text(stringResource(R.string.device_will_reset))
+                    Text("המכשיר יתאפס ויתחבר מחדש אוטומטית")
                 }
             },
             confirmButton = { }
@@ -121,10 +99,10 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.settings)) },
+                title = { Text("הגדרות") },
                 navigationIcon = {
                     IconButton(onClick = { showDiscardDialog = true }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
+                        Icon(Icons.Default.ArrowBack, contentDescription = "חזור")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -163,7 +141,7 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = stringResource(R.string.connection_status, connectionStatus),
+                        text = "סטטוס חיבור: $connectionStatus",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = when (connectionState) {
@@ -178,7 +156,7 @@ fun SettingsScreen(
                         IconButton(onClick = { viewModel.connectToSavedDeviceIfNeeded() }) {
                             Icon(
                                 Icons.Default.Refresh,
-                                contentDescription = stringResource(R.string.reconnect),
+                                contentDescription = "נסה להתחבר מחדש",
                                 tint = when (connectionState) {
                                     ConnectionState.Connected -> Color(0xFF4CAF50) // Green
                                     ConnectionState.Connecting -> Color(0xFFFFC107) // Amber
@@ -205,7 +183,7 @@ fun SettingsScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = stringResource(R.string.device_settings_title),
+                        text = "הגדרות מכשיר",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -215,7 +193,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = settings.deviceName,
                         onValueChange = { viewModel.updateSettings(deviceName = it) },
-                        label = { Text(stringResource(R.string.device_name), color = Color.White.copy(alpha = 0.7f)) },
+                        label = { Text("שם המכשיר", color = Color.White.copy(alpha = 0.7f)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp),
@@ -244,7 +222,7 @@ fun SettingsScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = stringResource(R.string.wifi_settings),
+                        text = "הגדרות WiFi",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -255,7 +233,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = settings.wifiSsid,
                         onValueChange = { viewModel.updateSettings(wifiSsid = it) },
-                        label = { Text(stringResource(R.string.wifi_ssid), color = Color.White.copy(alpha = 0.7f)) },
+                        label = { Text("SSID", color = Color.White.copy(alpha = 0.7f)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp),
@@ -277,7 +255,7 @@ fun SettingsScreen(
                             containerColor = Color(0xFF3F51B5)
                         )
                     ) {
-                        Text(stringResource(R.string.scan_networks))
+                        Text("סרוק רשתות זמינות")
                     }
                     
                     // Available networks list
@@ -328,7 +306,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = settings.wifiPassword,
                         onValueChange = { viewModel.updateSettings(wifiPassword = it) },
-                        label = { Text(stringResource(R.string.wifi_password), color = Color.White.copy(alpha = 0.7f)) },
+                        label = { Text("סיסמה", color = Color.White.copy(alpha = 0.7f)) },
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -358,7 +336,7 @@ fun SettingsScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = stringResource(R.string.hardware_settings),
+                        text = "הגדרות חומרה",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -369,7 +347,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = settings.relayCompressorPin.toString(),
                         onValueChange = { viewModel.updateSettings(relayCompressorPin = it.toIntOrNull() ?: 0) },
-                        label = { Text(stringResource(R.string.relay_compressor_pin), color = Color.White.copy(alpha = 0.7f)) },
+                        label = { Text("Relay Compressor Pin", color = Color.White.copy(alpha = 0.7f)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -386,7 +364,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = settings.relayFreePin.toString(),
                         onValueChange = { viewModel.updateSettings(relayFreePin = it.toIntOrNull() ?: 0) },
-                        label = { Text(stringResource(R.string.relay_free_pin), color = Color.White.copy(alpha = 0.7f)) },
+                        label = { Text("Relay Free Pin", color = Color.White.copy(alpha = 0.7f)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -403,7 +381,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = settings.sensorPin.toString(),
                         onValueChange = { viewModel.updateSettings(sensorPin = it.toIntOrNull() ?: 0) },
-                        label = { Text(stringResource(R.string.sensor_pin), color = Color.White.copy(alpha = 0.7f)) },
+                        label = { Text("Sensor Pin", color = Color.White.copy(alpha = 0.7f)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -433,7 +411,7 @@ fun SettingsScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = stringResource(R.string.calibration_settings),
+                        text = "הגדרות כיול",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -444,7 +422,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = settings.sensorValueAt0PSI.toString(),
                         onValueChange = { viewModel.updateSettings(sensorValueAt0PSI = it.toIntOrNull() ?: 0) },
-                        label = { Text(stringResource(R.string.sensor_value_at_0_psi), color = Color.White.copy(alpha = 0.7f)) },
+                        label = { Text("ערך חיישן ב-0 PSI", color = Color.White.copy(alpha = 0.7f)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -461,7 +439,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = settings.sensorValueAt50PSI.toString(),
                         onValueChange = { viewModel.updateSettings(sensorValueAt50PSI = it.toIntOrNull() ?: 1023) },
-                        label = { Text(stringResource(R.string.sensor_value_at_50_psi), color = Color.White.copy(alpha = 0.7f)) },
+                        label = { Text("ערך חיישן ב-50 PSI", color = Color.White.copy(alpha = 0.7f)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -478,7 +456,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = settings.precision.toString(),
                         onValueChange = { viewModel.updateSettings(precision = it.toFloatOrNull() ?: 1f) },
-                        label = { Text(stringResource(R.string.precision_psi), color = Color.White.copy(alpha = 0.7f)) },
+                        label = { Text("דיוק (PSI)", color = Color.White.copy(alpha = 0.7f)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -508,7 +486,7 @@ fun SettingsScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = stringResource(R.string.simulation_mode),
+                        text = "מצב סימולציה",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -523,7 +501,7 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = stringResource(R.string.enable_simulation_mode),
+                            text = "הפעל מצב סימולציה",
                             color = Color.White,
                             style = MaterialTheme.typography.bodyLarge
                         )
@@ -541,114 +519,10 @@ fun SettingsScreen(
                     }
                     
                     Text(
-                        text = stringResource(R.string.simulation_mode_description),
+                        text = "מצב סימולציה מאפשר בדיקת האפליקציה ללא חיבור למכשיר אמיתי",
                         color = Color.White.copy(alpha = 0.7f),
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-            }
-            
-            // Language selection card
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.language),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        // כפתור אנגלית (משמאל)
-                        OutlinedButton(
-                            onClick = {
-                                if (currentLanguage != "en") {
-                                    currentLanguage = "en"
-                                    sharedPreferences.edit()
-                                        .putString(context.getString(R.string.language_preference), "en")
-                                        .apply()
-                                    onLanguageChanged(Locale("en"))
-                                }
-                            },
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = if (currentLanguage == "en") 
-                                    MaterialTheme.colorScheme.primary 
-                                else 
-                                    MaterialTheme.colorScheme.surface
-                            )
-                        ) {
-                            Text(
-                                text = stringResource(R.string.language_english),
-                                color = if (currentLanguage == "en")
-                                    MaterialTheme.colorScheme.onPrimary
-                                else
-                                    MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                        
-                        // כפתור עברית (מימין)
-                        OutlinedButton(
-                            onClick = {
-                                if (currentLanguage != "he") {
-                                    currentLanguage = "he"
-                                    sharedPreferences.edit()
-                                        .putString(context.getString(R.string.language_preference), "he")
-                                        .apply()
-                                    onLanguageChanged(Locale("he"))
-                                }
-                            },
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                containerColor = if (currentLanguage == "he") 
-                                    MaterialTheme.colorScheme.primary 
-                                else 
-                                    MaterialTheme.colorScheme.surface
-                            )
-                        ) {
-                            Text(
-                                text = stringResource(R.string.language_hebrew),
-                                color = if (currentLanguage == "he")
-                                    MaterialTheme.colorScheme.onPrimary
-                                else
-                                    MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                }
-            }
-            
-            // גרסת האפליקציה
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.app_version),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = stringResource(R.string.version_number),
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(horizontal = 16.dp)
                     )
                 }
             }
@@ -672,7 +546,7 @@ fun SettingsScreen(
                 shape = MaterialTheme.shapes.medium
             ) {
                 Text(
-                    stringResource(R.string.save_settings),
+                    "שמור הגדרות",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -681,27 +555,4 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
-}
-
-private fun updateLocale(context: Context, languageCode: String) {
-    val locale = Locale(languageCode)
-    Locale.setDefault(locale)
-    
-    val config = context.resources.configuration
-    config.setLocale(locale)
-    
-    // יצירת קונטקסט חדש עם השפה החדשה
-    val newContext = context.createConfigurationContext(config)
-    
-    // עדכון המשאבים באופן מיידי
-    context.resources.updateConfiguration(config, context.resources.displayMetrics)
-    
-    // שמירת השפה בהעדפות
-    val sharedPreferences = context.getSharedPreferences(
-        context.getString(R.string.app_settings),
-        Context.MODE_PRIVATE
-    )
-    sharedPreferences.edit()
-        .putString(context.getString(R.string.language_preference), languageCode)
-        .apply()
 } 

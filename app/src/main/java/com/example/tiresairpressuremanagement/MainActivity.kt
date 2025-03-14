@@ -36,15 +36,12 @@ import com.example.tiresairpressuremanagement.ui.screens.AboutScreen
 import com.example.tiresairpressuremanagement.ui.screens.SplashScreen
 import kotlinx.coroutines.delay
 import androidx.compose.ui.res.stringResource
-import java.util.Locale
-import android.content.res.Configuration
 
 class MainActivity : ComponentActivity() {
     private val TAG = "MainActivity"
     private var showPermissionDialog by mutableStateOf(false)
     private lateinit var bleManager: BleManager
     private var isConnectingToSavedDevice = false
-    private var currentLocale: Locale? = null
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -67,48 +64,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun attachBaseContext(newBase: Context) {
-        val sharedPreferences = newBase.getSharedPreferences(
-            newBase.getString(R.string.app_settings),
-            Context.MODE_PRIVATE
-        )
-        val languageCode = sharedPreferences.getString(
-            newBase.getString(R.string.language_preference),
-            "he"
-        )
-        val locale = Locale(languageCode ?: "he")
-        
-        // עדכון ברירת המחדל של השפה
-        Locale.setDefault(locale)
-        
-        val config = Configuration(newBase.resources.configuration)
-        config.setLocale(locale)
-        
-        // יצירת קונטקסט חדש עם השפה החדשה
-        val context = newBase.createConfigurationContext(config)
-        
-        super.attachBaseContext(context)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.Theme_TiresAirPressureManagement)
         super.onCreate(savedInstanceState)
         android.util.Log.d(TAG, getString(R.string.on_create_called))
         
-        // Load saved language preference
-        val sharedPreferences = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE)
-        val savedLanguage = sharedPreferences.getString(getString(R.string.language_preference), "he")
-        currentLocale = Locale(savedLanguage ?: "he")
-        
-        // וידוא שהשפה מוגדרת כראוי
-        Locale.setDefault(currentLocale!!)
-        val config = resources.configuration
-        config.setLocale(currentLocale)
-        resources.updateConfiguration(config, resources.displayMetrics)
-        
         bleManager = BleManager(this)
         checkAndRequestPermissions()
         
+        val sharedPreferences = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE)
         val isFirstLaunch = sharedPreferences.getBoolean(getString(R.string.is_first_launch), true)
         
         if (isFirstLaunch) {
@@ -124,40 +88,6 @@ class MainActivity : ComponentActivity() {
                 AppContent()
             }
         }
-    }
-
-    private fun updateLocale(locale: Locale) {
-        Log.d(TAG, "Updating locale to: ${locale.language}")
-        
-        // בדיקה אם השפה הנוכחית זהה לשפה החדשה
-        if (currentLocale?.language == locale.language) {
-            Log.d(TAG, "Locale is already set to ${locale.language}, skipping update")
-            return
-        }
-        
-        currentLocale = locale
-        Locale.setDefault(locale)
-        
-        // עדכון הקונפיגורציה
-        val config = resources.configuration
-        config.setLocale(locale)
-        
-        // עדכון המשאבים באופן מיידי ויצירת קונטקסט חדש
-        val context = createConfigurationContext(config)
-        resources.updateConfiguration(config, resources.displayMetrics)
-        
-        // עדכון הקונטקסט הגלובלי
-        baseContext.resources.updateConfiguration(config, baseContext.resources.displayMetrics)
-        applicationContext.resources.updateConfiguration(config, applicationContext.resources.displayMetrics)
-        
-        // שמירת השפה בהעדפות
-        val sharedPreferences = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE)
-        sharedPreferences.edit()
-            .putString(getString(R.string.language_preference), locale.language)
-            .apply()
-        
-        // יצירה מחדש של האקטיביטי כדי להחיל את השינויים
-        recreate()
     }
 
     // Add method to handle configuration changes
@@ -181,81 +111,133 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    sealed class Screen {
-        object Main : Screen()
-        object Settings : Screen()
-        object About : Screen()
-    }
-
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun AppContent() {
-        var currentScreen by remember { mutableStateOf<Screen>(Screen.Main) }
+    private fun AppContent() {
+        // מצב המסך הנוכחי - start with SPLASH screen
+        var currentScreen by remember { mutableStateOf(Screen.SPLASH) }
         
-        // גורם לקומפוזבל להתרנדר מחדש כאשר השפה משתנה
-        val currentLanguage = remember { mutableStateOf(currentLocale?.language ?: "he") }
+        // Track connection state
+        val connectionState by bleManager.connectionState.collectAsState()
         
-        // עדכון השפה בכל פעם שהקומפוזבל מתרנדר
-        LaunchedEffect(currentLanguage.value) {
-            Log.d(TAG, "Current language in AppContent: ${currentLanguage.value}")
-        }
-        
-        when (currentScreen) {
-            is Screen.Main -> {
-                val viewModel: MainViewModel = viewModel(
-                    factory = MainViewModel.provideFactory(application, bleManager)
-                )
-                MainScreen(
-                    bleManager = bleManager,
-                    onDisconnect = {
-                        android.util.Log.d(TAG, getString(R.string.user_initiated_disconnect))
-                        bleManager.disconnect()
-                    },
-                    onSettingsClick = {
-                        android.util.Log.d(TAG, getString(R.string.user_clicked_settings))
-                        currentScreen = Screen.Settings
-                    },
-                    onAboutClick = {
-                        android.util.Log.d(TAG, getString(R.string.user_clicked_about))
-                        currentScreen = Screen.About
-                    },
-                    viewModel = viewModel
-                )
-            }
-            is Screen.Settings -> {
-                val viewModel: SettingsViewModel = viewModel(
-                    factory = SettingsViewModel.provideFactory(application, bleManager)
-                )
-                SettingsScreen(
-                    viewModel = viewModel,
-                    onBackClick = {
-                        android.util.Log.d(TAG, getString(R.string.user_clicked_back_from_settings))
-                        currentScreen = Screen.Main
-                    },
-                    onLanguageChanged = { newLocale ->
-                        updateLocale(newLocale)
-                        currentLanguage.value = newLocale.language
+        // Effect to handle connection state changes
+        LaunchedEffect(connectionState) {
+            if (isConnectingToSavedDevice) {
+                when (connectionState) {
+                    ConnectionState.Connected -> {
+                        // If connected successfully, go to main screen
+                        currentScreen = Screen.MAIN
+                        isConnectingToSavedDevice = false
                     }
-                )
-            }
-            is Screen.About -> {
-                AboutScreen(
-                    onBackClick = {
-                        android.util.Log.d(TAG, getString(R.string.user_clicked_back_from_about))
-                        currentScreen = Screen.Main
+                    ConnectionState.Disconnected -> {
+                        // If connection failed and we were trying to connect, go to connection screen
+                        if (currentScreen == Screen.SPLASH) {
+                            // Only change if we're still on splash screen
+                            delay(3000) // Wait for splash screen animation
+                            currentScreen = Screen.CONNECTION
+                            isConnectingToSavedDevice = false
+                        }
                     }
-                )
-            }
-        }
-        
-        if (showPermissionDialog) {
-            PermissionDialog(
-                onDismiss = { showPermissionDialog = false },
-                onConfirm = {
-                    showPermissionDialog = false
-                    checkAndRequestPermissions()
+                    else -> {} // Do nothing for other states
                 }
-            )
+            }
+        }
+        
+        Surface(
+            color = MaterialTheme.colorScheme.background
+        ) {
+            when (currentScreen) {
+                Screen.SPLASH -> {
+                    SplashScreen(
+                        onTimeout = {
+                            // If we're still connecting, stay on splash screen
+                            if (connectionState != ConnectionState.Connecting) {
+                                // If connected, go to main, otherwise go to connection screen
+                                currentScreen = if (connectionState == ConnectionState.Connected) {
+                                    Screen.MAIN
+                                } else {
+                                    Screen.CONNECTION
+                                }
+                            }
+                        },
+                        connectionInProgress = connectionState == ConnectionState.Connecting
+                    )
+                }
+                
+                Screen.MAIN -> {
+                    android.util.Log.d(TAG, "Displaying MainScreen")
+                    // Create the ViewModel with the existing BleManager instance
+                    val viewModel: MainViewModel = viewModel(
+                        factory = MainViewModel.provideFactory(application, bleManager)
+                    )
+                    MainScreen(
+                        bleManager = bleManager,
+                        onDisconnect = {
+                            android.util.Log.d(TAG, "User initiated disconnect")
+                            bleManager.disconnect()
+                            currentScreen = Screen.CONNECTION
+                        },
+                        onSettingsClick = {
+                            android.util.Log.d(TAG, "User clicked settings")
+                            currentScreen = Screen.SETTINGS
+                        },
+                        onAboutClick = {
+                            android.util.Log.d(TAG, "User clicked about")
+                            currentScreen = Screen.ABOUT
+                        },
+                        viewModel = viewModel
+                    )
+                }
+                Screen.CONNECTION -> {
+                    // אם יש חיבור פעיל, עבור למסך הראשי
+                    LaunchedEffect(Unit) {
+                        if (bleManager.connectionState.value == ConnectionState.Connected) {
+                            currentScreen = Screen.MAIN
+                        }
+                    }
+                    
+                    ConnectionManagementScreen(
+                        bleManager = bleManager,
+                        onDeviceConnected = {
+                            android.util.Log.d(TAG, "Device connected callback in MainActivity")
+                            currentScreen = Screen.MAIN
+                        }
+                    )
+                }
+                Screen.SETTINGS -> {
+                    android.util.Log.d(TAG, "Displaying SettingsScreen")
+                    // Create the ViewModel with the existing BleManager instance
+                    val viewModel: SettingsViewModel = viewModel(
+                        factory = SettingsViewModel.provideFactory(application, bleManager)
+                    )
+                    // Use the correct SettingsScreen with ViewModel
+                    SettingsScreen(
+                        viewModel = viewModel,
+                        onBackClick = {
+                            android.util.Log.d(TAG, "User clicked back from settings")
+                            currentScreen = Screen.MAIN
+                        }
+                    )
+                }
+                Screen.ABOUT -> {
+                    android.util.Log.d(TAG, "Displaying AboutScreen")
+                    AboutScreen(
+                        onBackClick = {
+                            android.util.Log.d(TAG, "User clicked back from about")
+                            currentScreen = Screen.MAIN
+                        }
+                    )
+                }
+            }
+            
+            if (showPermissionDialog) {
+                PermissionDialog(
+                    onDismiss = { showPermissionDialog = false },
+                    onConfirm = {
+                        showPermissionDialog = false
+                        checkAndRequestPermissions()
+                    }
+                )
+            }
         }
     }
 
@@ -308,6 +290,14 @@ class MainActivity : ComponentActivity() {
             checkSelfPermission(permission) == android.content.pm.PackageManager.PERMISSION_GRANTED
         }
     }
+}
+
+enum class Screen {
+    SPLASH,
+    MAIN,
+    CONNECTION,
+    SETTINGS,
+    ABOUT
 }
 
 @Composable

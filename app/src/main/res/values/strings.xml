@@ -20,25 +20,10 @@
     <string name="connecting">מתחבר למכשיר...</string>
     <string name="app_version">גרסת האפליקציה</string>
     <string name="version_number">1.0.0</string>
-    <string name="disconnect_device">נתק מכשיר</string>
-    <string name="about">אודות</string>
-    <string name="current_pressure">נוכחי: %1$.1f PSI</string>
-    <string name="current_pressure_label">לחץ נוכחי</string>
-    <string name="target_pressure_label">לחץ יעד</string>
-    <string name="pressure_format_with_unit">%.1f PSI</string>
-    <string name="preset_pressures">לחצים מוגדרים מראש</string>
-    
-    <!-- דיאלוגים -->
-    <string name="discard_changes_title">לצאת ללא שמירה?</string>
-    <string name="discard_changes_message">השינויים שביצעת לא יישמרו.</string>
-    <string name="discard_changes">צא ללא שמירה</string>
-    <string name="continue_editing">המשך עריכה</string>
-    <string name="saving_settings">שומר הגדרות...</string>
-    <string name="device_will_reset">המכשיר יתאפס ויתחבר מחדש אוטומטית</string>
     
     <!-- לחץ -->
     <string name="target_pressure">לחץ יעד:</string>
-    <string name="pressure_format">%.1f</string>
+    <string name="pressure_format">%.1f PSI</string>
     <string name="pressure_unit">PSI</string>
     <string name="pressure_reached">הגעת ללחץ היעד!</string>
     <string name="increase_pressure">הגדל לחץ</string>
@@ -50,44 +35,12 @@
     <string name="grant_permissions">אשר הרשאות</string>
     
     <!-- מצבי פעולה -->
-    <string name="mode_inflating">מנפח...</string>
-    <string name="mode_deflating">מרוקן...</string>
+    <string name="mode_inflating">מנפח ...</string>
+    <string name="mode_deflating">מרוקן ...</string>
     
     <!-- תיאורים -->
     <string name="app_logo">לוגו האפליקציה</string>
     <string name="settings_icon">הגדרות</string>
-    
-    <!-- שפה -->
-    <string name="language">שפה</string>
-    <string name="language_hebrew">עברית</string>
-    <string name="language_english">English</string>
-    
-    <!-- הגדרות -->
-    <string name="reconnect">נסה להתחבר מחדש</string>
-    <string name="device_settings_title">הגדרות מכשיר</string>
-    <string name="device_name">שם המכשיר</string>
-    <string name="wifi_settings">הגדרות WiFi</string>
-    <string name="wifi_ssid">SSID</string>
-    <string name="scan_networks">סרוק רשתות זמינות</string>
-    <string name="wifi_password">סיסמה</string>
-    <string name="hardware_settings">הגדרות חומרה</string>
-    <string name="relay_compressor_pin">Relay Compressor Pin</string>
-    <string name="relay_free_pin">Relay Free Pin</string>
-    <string name="sensor_pin">Sensor Pin</string>
-    <string name="calibration_settings">הגדרות כיול</string>
-    <string name="sensor_value_at_0_psi">ערך חיישן ב-0 PSI</string>
-    <string name="sensor_value_at_50_psi">ערך חיישן ב-50 PSI</string>
-    <string name="precision_psi">דיוק (PSI)</string>
-    <string name="simulation_mode">מצב סימולציה</string>
-    <string name="enable_simulation_mode">הפעל מצב סימולציה</string>
-    <string name="simulation_mode_description">מצב סימולציה מאפשר בדיקת האפליקציה ללא חיבור למכשיר אמיתי</string>
-    
-    <!-- מסך אודות -->
-    <string name="developed_by">פותח על ידי</string>
-    <string name="developer_name">ניר אזולאי</string>
-    <string name="developer_email">nir.azulay@gmail.com</string>
-    <string name="version_info">גרסה 1.0</string>
-    <string name="copyright_info">© 2025 כל הזכויות שמורות</string>
     
     <!-- לוגים -->
     <string name="on_create_called">onCreate called</string>
@@ -120,7 +73,4 @@
     <string name="device_settings">DeviceSettings</string>
     <string name="is_first_launch">isFirstLaunch</string>
     <string name="selected_device_address">selectedDeviceAddress</string>
-    <string name="language_preference">language_preference</string>
-    <string name="connection_status">סטטוס חיבור: %1$s</string>
-    <string name="save_settings">שמור הגדרות</string>
 </resources>

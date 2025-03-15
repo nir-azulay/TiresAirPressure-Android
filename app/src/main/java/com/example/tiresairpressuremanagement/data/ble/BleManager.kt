@@ -67,6 +67,13 @@ class BleManager(private val context: Context) {
     private val _targetReachedEvent = MutableSharedFlow<Pair<Float, Float>>(replay = 1, extraBufferCapacity = 1)
     val targetReachedEvent: SharedFlow<Pair<Float, Float>> = _targetReachedEvent
     
+    // Variables for controlling scan result sorting
+    private var lastSortTime = 0L
+    private var sortCount = 0
+    private val MAX_SORT_COUNT = 5
+    private val SORT_INTERVAL = 10000L // 10 seconds in milliseconds
+    private val unsortedScanResults = mutableListOf<BleDevice>()
+    
     private val bluetoothManager: BluetoothManager by lazy {
         context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
     }
@@ -97,22 +104,36 @@ class BleManager(private val context: Context) {
             if (isLikelyTargetDevice(device, deviceName, rssi)) {
                 // Add to the list
                 val bleDevice = BleDevice(deviceName, deviceAddress, rssi)
-                val currentList = _scanResults.value.toMutableList()
                 
                 // Check if device with same address already exists in the list
-                val existingDeviceIndex = currentList.indexOfFirst { it.address == deviceAddress }
+                val existingDeviceIndex = unsortedScanResults.indexOfFirst { it.address == deviceAddress }
                 if (existingDeviceIndex >= 0) {
                     // Update the existing device with new RSSI
-                    currentList[existingDeviceIndex] = bleDevice
+                    unsortedScanResults[existingDeviceIndex] = bleDevice
                 } else {
                     // Add new device to the list
+                    unsortedScanResults.add(bleDevice)
+                    
+                    // מיד מוסיף את המכשיר החדש לרשימה המוצגת (ללא מיון)
+                    val currentList = _scanResults.value.toMutableList()
                     currentList.add(bleDevice)
+                    _scanResults.value = currentList
+                    
+                    Log.d("BleManager", "Added new device to displayed list: $deviceName")
                 }
                 
-                // Sort the list by RSSI (higher values = closer devices)
-                val sortedList = currentList.sortedByDescending { it.rssi }
-                
-                _scanResults.value = sortedList
+                // Check if it's time to sort and update the list
+                val currentTime = System.currentTimeMillis()
+                if (sortCount < MAX_SORT_COUNT && currentTime - lastSortTime >= SORT_INTERVAL) {
+                    // Sort the list by RSSI (higher values = closer devices)
+                    val sortedList = unsortedScanResults.sortedByDescending { it.rssi }
+                    
+                    _scanResults.value = sortedList
+                    lastSortTime = currentTime
+                    sortCount++
+                    
+                    Log.d("BleManager", "Sorted scan results (sort #$sortCount): ${sortedList.size} devices")
+                }
             }
         }
     }
@@ -461,7 +482,12 @@ class BleManager(private val context: Context) {
             if (hasRequiredPermissions()) {
                 Log.d("BleManager", "Has required permissions, starting scan")
                 val scanner = adapter.bluetoothLeScanner
+                
+                // Reset scan variables
                 _scanResults.value = emptyList() // Clear previous results
+                unsortedScanResults.clear()
+                sortCount = 0
+                lastSortTime = 0L
                 
                 // Set up scan settings
                 val settings = ScanSettings.Builder()

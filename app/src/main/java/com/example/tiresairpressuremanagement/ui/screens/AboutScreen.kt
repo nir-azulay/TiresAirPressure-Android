@@ -23,26 +23,25 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tiresairpressuremanagement.R
+import com.example.tiresairpressuremanagement.utils.Version
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(
-    onBackClick: () -> Unit
+    onNavigateBack: () -> Unit
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.about)) },
+                title = { Text(text = stringResource(R.string.about_screen_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Default.ArrowBack,
+                            contentDescription = stringResource(R.string.back_button)
+                        )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
+                }
             )
         }
     ) { paddingValues ->
@@ -55,7 +54,17 @@ fun AboutScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // App Name
+            // תמונת פרופיל
+            Image(
+                painter = painterResource(id = R.drawable.profile_nir),
+                contentDescription = stringResource(R.string.developer_name),
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+            
+            // כותרת האפליקציה
             Text(
                 text = stringResource(R.string.app_name),
                 fontSize = 24.sp,
@@ -63,84 +72,58 @@ fun AboutScreen(
                 textAlign = TextAlign.Center
             )
             
-            Spacer(modifier = Modifier.height(16.dp))
+            // גרסת האפליקציה
+            Text(
+                text = Version.getShortVersionInfo(),
+                fontSize = 18.sp,
+                textAlign = TextAlign.Center
+            )
             
-            // Developer Info Card
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            
+            // פרטי גרסה מלאים
+            Text(
+                text = Version.getFullVersionInfo(),
+                fontSize = 16.sp,
+                textAlign = TextAlign.Start,
+                modifier = Modifier.fillMaxWidth()
+            )
+            
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            
+            // תיאור האפליקציה
+            Text(
+                text = stringResource(R.string.app_description),
+                fontSize = 16.sp,
+                textAlign = TextAlign.Center
+            )
+            
+            // פרטי יצירת קשר
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFF1E2530)
-                )
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
             ) {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
                         .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Developer profile picture
-                    Image(
-                        painter = painterResource(id = R.drawable.profile_nir),
-                        contentDescription = stringResource(R.string.developer_name),
-                        modifier = Modifier
-                            .size(150.dp)
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
                     Text(
-                        text = stringResource(R.string.developed_by),
-                        fontSize = 18.sp,
-                        color = Color.White,
-                        fontWeight = FontWeight.Medium
+                        text = stringResource(R.string.contact_info),
+                        fontWeight = FontWeight.Bold
                     )
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Text(
-                        text = stringResource(R.string.developer_name),
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Email,
-                            contentDescription = null,
-                            tint = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.developer_email),
-                            fontSize = 16.sp,
-                            color = Color.White
-                        )
-                    }
+                    Text(text = Version.DEVELOPER)
+                    // אפשר להוסיף כאן פרטי קשר נוספים
                 }
             }
             
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // Version Info
+            // זכויות יוצרים
             Text(
-                text = stringResource(R.string.version_format),
-                fontSize = 16.sp,
-                color = Color.Gray
-            )
-            
-            Text(
-                text = stringResource(R.string.copyright_notice),
+                text = stringResource(R.string.copyright_notice, Version.DEVELOPER),
                 fontSize = 14.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(top = 8.dp)
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 16.dp)
             )
         }
     }

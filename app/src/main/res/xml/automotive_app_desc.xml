@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<automotiveApp>
+    <uses name="template" />
+    <uses name="notification" />
+    <uses name="diagnostic" />
+    <uses name="device" />
+</automotiveApp> 

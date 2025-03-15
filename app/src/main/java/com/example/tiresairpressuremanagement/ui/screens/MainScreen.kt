@@ -38,6 +38,10 @@ import com.example.tiresairpressuremanagement.R
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalView
 import android.view.WindowManager
+import androidx.compose.material.icons.filled.BluetoothDisabled
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
 
 private const val TAG = "MainScreen"
 
@@ -48,7 +52,7 @@ fun MainScreen(
     onDisconnect: () -> Unit,
     onSettingsClick: () -> Unit,
     onAboutClick: () -> Unit,
-    viewModel: MainViewModel = viewModel()
+    onExitClick: () -> Unit
 ) {
     val deviceStatus by bleManager.deviceStatus.collectAsState()
     val connectionState by bleManager.connectionState.collectAsState()
@@ -211,6 +215,9 @@ fun MainScreen(
                     }
                     IconButton(onClick = onAboutClick) {
                         Icon(Icons.Default.Info, contentDescription = stringResource(R.string.about))
+                    }
+                    IconButton(onClick = onExitClick) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.exit_app))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

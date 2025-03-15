@@ -21,6 +21,7 @@ import androidx.compose.foundation.clickable
 import com.example.tiresairpressuremanagement.domain.models.BleDevice
 import com.example.tiresairpressuremanagement.domain.models.BleCommand
 import android.content.Context
+import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Arrangement
 import com.example.tiresairpressuremanagement.ui.screens.ConnectionManagementScreen
@@ -31,6 +32,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import android.os.Build
 import android.Manifest
 import android.util.Log
+import androidx.car.app.CarContext
+import com.example.tiresairpressuremanagement.auto.TiresAirPressureCarAppService
 import com.example.tiresairpressuremanagement.ui.screens.main.MainViewModel
 import com.example.tiresairpressuremanagement.ui.screens.AboutScreen
 import com.example.tiresairpressuremanagement.ui.screens.SplashScreen
@@ -91,6 +94,9 @@ class MainActivity : ComponentActivity() {
                 requestNotificationPermission()
             }
         }
+        
+        // התחל את שירות ה-Android Auto
+        startAndroidAutoService()
         
         setContent {
             android.util.Log.d(TAG, getString(R.string.setting_content))
@@ -187,14 +193,10 @@ class MainActivity : ComponentActivity() {
                 
                 Screen.MAIN -> {
                     android.util.Log.d(TAG, "Displaying MainScreen")
-                    // Create the ViewModel with the existing BleManager instance
-                    val viewModel: MainViewModel = viewModel(
-                        factory = MainViewModel.provideFactory(application, bleManager)
-                    )
                     MainScreen(
                         bleManager = bleManager,
                         onDisconnect = {
-                            android.util.Log.d(TAG, "User initiated disconnect")
+                            android.util.Log.d(TAG, "User clicked disconnect")
                             bleManager.disconnect()
                             currentScreen = Screen.CONNECTION
                         },
@@ -206,7 +208,10 @@ class MainActivity : ComponentActivity() {
                             android.util.Log.d(TAG, "User clicked about")
                             currentScreen = Screen.ABOUT
                         },
-                        viewModel = viewModel
+                        onExitClick = {
+                            android.util.Log.d(TAG, "User clicked exit")
+                            finish()
+                        }
                     )
                 }
                 Screen.CONNECTION -> {
@@ -243,7 +248,7 @@ class MainActivity : ComponentActivity() {
                 Screen.ABOUT -> {
                     android.util.Log.d(TAG, "Displaying AboutScreen")
                     AboutScreen(
-                        onBackClick = {
+                        onNavigateBack = {
                             android.util.Log.d(TAG, "User clicked back from about")
                             currentScreen = Screen.MAIN
                         }
@@ -310,6 +315,22 @@ class MainActivity : ComponentActivity() {
         
         return wifiPermissions.all { permission ->
             checkSelfPermission(permission) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    /**
+     * מתחיל את שירות ה-Android Auto.
+     */
+    private fun startAndroidAutoService() {
+        try {
+            // התחל את שירות ה-Android Auto
+            val intent = Intent(this, TiresAirPressureCarAppService::class.java)
+            startService(intent)
+            
+            // לוג לצורך דיבוג
+            Log.d(TAG, "Android Auto service started successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start Android Auto service", e)
         }
     }
 }

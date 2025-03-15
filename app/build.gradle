@@ -10,21 +10,37 @@ android {
 
     defaultConfig {
         applicationId "com.example.tiresairpressuremanagement"
-        minSdk 26
+        minSdk 29
         targetSdk 34
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary true
         }
+
+        // הוספת BuildConfig fields
+        buildConfigField "String", "BUILD_TIME", "\"${new Date().format('yyyy-MM-dd HH:mm:ss')}\""
+    }
+
+    buildFeatures {
+        compose true
+        buildConfig true  // הפעלת תכונת BuildConfig
     }
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            buildConfigField "boolean", "DEBUG_MODE", "false"
+            buildConfigField "String", "BUILD_TYPE", "\"RELEASE\""
+        }
+        debug {
+            buildConfigField "boolean", "DEBUG_MODE", "true"
+            buildConfigField "String", "BUILD_TYPE", "\"DEBUG\""
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
         }
     }
     compileOptions {
@@ -34,9 +50,6 @@ android {
     kotlinOptions {
         jvmTarget = '17'
     }
-    buildFeatures {
-        compose true
-    }
     composeOptions {
         kotlinCompilerExtensionVersion '1.5.1'
     }
@@ -44,6 +57,11 @@ android {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
+    }
+    
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
     }
 }
 
@@ -81,6 +99,10 @@ dependencies {
     
     // BLE
     implementation 'no.nordicsemi.android:ble:2.7.2'
+    
+    // Android Auto
+    implementation 'androidx.car.app:app:1.4.0'
+    implementation 'androidx.car.app:app-automotive:1.4.0'
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

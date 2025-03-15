@@ -31,6 +31,13 @@ class SettingsViewModel(
     companion object {
         private const val TAG = "SettingsViewModel"
         
+        // הגדרות עבור מצב תצוגה
+        private const val THEME_MODE_PREF = "theme_mode_preference"
+        private const val THEME_MODE_KEY = "theme_mode"
+        private const val THEME_MODE_SYSTEM = 0  // ברירת מחדל - לפי הגדרות המערכת
+        private const val THEME_MODE_LIGHT = 1   // מצב יום
+        private const val THEME_MODE_DARK = 2    // מצב לילה
+        
         fun provideFactory(
             application: Application,
             bleManager: BleManager
@@ -88,8 +95,15 @@ class SettingsViewModel(
         }
     }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Lazily, "מנותק")
     
+    // מצב תצוגה נוכחי
+    private val _themeMode = MutableStateFlow(THEME_MODE_SYSTEM)
+    val themeMode: StateFlow<Int> = _themeMode.asStateFlow()
+    
     init {
         Log.d(TAG, "Initializing SettingsViewModel")
+        
+        // טעינת מצב התצוגה מההגדרות
+        loadThemeMode()
         
         // Monitor connection state
         viewModelScope.launch {
@@ -416,5 +430,28 @@ class SettingsViewModel(
     fun clearAvailableNetworks() {
         Log.d(TAG, "Clearing available networks list")
         _availableNetworks.value = emptyList()
+    }
+    
+    // פונקציה לשינוי מצב התצוגה
+    fun setThemeMode(mode: Int) {
+        if (mode in THEME_MODE_SYSTEM..THEME_MODE_DARK) {
+            _themeMode.value = mode
+            saveThemeMode()
+        }
+    }
+    
+    // שמירת מצב התצוגה
+    private fun saveThemeMode() {
+        val sharedPreferences = application.getSharedPreferences(THEME_MODE_PREF, Context.MODE_PRIVATE)
+        sharedPreferences.edit().putInt(THEME_MODE_KEY, _themeMode.value).apply()
+        Log.d(TAG, "Theme mode saved: ${_themeMode.value}")
+    }
+    
+    // טעינת מצב התצוגה
+    private fun loadThemeMode() {
+        val sharedPreferences = application.getSharedPreferences(THEME_MODE_PREF, Context.MODE_PRIVATE)
+        val savedMode = sharedPreferences.getInt(THEME_MODE_KEY, THEME_MODE_SYSTEM)
+        _themeMode.value = savedMode
+        Log.d(TAG, "Theme mode loaded: $savedMode")
     }
 } 

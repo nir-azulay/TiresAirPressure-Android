@@ -610,6 +610,114 @@ fun SettingsScreen(
                 }
             }
             
+            // Theme Mode Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFF1E2530) // Dark blue-gray color from MainScreen
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "מצב תצוגה",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    
+                    val themeMode by viewModel.themeMode.collectAsState()
+                    
+                    // System Default Option
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { viewModel.setThemeMode(0) }
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "ברירת מחדל של המערכת",
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        
+                        RadioButton(
+                            selected = themeMode == 0,
+                            onClick = { viewModel.setThemeMode(0) },
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = Color(0xFF3F51B5),
+                                unselectedColor = Color.Gray
+                            )
+                        )
+                    }
+                    
+                    // Light Mode Option
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { viewModel.setThemeMode(1) }
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "מצב יום",
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        
+                        RadioButton(
+                            selected = themeMode == 1,
+                            onClick = { viewModel.setThemeMode(1) },
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = Color(0xFF3F51B5),
+                                unselectedColor = Color.Gray
+                            )
+                        )
+                    }
+                    
+                    // Dark Mode Option
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { viewModel.setThemeMode(2) }
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "מצב לילה",
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        
+                        RadioButton(
+                            selected = themeMode == 2,
+                            onClick = { viewModel.setThemeMode(2) },
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = Color(0xFF3F51B5),
+                                unselectedColor = Color.Gray
+                            )
+                        )
+                    }
+                    
+                    Text(
+                        text = "שינוי מצב התצוגה יחייב הפעלה מחדש של האפליקציה",
+                        color = Color.White.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+            
             // Save button
             Button(
                 onClick = {

@@ -36,12 +36,22 @@ import com.example.tiresairpressuremanagement.ui.screens.AboutScreen
 import com.example.tiresairpressuremanagement.ui.screens.SplashScreen
 import kotlinx.coroutines.delay
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.isSystemInDarkTheme
 
 class MainActivity : ComponentActivity() {
     private val TAG = "MainActivity"
     private var showPermissionDialog by mutableStateOf(false)
     private lateinit var bleManager: BleManager
     private var isConnectingToSavedDevice = false
+    
+    // קבועים עבור מצב תצוגה
+    companion object {
+        private const val THEME_MODE_PREF = "theme_mode_preference"
+        private const val THEME_MODE_KEY = "theme_mode"
+        private const val THEME_MODE_SYSTEM = 0  // ברירת מחדל - לפי הגדרות המערכת
+        private const val THEME_MODE_LIGHT = 1   // מצב יום
+        private const val THEME_MODE_DARK = 2    // מצב לילה
+    }
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -84,7 +94,19 @@ class MainActivity : ComponentActivity() {
         
         setContent {
             android.util.Log.d(TAG, getString(R.string.setting_content))
-            TiresAirPressureManagementTheme {
+            
+            // קריאת הגדרת מצב התצוגה
+            val themePreferences = getSharedPreferences(THEME_MODE_PREF, Context.MODE_PRIVATE)
+            val themeMode = themePreferences.getInt(THEME_MODE_KEY, THEME_MODE_SYSTEM)
+            
+            // קביעת מצב התצוגה בהתאם להגדרות
+            val darkTheme = when (themeMode) {
+                THEME_MODE_LIGHT -> false
+                THEME_MODE_DARK -> true
+                else -> isSystemInDarkTheme()
+            }
+            
+            TiresAirPressureManagementTheme(darkTheme = darkTheme) {
                 AppContent()
             }
         }

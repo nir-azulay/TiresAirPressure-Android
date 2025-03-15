@@ -42,6 +42,9 @@ class BleManager(private val context: Context) {
     private var notifyCharacteristic: BluetoothGattCharacteristic? = null
     private var commandCharacteristic: BluetoothGattCharacteristic? = null
     
+    // משתנה לעקוב אחרי פקודות ניפוח/הוצאת אוויר כדי להתעלם מהודעת הסטטוס הראשונה
+    private var ignoreNextStatusUpdate = false
+    
     // Simplified message handling now that MTU size is correct
     private var settingsRequestAttempts = 0
     private val MAX_SETTINGS_REQUEST_ATTEMPTS = 3
@@ -646,6 +649,24 @@ class BleManager(private val context: Context) {
                 return
             }
             
+            // בדיקה אם זו פקודת ניפוח או הוצאת אוויר כדי להתעלם מהודעת הסטטוס הבאה
+            if (command is BleCommand.StartTargetPressure) {
+                Log.d(TAG, "Setting flag to ignore next status update after INFLATE/DEFLATE command")
+                ignoreNextStatusUpdate = true
+                
+                // הגדרת טיימר שיאפס את הדגל אוטומטית אחרי 2 שניות למקרה שלא קיבלנו הודעת סטטוס
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    if (ignoreNextStatusUpdate) {
+                        Log.d(TAG, "Resetting ignore flag automatically after timeout")
+                        ignoreNextStatusUpdate = false
+                    }
+                }, 2000) // 2 שניות
+            } else if (command is BleCommand.Stop) {
+                // אם זו פקודת עצירה, נאפס את הדגל כדי לא להתעלם מהודעות סטטוס
+                Log.d(TAG, "Resetting ignore flag for STOP command")
+                ignoreNextStatusUpdate = false
+            }
+            
             // Manually serialize the BleCommand object
             val jsonString = when (command) {
                 is BleCommand.Stop -> {
@@ -916,6 +937,14 @@ class BleManager(private val context: Context) {
     // Call this function when device status is received
     private fun onDeviceStatusReceived(deviceStatus: DeviceStatus) {
         android.util.Log.d(TAG, "Received device status: $deviceStatus")
+        
+        // בדיקה אם צריך להתעלם מהודעת הסטטוס הזו
+        if (ignoreNextStatusUpdate) {
+            android.util.Log.d(TAG, "Ignoring this status update as it came immediately after INFLATE/DEFLATE command")
+            ignoreNextStatusUpdate = false
+            return
+        }
+        
         saveDeviceSettings(deviceStatus)
         
         // Update the StateFlow on the main thread to ensure proper UI updates

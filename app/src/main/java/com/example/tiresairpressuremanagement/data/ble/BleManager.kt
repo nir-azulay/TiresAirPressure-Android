@@ -97,6 +97,15 @@ class BleManager(private val context: Context) {
     // Initialize MediaPlayer with the connection sound
     private val mediaPlayer: MediaPlayer = MediaPlayer.create(context, R.raw.connection_sound)
     
+    private val _currentPressure = MutableStateFlow(0f)
+    val currentPressure: StateFlow<Float> = _currentPressure
+
+    private val _targetPressure = MutableStateFlow(30f)
+    val targetPressure: StateFlow<Float> = _targetPressure
+
+    private val _isInflating = MutableStateFlow(false)
+    val isInflating: StateFlow<Boolean> = _isInflating
+    
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             val device = result.device
@@ -488,53 +497,26 @@ class BleManager(private val context: Context) {
     }
     
     fun startScan() {
-        Log.d("BleManager", "Starting BLE scan")
-        val adapter = bluetoothAdapter
-        if (adapter?.isEnabled == true) {
-            if (hasRequiredPermissions()) {
-                Log.d("BleManager", "Has required permissions, starting scan")
-                val scanner = adapter.bluetoothLeScanner
-                
-                // Reset scan variables
-                _scanResults.value = emptyList() // Clear previous results
-                unsortedScanResults.clear()
-                sortCount = 0
-                lastSortTime = 0L
-                
-                // Set up scan settings
-                val settings = ScanSettings.Builder()
-                    .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY) // Use low latency, high power scan mode
-                    .setReportDelay(0) // Report results immediately
-                    .build()
-                
-                // Start scan with settings
-                scanner?.startScan(null, settings, scanCallback)
-                Log.d("BleManager", "Scan started with low latency settings")
-            } else {
-                Log.e("BleManager", "Missing required permissions for BLE scan")
-                
-                // עדכון מצב החיבור להרשאות חסרות
-                _connectionState.value = ConnectionState.PermissionDenied
-                
-                // Request permissions
-                if (context is Activity) {
-                    requestRequiredPermissions(context as Activity)
-                } else {
-                    Log.e("BleManager", "Context is not an Activity, cannot request permissions")
-                }
-            }
-        } else {
-            Log.d("BleManager", "Bluetooth is disabled")
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+            return
         }
+        _connectionState.value = ConnectionState.Scanning
+        bleScanner?.startScan(
+            emptyList(), // רשימה ריקה של סינונים
+            ScanSettings.Builder()
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                .build(),
+            scanCallback
+        )
     }
     
     fun stopScan() {
-        Log.d("BleManager", "Stopping BLE scan")
-        val adapter = bluetoothAdapter
-        if (adapter?.isEnabled == true) {
-            val scanner = adapter.bluetoothLeScanner
-            scanner?.stopScan(scanCallback)
-            Log.d("BleManager", "Scan stopped")
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+            return
+        }
+        bleScanner?.stopScan(scanCallback)
+        if (_connectionState.value == ConnectionState.Scanning) {
+            _connectionState.value = ConnectionState.Disconnected
         }
     }
     
@@ -1350,16 +1332,39 @@ class BleManager(private val context: Context) {
         }
     }
     
+    fun connectToDevice(device: BleDevice) {
+        Log.d(TAG, "Connecting to device: ${device.name}")
+        val bluetoothDevice = bluetoothAdapter?.getRemoteDevice(device.address)
+        if (bluetoothDevice != null) {
+            _connectionState.value = ConnectionState.Connecting
+            bluetoothGatt = bluetoothDevice.connectGatt(context, false, gattCallback)
+        } else {
+            Log.e(TAG, "Device not found: ${device.address}")
+            _connectionState.value = ConnectionState.Disconnected
+        }
+    }
+
+    fun setTargetPressure(pressure: Float) {
+        Log.d(TAG, "Setting target pressure to: $pressure")
+        _targetPressure.value = pressure
+        // כאן יש להוסיף את הלוגיקה לשליחת הפקודה למכשיר
+    }
+
+    fun startInflation() {
+        Log.d(TAG, "Starting inflation")
+        _isInflating.value = true
+        // כאן יש להוסיף את הלוגיקה לשליחת פקודת התחלת ניפוח למכשיר
+    }
+
+    fun stopInflation() {
+        Log.d(TAG, "Stopping inflation")
+        _isInflating.value = false
+        // כאן יש להוסיף את הלוגיקה לשליחת פקודת עצירת ניפוח למכשיר
+    }
+    
     companion object {
         const val REQUEST_BLUETOOTH_PERMISSIONS = 1001
     }
-}
-
-enum class ConnectionState {
-    Connected,
-    Connecting,
-    Disconnected,
-    PermissionDenied
 }
 
 // Custom adapter for DeviceSettingsResponse to handle the specific JSON format

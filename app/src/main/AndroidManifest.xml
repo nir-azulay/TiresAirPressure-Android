@@ -21,7 +21,6 @@
     
     <!-- Foreground Service permission -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_AUTOMOTIVE_PROJECTION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     
     <!-- Internet permissions -->
@@ -32,7 +31,6 @@
     <uses-feature
         android:name="android.hardware.bluetooth_le"
         android:required="true" />
-    <uses-feature android:name="android.hardware.type.automotive" android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -44,11 +42,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TiresAirPressureManagement"
         tools:targetApi="31">
-        
-        <!-- הגדרת תמיכה ב-Android Auto -->
-        <meta-data
-            android:name="com.google.android.gms.car.application"
-            android:resource="@xml/automotive_app_desc" />
             
         <activity
             android:name=".MainActivity"
@@ -60,28 +53,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        
-        <!-- Android Auto Service -->
-        <service
-            android:name=".auto.TiresAirPressureCarAppService"
-            android:exported="true"
-            android:foregroundServiceType="connectedDevice">
-            <intent-filter>
-                <action android:name="androidx.car.app.CarAppService" />
-                <category android:name="androidx.car.app.category.DIAGNOSTIC" />
-                <category android:name="androidx.car.app.category.CAR_INFORMATION" />
-            </intent-filter>
-        </service>
-
-        <!-- Required for Android Auto -->
-        <meta-data
-            android:name="androidx.car.app.minCarApiLevel"
-            android:value="1" />
-            
-        <!-- הגדרת תמיכה ב-Android Auto -->
-        <meta-data
-            android:name="androidx.car.app.CarAppService"
-            android:value=".auto.TiresAirPressureCarAppService" />
     </application>
 
 </manifest>

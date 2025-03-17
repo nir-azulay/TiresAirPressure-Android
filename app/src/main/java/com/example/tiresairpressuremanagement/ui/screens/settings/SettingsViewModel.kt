@@ -93,6 +93,7 @@ class SettingsViewModel(
             com.example.tiresairpressuremanagement.data.ble.ConnectionState.Connecting -> "מתחבר..."
             com.example.tiresairpressuremanagement.data.ble.ConnectionState.Disconnected -> "מנותק"
             com.example.tiresairpressuremanagement.data.ble.ConnectionState.PermissionDenied -> "הרשאה דרושה"
+            com.example.tiresairpressuremanagement.data.ble.ConnectionState.Scanning -> "סורק..."
         }
     }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Lazily, "מנותק")
     

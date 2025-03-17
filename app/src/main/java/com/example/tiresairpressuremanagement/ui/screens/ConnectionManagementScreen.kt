@@ -86,6 +86,7 @@ fun ConnectionManagementScreen(
                         ConnectionState.Connecting -> Color(0xFFFFC107).copy(alpha = 0.2f) // Amber
                         ConnectionState.Disconnected -> Color(0xFFF44336).copy(alpha = 0.2f) // Red
                         ConnectionState.PermissionDenied -> Color(0xFFF44336).copy(alpha = 0.2f) // Red
+                        ConnectionState.Scanning -> Color(0xFF2196F3).copy(alpha = 0.2f) // Blue
                     }
                 )
             ) {
@@ -102,6 +103,7 @@ fun ConnectionManagementScreen(
                             ConnectionState.Connecting -> Icons.Default.BluetoothSearching
                             ConnectionState.Disconnected -> Icons.Default.Bluetooth
                             ConnectionState.PermissionDenied -> Icons.Default.Bluetooth
+                            ConnectionState.Scanning -> Icons.Default.Search
                         },
                         contentDescription = null,
                         tint = when (connectionState) {
@@ -109,6 +111,7 @@ fun ConnectionManagementScreen(
                             ConnectionState.Connecting -> Color(0xFFFFC107) // Amber
                             ConnectionState.Disconnected -> Color(0xFFF44336) // Red
                             ConnectionState.PermissionDenied -> Color(0xFFF44336) // Red
+                            ConnectionState.Scanning -> Color(0xFF2196F3) // Blue
                         }
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -118,12 +121,14 @@ fun ConnectionManagementScreen(
                             ConnectionState.Connecting -> stringResource(R.string.connecting)
                             ConnectionState.Disconnected -> stringResource(R.string.disconnected)
                             ConnectionState.PermissionDenied -> stringResource(R.string.permission_denied)
+                            ConnectionState.Scanning -> stringResource(R.string.scanning)
                         },
                         color = when (connectionState) {
                             ConnectionState.Connected -> Color(0xFF4CAF50) // Green
                             ConnectionState.Connecting -> Color(0xFFFFC107) // Amber
                             ConnectionState.Disconnected -> Color(0xFFF44336) // Red
                             ConnectionState.PermissionDenied -> Color(0xFFF44336) // Red
+                            ConnectionState.Scanning -> Color(0xFF2196F3) // Blue
                         },
                         fontWeight = FontWeight.Bold
                     )

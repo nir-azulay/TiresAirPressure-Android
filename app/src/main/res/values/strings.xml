@@ -132,7 +132,7 @@
     <string name="auto_start">התחלה אוטומטית</string>
     <string name="bt_pin_code">קוד PIN לבלוטות\'</string>
     
-    <!-- מחרוזות עבור Android Auto -->
+    <!-- מחרוזות כלליות נוספות -->
     <string name="scanning_for_devices">סורק מכשירים...</string>
     <string name="tap_to_connect">לחץ כדי להתחבר</string>
     <string name="tire_pressure">לחץ אוויר בצמיגים</string>

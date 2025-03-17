@@ -132,6 +132,7 @@ fun SettingsScreen(
                         ConnectionState.Connected -> Color(0xFF4CAF50).copy(alpha = 0.2f) // Green
                         ConnectionState.Connecting -> Color(0xFFFFC107).copy(alpha = 0.2f) // Amber
                         ConnectionState.Disconnected -> Color(0xFFF44336).copy(alpha = 0.2f) // Red
+                        ConnectionState.PermissionDenied -> Color(0xFFFFA500).copy(alpha = 0.2f) // Orange
                     }
                 )
             ) {
@@ -150,6 +151,7 @@ fun SettingsScreen(
                             ConnectionState.Connected -> Color(0xFF4CAF50) // Green
                             ConnectionState.Connecting -> Color(0xFFFFC107) // Amber
                             ConnectionState.Disconnected -> Color(0xFFF44336) // Red
+                            ConnectionState.PermissionDenied -> Color(0xFFFFA500) // Orange
                         }
                     )
                     
@@ -163,6 +165,7 @@ fun SettingsScreen(
                                     ConnectionState.Connected -> Color(0xFF4CAF50) // Green
                                     ConnectionState.Connecting -> Color(0xFFFFC107) // Amber
                                     ConnectionState.Disconnected -> Color(0xFFF44336) // Red
+                                    ConnectionState.PermissionDenied -> Color(0xFFFFA500) // Orange
                                 }
                             )
                         }

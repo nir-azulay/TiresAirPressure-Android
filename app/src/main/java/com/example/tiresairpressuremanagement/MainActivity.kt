@@ -43,6 +43,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
+import android.net.Uri
 
 class MainActivity : ComponentActivity() {
     private val TAG = "MainActivity"
@@ -150,11 +151,19 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun AppContent() {
-        // מצב המסך הנוכחי - start with SPLASH screen
         var currentScreen by remember { mutableStateOf(Screen.SPLASH) }
+        var showPermissionDialog by remember { mutableStateOf(false) }
+        var showPermissionSettingsDialog by remember { mutableStateOf(false) }
         
-        // Track connection state
+        // Observe connection state
         val connectionState by bleManager.connectionState.collectAsState()
+        
+        // Show permission settings dialog if needed
+        LaunchedEffect(connectionState) {
+            if (connectionState == ConnectionState.PermissionDenied) {
+                showPermissionSettingsDialog = true
+            }
+        }
         
         // Effect to handle connection state changes
         LaunchedEffect(connectionState) {
@@ -265,6 +274,17 @@ class MainActivity : ComponentActivity() {
                 }
             }
             
+            // Add the permission settings dialog
+            if (showPermissionSettingsDialog) {
+                PermissionSettingsDialog(
+                    onDismiss = { showPermissionSettingsDialog = false },
+                    onOpenSettings = {
+                        showPermissionSettingsDialog = false
+                        openAppSettings()
+                    }
+                )
+            }
+            
             if (showPermissionDialog) {
                 PermissionDialog(
                     onDismiss = { showPermissionDialog = false },
@@ -278,28 +298,48 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkAndRequestPermissions() {
-        val permissions = mutableListOf<String>()
+        // בדיקה אם יש לנו את כל ההרשאות הנדרשות
+        val missingPermissions = mutableListOf<String>()
         
-        // Add BLE permissions
-        permissions.addAll(arrayOf(
-            Manifest.permission.BLUETOOTH,
-            Manifest.permission.BLUETOOTH_ADMIN,
-            Manifest.permission.BLUETOOTH_SCAN,
-            Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        ))
+        // בדיקת הרשאות Bluetooth
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+                missingPermissions.add(Manifest.permission.BLUETOOTH_SCAN)
+            }
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                missingPermissions.add(Manifest.permission.BLUETOOTH_CONNECT)
+            }
+        } else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) {
+                missingPermissions.add(Manifest.permission.BLUETOOTH)
+            }
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED) {
+                missingPermissions.add(Manifest.permission.BLUETOOTH_ADMIN)
+            }
+        }
         
-        // Add notification permission for Android 13+
+        // בדיקת הרשאות מיקום (נדרשות עבור סריקת Bluetooth)
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            missingPermissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            missingPermissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
+        
+        // אם יש הרשאות חסרות, בקש אותן
+        if (missingPermissions.isNotEmpty()) {
+            android.util.Log.d(TAG, "Missing permissions: $missingPermissions")
+            requestPermissionLauncher.launch(missingPermissions.toTypedArray())
+        } else {
+            android.util.Log.d(TAG, "All required permissions granted")
+            tryConnectToSavedDevice()
+        }
+        
+        // בדיקת הרשאת התראות (נפרדת מהרשאות Bluetooth)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (!hasNotificationPermission()) {
                 requestNotificationPermission()
             }
-        }
-        
-        // Request other permissions
-        if (permissions.isNotEmpty()) {
-            requestPermissionLauncher.launch(permissions.toTypedArray())
         }
     }
 
@@ -368,6 +408,13 @@ class MainActivity : ComponentActivity() {
             Log.e(TAG, "Failed to start Android Auto service", e)
         }
     }
+
+    private fun openAppSettings() {
+        val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+        val uri = Uri.fromParts("package", packageName, null)
+        intent.data = uri
+        startActivity(intent)
+    }
 }
 
 enum class Screen {
@@ -390,6 +437,28 @@ private fun PermissionDialog(
         confirmButton = {
             TextButton(onClick = onConfirm) {
                 Text(stringResource(R.string.grant_permissions))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.close))
+            }
+        }
+    )
+}
+
+@Composable
+private fun PermissionSettingsDialog(
+    onDismiss: () -> Unit,
+    onOpenSettings: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.permissions_required)) },
+        text = { Text(stringResource(R.string.open_settings_permission_explanation)) },
+        confirmButton = {
+            TextButton(onClick = onOpenSettings) {
+                Text(stringResource(R.string.open_settings))
             }
         },
         dismissButton = {

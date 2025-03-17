@@ -512,6 +512,10 @@ class BleManager(private val context: Context) {
                 Log.d("BleManager", "Scan started with low latency settings")
             } else {
                 Log.e("BleManager", "Missing required permissions for BLE scan")
+                
+                // עדכון מצב החיבור להרשאות חסרות
+                _connectionState.value = ConnectionState.PermissionDenied
+                
                 // Request permissions
                 if (context is Activity) {
                     requestRequiredPermissions(context as Activity)
@@ -881,6 +885,7 @@ class BleManager(private val context: Context) {
     
     private fun requestRequiredPermissions(activity: Activity) {
         Log.d("BleManager", "Requesting required permissions")
+        
         val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             arrayOf(
                 Manifest.permission.BLUETOOTH_SCAN,
@@ -891,15 +896,25 @@ class BleManager(private val context: Context) {
         } else {
             arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.BLUETOOTH,
+                Manifest.permission.BLUETOOTH_ADMIN
             )
         }
         
-        ActivityCompat.requestPermissions(
-            activity,
-            permissions,
-            REQUEST_BLUETOOTH_PERMISSIONS
-        )
+        // בדיקה אילו הרשאות חסרות
+        val missingPermissions = permissions.filter { permission ->
+            ActivityCompat.checkSelfPermission(activity, permission) != PackageManager.PERMISSION_GRANTED
+        }.toTypedArray()
+        
+        // בקשת ההרשאות החסרות
+        if (missingPermissions.isNotEmpty()) {
+            ActivityCompat.requestPermissions(
+                activity,
+                missingPermissions,
+                REQUEST_BLUETOOTH_PERMISSIONS
+            )
+        }
     }
     
     private fun saveDeviceName(deviceName: String) {
@@ -1343,7 +1358,8 @@ class BleManager(private val context: Context) {
 enum class ConnectionState {
     Connected,
     Connecting,
-    Disconnected
+    Disconnected,
+    PermissionDenied
 }
 
 // Custom adapter for DeviceSettingsResponse to handle the specific JSON format

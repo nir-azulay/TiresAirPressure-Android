@@ -31,8 +31,10 @@
     
     <!-- הרשאות -->
     <string name="permissions_required">נדרשות הרשאות</string>
-    <string name="permissions_explanation">כדי להשתמש באפליקציה, אנחנו צריכים הרשאות Bluetooth כדי לסרוק ולהתחבר למכשירים. בלי ההרשאות האלה, לא נוכל לנהל את לחץ האוויר בצמיגים.</string>
+    <string name="permissions_explanation">האפליקציה זקוקה להרשאות כדי לסרוק ולהתחבר למכשירי Bluetooth.</string>
     <string name="grant_permissions">אשר הרשאות</string>
+    <string name="open_settings">פתח הגדרות</string>
+    <string name="open_settings_permission_explanation">האפליקציה זקוקה להרשאות Bluetooth ומיקום כדי לפעול כראוי. אנא פתח את הגדרות האפליקציה ואפשר את ההרשאות הנדרשות.</string>
     
     <!-- מצבי פעולה -->
     <string name="mode_inflating">מנפח ...</string>
@@ -146,4 +148,5 @@
     <string name="connection_duration_seconds">Connected for %d seconds</string>
     <string name="connection_duration_minutes">Connected for %d minutes and %d seconds</string>
     <string name="connection_duration_hours">Connected for %d hours and %d minutes</string>
+    <string name="permission_denied">הרשאות חסרות</string>
 </resources>

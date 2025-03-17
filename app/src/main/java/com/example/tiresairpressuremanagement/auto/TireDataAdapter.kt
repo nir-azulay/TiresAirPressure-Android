@@ -2,80 +2,80 @@ package com.example.tiresairpressuremanagement.auto
 
 import android.content.Context
 import android.util.Log
-import com.example.tiresairpressuremanagement.data.TireData
-import com.example.tiresairpressuremanagement.data.ble.BleManager
+import com.example.tiresairpressuremanagement.domain.models.BleDevice
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlin.random.Random
 
 /**
- * מחלקת מתאם שמקשרת בין נתוני ה-BLE לבין ממשק ה-Android Auto.
- * מחלקה זו אחראית על איסוף הנתונים מהחיישנים והעברתם לממשק המשתמש של Android Auto.
+ * גרסה מינימלית של מתאם הנתונים עבור Android Auto.
+ * גרסה זו מספקת רק פונקציונליות בסיסית ללא תלות ברכיבים חיצוניים.
  */
 class TireDataAdapter(private val context: Context) {
     private val TAG = "TireDataAdapter"
     
-    private val _tiresData = MutableStateFlow<List<TireData>>(emptyList())
-    val tiresData: StateFlow<List<TireData>> = _tiresData
-    
-    private val _isConnected = MutableStateFlow(false)
-    val isConnected: StateFlow<Boolean> = _isConnected
+    // תוצאות הסריקה - כרגע יוחזרו נתונים סטטיים
+    private val _scanResults = MutableStateFlow<List<BleDevice>>(emptyList())
     
     /**
-     * מתחיל את איסוף הנתונים מהחיישנים.
-     * במימוש אמיתי, כאן היינו מתחברים למכשיר ה-BLE ומתחילים לקבל נתונים.
+     * התחלת איסוף נתונים - מימוש ריק לעת עתה
      */
     fun startDataCollection() {
         try {
-            Log.d(TAG, "Starting data collection")
-            // בשלב זה, נשתמש בנתונים לדוגמה
-            _tiresData.value = listOf(
-                TireData(32.5f, 25.0f, 100),
-                TireData(33.0f, 26.0f, 100),
-                TireData(32.0f, 25.5f, 100),
-                TireData(32.8f, 25.2f, 100)
-            )
-            _isConnected.value = true
-            Log.d(TAG, "Data collection started with ${_tiresData.value.size} tires")
+            Log.d(TAG, "startDataCollection() called - stub implementation")
         } catch (e: Exception) {
-            Log.e(TAG, "Error starting data collection", e)
+            Log.e(TAG, "Error in startDataCollection", e)
         }
     }
     
     /**
-     * מעדכן את נתוני הצמיגים.
-     * במימוש אמיתי, כאן היינו מקבלים נתונים מהחיישנים.
-     */
-    fun updateTireData() {
-        try {
-            // זו רק סימולציה פשוטה
-            val currentData = _tiresData.value
-            if (currentData.isNotEmpty()) {
-                _tiresData.value = currentData.map { 
-                    it.copy(
-                        pressure = it.pressure + Random.nextFloat() - 0.5f,
-                        temperature = it.temperature + Random.nextFloat() * 2 - 1f
-                    )
-                }
-                Log.d(TAG, "Tire data updated")
-            } else {
-                Log.d(TAG, "No tire data to update")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error updating tire data", e)
-        }
-    }
-    
-    /**
-     * מפסיק את איסוף הנתונים מהחיישנים.
+     * עצירת איסוף נתונים - מימוש ריק לעת עתה
      */
     fun stopDataCollection() {
         try {
-            Log.d(TAG, "Stopping data collection")
-            _isConnected.value = false
-            Log.d(TAG, "Data collection stopped")
+            Log.d(TAG, "stopDataCollection() called - stub implementation")
         } catch (e: Exception) {
-            Log.e(TAG, "Error stopping data collection", e)
+            Log.e(TAG, "Error in stopDataCollection", e)
         }
+    }
+    
+    /**
+     * מתחיל סריקה של מכשירי BLE
+     */
+    fun startScan() {
+        try {
+            Log.d(TAG, "Starting scan (stub implementation)")
+            
+            // סימולציה של קבלת תוצאות לאחר זמן מה
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                val mockResults = listOf(
+                    BleDevice("מכשיר לחץ אוויר 1", "00:11:22:33:44:55", -65),
+                    BleDevice("צמיג חכם", "AA:BB:CC:DD:EE:FF", -72)
+                )
+                Log.d(TAG, "Generated mock scan results with ${mockResults.size} devices")
+                _scanResults.value = mockResults
+            }, 3000) // המתן 3 שניות לפני הצגת תוצאות מדומות
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error starting scan", e)
+        }
+    }
+    
+    /**
+     * מפסיק את הסריקה
+     */
+    fun stopScan() {
+        try {
+            Log.d(TAG, "Stopping scan (stub implementation)")
+            // אין צורך לעשות כלום בגרסה זו
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping scan", e)
+        }
+    }
+    
+    /**
+     * מחזיר את תוצאות הסריקה
+     */
+    fun getScanResults(): StateFlow<List<BleDevice>> {
+        return _scanResults
     }
 } 

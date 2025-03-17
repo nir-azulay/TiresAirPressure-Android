@@ -22,6 +22,7 @@
     <!-- Foreground Service permission -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_AUTOMOTIVE_PROJECTION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     
     <!-- Internet permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -57,14 +58,14 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
-                <category android:name="android.intent.category.CAR_LAUNCHER" />
             </intent-filter>
         </activity>
         
         <!-- Android Auto Service -->
         <service
             android:name=".auto.TiresAirPressureCarAppService"
-            android:exported="true">
+            android:exported="true"
+            android:foregroundServiceType="connectedDevice">
             <intent-filter>
                 <action android:name="androidx.car.app.CarAppService" />
                 <category android:name="androidx.car.app.category.DIAGNOSTIC" />

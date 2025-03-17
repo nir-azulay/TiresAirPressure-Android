@@ -28,6 +28,7 @@
     <string name="pressure_reached">הגעת ללחץ היעד!</string>
     <string name="increase_pressure">הגדל לחץ</string>
     <string name="decrease_pressure">הפחת לחץ</string>
+    <string name="pressure_difference">הפרש לחץ:</string>
     
     <!-- הרשאות -->
     <string name="permissions_required">נדרשות הרשאות</string>

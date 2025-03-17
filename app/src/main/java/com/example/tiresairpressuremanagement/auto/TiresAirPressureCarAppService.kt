@@ -11,6 +11,7 @@ import androidx.car.app.CarAppService
 import androidx.car.app.Session
 import androidx.car.app.validation.HostValidator
 import androidx.core.app.NotificationCompat
+import com.example.tiresairpressuremanagement.BuildConfig
 import com.example.tiresairpressuremanagement.R
 
 /**
@@ -42,7 +43,15 @@ class TiresAirPressureCarAppService : CarAppService() {
     }
 
     override fun createHostValidator(): HostValidator {
-        return HostValidator.ALLOW_ALL_HOSTS_VALIDATOR
+        // בסביבת פיתוח, אפשר להשתמש ב-ALLOW_ALL_HOSTS_VALIDATOR
+        // בסביבת ייצור, יש להשתמש ב-HostValidator.Builder
+        return if (BuildConfig.DEBUG) {
+            HostValidator.ALLOW_ALL_HOSTS_VALIDATOR
+        } else {
+            HostValidator.Builder(applicationContext)
+                .addAllowedHosts(androidx.car.app.R.array.hosts_allowlist_sample)
+                .build()
+        }
     }
 
     override fun onCreateSession(): Session {

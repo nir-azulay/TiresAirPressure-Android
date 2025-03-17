@@ -4,6 +4,31 @@ plugins {
     id 'com.google.devtools.ksp'
 }
 
+// הוספת קוד לניהול מספר גרסה אוטומטי
+def versionPropsFile = file('version.properties')
+def versionBuild = 0
+
+if (versionPropsFile.canRead()) {
+    def Properties versionProps = new Properties()
+    versionProps.load(new FileInputStream(versionPropsFile))
+    versionBuild = versionProps['VERSION_BUILD'].toInteger()
+}
+
+def versionMajor = 1
+def versionMinor = 0
+def versionPatch = 0
+
+// הגדלת מספר הבנייה בכל פעם
+versionBuild++
+
+// שמירת מספר הבנייה החדש בקובץ
+def versionProps = new Properties()
+versionProps['VERSION_BUILD'] = versionBuild.toString()
+versionProps.store(versionPropsFile.newWriter(), null)
+
+// יצירת מחרוזת גרסה מלאה
+def fullVersionName = "${versionMajor}.${versionMinor}.${versionPatch}.${versionBuild}"
+
 android {
     namespace 'com.example.tiresairpressuremanagement'
     compileSdk 34
@@ -12,8 +37,8 @@ android {
         applicationId "com.example.tiresairpressuremanagement"
         minSdk 29
         targetSdk 34
-        versionCode 1
-        versionName "1.0.0"
+        versionCode versionBuild
+        versionName fullVersionName
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -22,6 +47,7 @@ android {
 
         // הוספת BuildConfig fields
         buildConfigField "String", "BUILD_TIME", "\"${new Date().format('yyyy-MM-dd HH:mm:ss')}\""
+        buildConfigField "String", "VERSION_NAME", "\"${fullVersionName}\""
     }
 
     buildFeatures {

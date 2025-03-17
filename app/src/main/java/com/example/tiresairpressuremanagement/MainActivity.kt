@@ -40,6 +40,9 @@ import com.example.tiresairpressuremanagement.ui.screens.SplashScreen
 import kotlinx.coroutines.delay
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import android.content.pm.PackageManager
 
 class MainActivity : ComponentActivity() {
     private val TAG = "MainActivity"
@@ -128,9 +131,15 @@ class MainActivity : ComponentActivity() {
 
     private fun tryConnectToSavedDevice() {
         val sharedPreferences = getSharedPreferences(getString(R.string.device_settings), Context.MODE_PRIVATE)
-        val savedDeviceAddress = sharedPreferences.getString(getString(R.string.selected_device_address), null)
-        if (savedDeviceAddress != null) {
-            android.util.Log.d(TAG, getString(R.string.found_saved_device, savedDeviceAddress))
+        val primaryDeviceAddress = sharedPreferences.getString(getString(R.string.selected_device_address), null)
+        val secondaryDeviceAddress = sharedPreferences.getString("secondDeviceAddress", null)
+        
+        if (primaryDeviceAddress != null) {
+            android.util.Log.d(TAG, getString(R.string.found_saved_device, primaryDeviceAddress))
+            isConnectingToSavedDevice = true
+            bleManager.connectToSavedDevice()
+        } else if (secondaryDeviceAddress != null) {
+            android.util.Log.d(TAG, "Found secondary saved device: $secondaryDeviceAddress")
             isConnectingToSavedDevice = true
             bleManager.connectToSavedDevice()
         } else {
@@ -269,18 +278,44 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkAndRequestPermissions() {
-        val missingPermissions = PermissionManager.getMissingPermissions(this)
-        if (missingPermissions.isNotEmpty()) {
-            requestPermissionLauncher.launch(missingPermissions.toTypedArray())
+        val permissions = mutableListOf<String>()
+        
+        // Add BLE permissions
+        permissions.addAll(arrayOf(
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN,
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ))
+        
+        // Add notification permission for Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (!hasNotificationPermission()) {
+                requestNotificationPermission()
+            }
+        }
+        
+        // Request other permissions
+        if (permissions.isNotEmpty()) {
+            requestPermissionLauncher.launch(permissions.toTypedArray())
+        }
+    }
+
+    private fun hasNotificationPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
         } else {
-            // אם כל ההרשאות כבר קיימות, ננסה להתחבר למכשיר השמור
-            tryConnectToSavedDevice()
+            true // For Android 12 and below, notification permission is not required
         }
     }
 
     private fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            Log.d("MainActivity", "Requesting notification permission for Android 13+")
             requestNotificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }

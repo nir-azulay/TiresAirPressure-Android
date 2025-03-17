@@ -76,6 +76,11 @@ dependencies {
     // Bluetooth LE
     implementation("com.google.android.gms:play-services-location:21.1.0")
     
+    // Android Auto
+    implementation("androidx.car.app:app:1.4.0")
+    implementation("androidx.car.app:app-projected:1.4.0")
+    implementation("androidx.car.app:app-automotive:1.4.0")
+    
     // JSON parsing
     implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
     implementation("com.squareup.moshi:moshi-adapters:1.15.0")

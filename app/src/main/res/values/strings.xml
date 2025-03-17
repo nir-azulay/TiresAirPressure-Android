@@ -143,4 +143,7 @@
     <string name="app_description">אפליקציה לניהול לחץ אוויר בצמיגים</string>
     <string name="contact_info">פרטי יצירת קשר</string>
     <string name="copyright_notice">© %1$s 2024. כל הזכויות שמורות.</string>
+    <string name="connection_duration_seconds">Connected for %d seconds</string>
+    <string name="connection_duration_minutes">Connected for %d minutes and %d seconds</string>
+    <string name="connection_duration_hours">Connected for %d hours and %d minutes</string>
 </resources>

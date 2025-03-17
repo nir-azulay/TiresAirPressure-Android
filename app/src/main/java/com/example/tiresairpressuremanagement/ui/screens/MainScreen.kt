@@ -42,6 +42,8 @@ import androidx.compose.material.icons.filled.BluetoothDisabled
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
+import kotlinx.coroutines.delay
+import androidx.compose.foundation.clickable
 
 private const val TAG = "MainScreen"
 
@@ -54,8 +56,9 @@ fun MainScreen(
     onAboutClick: () -> Unit,
     onExitClick: () -> Unit
 ) {
-    val deviceStatus by bleManager.deviceStatus.collectAsState()
     val connectionState by bleManager.connectionState.collectAsState()
+    val deviceName by bleManager.connectedDeviceName.collectAsState()
+    val deviceStatus by bleManager.deviceStatus.collectAsState()
     var targetPressure by remember { mutableStateOf(30f) }
     var isInflating by remember { mutableStateOf(false) }
     
@@ -262,7 +265,7 @@ fun MainScreen(
                             verticalArrangement = Arrangement.Top
                         ) {
                             // Connection status indicator
-                            ConnectionStatusCard(connectionState)
+                            ConnectionStatusCard(connectionState, deviceName, bleManager)
                             
                             // Pressure gauge
                             PressureGaugeCard(
@@ -328,7 +331,7 @@ fun MainScreen(
                         verticalArrangement = Arrangement.SpaceEvenly
                     ) {
                         // Connection status indicator
-                        ConnectionStatusCard(connectionState)
+                        ConnectionStatusCard(connectionState, deviceName, bleManager)
                         
                         // Pressure gauge
                         PressureGaugeCard(
@@ -380,53 +383,113 @@ fun MainScreen(
 }
 
 @Composable
-private fun ConnectionStatusCard(connectionState: ConnectionState) {
+private fun ConnectionStatusCard(connectionState: ConnectionState, deviceName: String?, bleManager: BleManager) {
+    var showTooltip by remember { mutableStateOf(false) }
+    var currentDuration by remember { mutableStateOf(0L) }
+    
+    // Update duration when tooltip is shown
+    LaunchedEffect(showTooltip) {
+        if (showTooltip && connectionState == ConnectionState.Connected) {
+            while (showTooltip) {
+                currentDuration = bleManager.getConnectionDuration()
+                delay(1000)
+            }
+        }
+    }
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(
             containerColor = when (connectionState) {
-                ConnectionState.Connected -> Color(0xFF4CAF50).copy(alpha = 0.2f) // Green
-                ConnectionState.Connecting -> Color(0xFFFFC107).copy(alpha = 0.2f) // Amber
-                ConnectionState.Disconnected -> Color(0xFFF44336).copy(alpha = 0.2f) // Red
+                ConnectionState.Connected -> Color(0xFF4CAF50).copy(alpha = 0.2f)
+                ConnectionState.Connecting -> Color(0xFFFFC107).copy(alpha = 0.2f)
+                ConnectionState.Disconnected -> Color(0xFFF44336).copy(alpha = 0.2f)
             }
         )
     ) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+                .padding(8.dp)
         ) {
-            Icon(
-                imageVector = when (connectionState) {
-                    ConnectionState.Connected -> Icons.Default.Bluetooth
-                    ConnectionState.Connecting -> Icons.Default.BluetoothSearching
-                    ConnectionState.Disconnected -> Icons.Default.BluetoothDisabled
-                },
-                contentDescription = null,
-                tint = when (connectionState) {
-                    ConnectionState.Connected -> Color(0xFF4CAF50) // Green
-                    ConnectionState.Connecting -> Color(0xFFFFC107) // Amber
-                    ConnectionState.Disconnected -> Color(0xFFF44336) // Red
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showTooltip = !showTooltip },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = when (connectionState) {
+                        ConnectionState.Connected -> Icons.Default.Bluetooth
+                        ConnectionState.Connecting -> Icons.Default.BluetoothSearching
+                        ConnectionState.Disconnected -> Icons.Default.BluetoothDisabled
+                    },
+                    contentDescription = null,
+                    tint = when (connectionState) {
+                        ConnectionState.Connected -> Color(0xFF4CAF50)
+                        ConnectionState.Connecting -> Color(0xFFFFC107)
+                        ConnectionState.Disconnected -> Color(0xFFF44336)
+                    },
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = when (connectionState) {
+                        ConnectionState.Connected -> stringResource(R.string.connected)
+                        ConnectionState.Connecting -> stringResource(R.string.connecting)
+                        ConnectionState.Disconnected -> stringResource(R.string.disconnected)
+                    },
+                    color = when (connectionState) {
+                        ConnectionState.Connected -> Color(0xFF4CAF50)
+                        ConnectionState.Connecting -> Color(0xFFFFC107)
+                        ConnectionState.Disconnected -> Color(0xFFF44336)
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                
+                if (connectionState == ConnectionState.Connected && deviceName != null) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = deviceName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF4CAF50),
+                        fontWeight = FontWeight.Normal
+                    )
                 }
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = when (connectionState) {
-                    ConnectionState.Connected -> stringResource(R.string.connected)
-                    ConnectionState.Connecting -> stringResource(R.string.connecting)
-                    ConnectionState.Disconnected -> stringResource(R.string.disconnected)
-                },
-                color = when (connectionState) {
-                    ConnectionState.Connected -> Color(0xFF4CAF50) // Green
-                    ConnectionState.Connecting -> Color(0xFFFFC107) // Amber
-                    ConnectionState.Disconnected -> Color(0xFFF44336) // Red
-                },
-                fontWeight = FontWeight.Bold
-            )
+            }
+            
+            if (showTooltip && connectionState == ConnectionState.Connected) {
+                val duration = currentDuration / 1000 // Convert to seconds
+                val hours = duration / 3600
+                val minutes = (duration % 3600) / 60
+                val seconds = duration % 60
+                
+                val durationText = when {
+                    hours > 0 -> stringResource(R.string.connection_duration_hours, hours, minutes)
+                    minutes > 0 -> stringResource(R.string.connection_duration_minutes, minutes, seconds)
+                    else -> stringResource(R.string.connection_duration_seconds, seconds)
+                }
+                
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 32.dp),
+                    shape = MaterialTheme.shapes.small,
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    tonalElevation = 3.dp
+                ) {
+                    Text(
+                        text = durationText,
+                        modifier = Modifier.padding(8.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
     }
 }

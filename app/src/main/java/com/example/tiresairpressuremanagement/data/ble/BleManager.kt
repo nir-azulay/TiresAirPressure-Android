@@ -57,6 +57,11 @@ class BleManager(private val context: Context) {
     private val _connectionState = MutableStateFlow(ConnectionState.Disconnected)
     val connectionState: StateFlow<ConnectionState> = _connectionState
     
+    private val _connectedDeviceName = MutableStateFlow<String?>(null)
+    val connectedDeviceName: StateFlow<String?> = _connectedDeviceName
+    
+    private var connectionStartTime: Long = 0
+    
     private val _deviceStatus = MutableStateFlow<DeviceStatus?>(null)
     val deviceStatus: StateFlow<DeviceStatus?> = _deviceStatus
     
@@ -197,12 +202,15 @@ class BleManager(private val context: Context) {
             when (newState) {
                 BluetoothGatt.STATE_CONNECTED -> {
                     android.util.Log.d(TAG, "Connected to GATT server")
+                    connectionStartTime = System.currentTimeMillis()
                     
                     // שמירת המכשיר כנבחר
                     val deviceAddress = gatt.device?.address
+                    val deviceName = gatt.device?.name
                     if (deviceAddress != null) {
                         android.util.Log.d(TAG, "Saving connected device address: $deviceAddress")
                         saveSelectedDevice(deviceAddress)
+                        _connectedDeviceName.value = deviceName
                     }
                     
                     // השמעת צליל
@@ -231,6 +239,7 @@ class BleManager(private val context: Context) {
                     
                     // עדכון מצב החיבור
                     _connectionState.value = ConnectionState.Disconnected
+                    _connectedDeviceName.value = null
                     android.util.Log.d(TAG, "Connection state set to DISCONNECTED")
                     
                     // סגירת לקוח GATT
@@ -972,20 +981,32 @@ class BleManager(private val context: Context) {
     fun saveSelectedDevice(deviceAddress: String) {
         val sharedPreferences = context.getSharedPreferences("DeviceSettings", Context.MODE_PRIVATE)
         val editor = sharedPreferences.edit()
+        
+        // Get the current saved device
+        val currentSavedDevice = sharedPreferences.getString("selectedDeviceAddress", null)
+        
+        if (currentSavedDevice != null && currentSavedDevice != deviceAddress) {
+            // If we have a different device saved, move it to second position
+            editor.putString("secondDeviceAddress", currentSavedDevice)
+        }
+        
+        // Save the new device as the primary device
         editor.putString("selectedDeviceAddress", deviceAddress)
         editor.apply()
     }
 
     fun connectToSavedDevice() {
         val sharedPreferences = context.getSharedPreferences("DeviceSettings", Context.MODE_PRIVATE)
-        val deviceAddress = sharedPreferences.getString("selectedDeviceAddress", null)
-        if (deviceAddress != null) {
-            Log.d(TAG, "Attempting to connect to saved device: $deviceAddress")
+        val primaryDeviceAddress = sharedPreferences.getString("selectedDeviceAddress", null)
+        val secondaryDeviceAddress = sharedPreferences.getString("secondDeviceAddress", null)
+        
+        if (primaryDeviceAddress != null) {
+            Log.d(TAG, "Attempting to connect to primary saved device: $primaryDeviceAddress")
             
             // Check if we're already connected to this device
             if (_connectionState.value == ConnectionState.Connected && 
-                bluetoothGatt?.device?.address == deviceAddress) {
-                Log.d(TAG, "Already connected to this device, no need to reconnect")
+                bluetoothGatt?.device?.address == primaryDeviceAddress) {
+                Log.d(TAG, "Already connected to primary device, no need to reconnect")
                 return
             }
             
@@ -996,10 +1017,29 @@ class BleManager(private val context: Context) {
                 Log.e(TAG, "Sleep interrupted: ${e.message}")
             }
             
-            // Connect to the saved device
-            connect(deviceAddress)
+            // Connect to the primary device
+            connect(primaryDeviceAddress)
+        } else if (secondaryDeviceAddress != null) {
+            Log.d(TAG, "No primary device found, attempting to connect to secondary device: $secondaryDeviceAddress")
+            
+            // Check if we're already connected to this device
+            if (_connectionState.value == ConnectionState.Connected && 
+                bluetoothGatt?.device?.address == secondaryDeviceAddress) {
+                Log.d(TAG, "Already connected to secondary device, no need to reconnect")
+                return
+            }
+            
+            // Small delay before connecting
+            try {
+                Thread.sleep(500)
+            } catch (e: InterruptedException) {
+                Log.e(TAG, "Sleep interrupted: ${e.message}")
+            }
+            
+            // Connect to the secondary device
+            connect(secondaryDeviceAddress)
         } else {
-            Log.d(TAG, "No saved device to connect to")
+            Log.d(TAG, "No saved devices to connect to")
         }
     }
     
@@ -1284,6 +1324,14 @@ class BleManager(private val context: Context) {
         } catch (e: Exception) {
             Log.e(TAG, "Error showing notification: ${e.message}", e)
             e.printStackTrace()
+        }
+    }
+    
+    fun getConnectionDuration(): Long {
+        return if (_connectionState.value == ConnectionState.Connected) {
+            System.currentTimeMillis() - connectionStartTime
+        } else {
+            0
         }
     }
     

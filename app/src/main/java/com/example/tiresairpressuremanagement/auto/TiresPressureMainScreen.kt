@@ -8,6 +8,7 @@ import androidx.lifecycle.LifecycleOwner
 import com.example.tiresairpressuremanagement.data.ble.BleManager
 import com.example.tiresairpressuremanagement.data.ble.ConnectionState
 import com.example.tiresairpressuremanagement.domain.models.BleCommand
+import com.example.tiresairpressuremanagement.domain.models.DeviceStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -17,6 +18,9 @@ import kotlinx.coroutines.launch
 import com.example.tiresairpressuremanagement.utils.BleConstants
 import androidx.core.graphics.drawable.IconCompat
 import android.graphics.drawable.Icon
+import android.util.Log
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 /**
  * המסך הראשי של האפליקציה ב-Android Auto.
@@ -30,15 +34,19 @@ class TiresPressureMainScreen(
     private val coroutineScope = CoroutineScope(Dispatchers.Main + Job())
     private var currentPressure: Float = 0.0f
     private var isInflating: Boolean = false
+    private var isDeflating: Boolean = false
     private var targetPressure: Float = 0.0f
     private var connectionState: ConnectionState = ConnectionState.Disconnected
-    
+    private var operationMode: Int = DeviceStatus.MODE_STOP
+    private val TAG = "TiresPressureMainScreen"
+
     init {
         lifecycle.addObserver(this)
         
         // מעקב אחר שינויים במצב החיבור
         bleManager.connectionState
             .onEach { state ->
+                Log.d(TAG, "Connection state changed: $state")
                 connectionState = state
                 invalidate()
             }
@@ -47,10 +55,83 @@ class TiresPressureMainScreen(
         // מעקב אחר שינויים בלחץ האוויר
         bleManager.currentPressure
             .onEach { pressure ->
+                val changed = currentPressure != pressure
+                Log.d(TAG, "Pressure flow updated: $pressure (changed: $changed)")
                 currentPressure = pressure
-                invalidate()
+                if (changed) {
+                    Log.d(TAG, "Pressure changed, invalidating UI")
+                    invalidate()
+                }
             }
             .launchIn(coroutineScope)
+            
+        // Monitor device status directly for additional debugging and UI state syncing
+        bleManager.deviceStatus
+            .onEach { status ->
+                Log.d(TAG, "Device status update: $status")
+                if (status != null) {
+                    Log.d(TAG, "Device pressure from status: ${status.pressure}")
+                    Log.d(TAG, "Operation mode: ${status.operationMode}")
+                    
+                    // Update operation mode
+                    val previousMode = operationMode
+                    operationMode = status.operationMode
+                    
+                    // Update inflation state based on operation mode
+                    when (operationMode) {
+                        DeviceStatus.MODE_STOP -> {
+                            if (isInflating || isDeflating) {
+                                Log.d(TAG, "Device stopped inflation/deflation")
+                                isInflating = false
+                                isDeflating = false
+                                invalidate()
+                            }
+                        }
+                        DeviceStatus.MODE_INFLATE -> {
+                            if (!isInflating) {
+                                Log.d(TAG, "Device started inflation")
+                                isInflating = true
+                                isDeflating = false
+                                invalidate()
+                            }
+                        }
+                        DeviceStatus.MODE_DEFLATE -> {
+                            if (!isDeflating) {
+                                Log.d(TAG, "Device started deflation")
+                                isDeflating = true
+                                isInflating = false
+                                invalidate()
+                            }
+                        }
+                    }
+                    
+                    // If operation mode changed, update the UI
+                    if (previousMode != operationMode) {
+                        invalidate()
+                    }
+                }
+            }
+            .launchIn(coroutineScope)
+            
+        // Start a periodic refresh to ensure UI updates
+        startPeriodicRefresh()
+    }
+    
+    private fun startPeriodicRefresh() {
+        coroutineScope.launch {
+            while (isActive) {
+                // Force refresh every second to ensure data is updated
+                if (connectionState == ConnectionState.Connected) {
+                    Log.d(TAG, "Requesting fresh pressure reading, current value: $currentPressure")
+                    bleManager.refreshPressureReading()
+                    
+                    // Add a small delay before invalidating to allow the BLE response to arrive
+                    delay(200)
+                }
+                invalidate()
+                delay(1000) // Decreased to 1 second for more responsive updates
+            }
+        }
     }
     
     override fun onGetTemplate(): Template {
@@ -62,7 +143,16 @@ class TiresPressureMainScreen(
                 .addAction(
                     Action.Builder()
                         .setTitle(carContext.getString(com.example.tiresairpressuremanagement.R.string.connect))
-                        .setOnClickListener { bleManager.connectToSavedDevice() }
+                        .setIcon(
+                            CarIcon.Builder(IconCompat.createWithResource(
+                                carContext, 
+                                android.R.drawable.stat_sys_data_bluetooth
+                            )).build()
+                        )
+                        .setOnClickListener { 
+                            Log.d(TAG, "Connect button clicked")
+                            bleManager.connectToSavedDevice() 
+                        }
                         .build()
                 )
                 .build()
@@ -73,25 +163,47 @@ class TiresPressureMainScreen(
     }
     
     private fun buildMainTemplate(): Template {
+        // Log the current pressure and operation mode
+        Log.d(TAG, "Building template with pressure: $currentPressure, operation mode: $operationMode")
+        
         val currentPressureText = String.format("%.1f PSI", currentPressure)
         
+        // Determine the current mode text
+        val modeText = when (operationMode) {
+            DeviceStatus.MODE_INFLATE -> carContext.getString(com.example.tiresairpressuremanagement.R.string.mode_inflating)
+            DeviceStatus.MODE_DEFLATE -> carContext.getString(com.example.tiresairpressuremanagement.R.string.mode_deflating)
+            else -> ""
+        }
+        
+        // Determine if we're in an active operation
+        val isActiveOperation = operationMode == DeviceStatus.MODE_INFLATE || operationMode == DeviceStatus.MODE_DEFLATE
+        
+        // Build the action row with appropriate text and icons based on the device's operation mode
         val inflateDeflateRow = Row.Builder()
-            .addText(
-                if (isInflating) 
-                    carContext.getString(com.example.tiresairpressuremanagement.R.string.stop) 
-                else 
-                    carContext.getString(com.example.tiresairpressuremanagement.R.string.inflate)
-            )
+            // Add a minimal title to satisfy the Row requirement
+            .setTitle(" ")
             .addAction(
                 Action.Builder()
                     .setTitle(
-                        if (isInflating) 
+                        if (isActiveOperation) 
                             carContext.getString(com.example.tiresairpressuremanagement.R.string.stop) 
                         else 
                             carContext.getString(com.example.tiresairpressuremanagement.R.string.inflate)
                     )
+                    .setIcon(
+                        if (isActiveOperation)
+                            CarIcon.Builder(IconCompat.createWithResource(
+                                carContext, 
+                                android.R.drawable.ic_media_pause
+                            )).build()
+                        else
+                            CarIcon.Builder(IconCompat.createWithResource(
+                                carContext, 
+                                android.R.drawable.ic_media_play
+                            )).build()
+                    )
                     .setOnClickListener {
-                        if (isInflating) {
+                        if (isActiveOperation) {
                             // שליחת פקודת עצירה
                             stopInflation()
                         } else {
@@ -103,26 +215,41 @@ class TiresPressureMainScreen(
             )
             .build()
         
-        // הוספת שורת מידע על לחץ היעד אם בתהליך ניפוח
         val paneBuilder = Pane.Builder()
-            .addRow(
-                Row.Builder()
-                    .setTitle(carContext.getString(com.example.tiresairpressuremanagement.R.string.auto_current_pressure))
-                    .addText(currentPressureText)
-                    .build()
-            )
         
-        // הוספת שורת לחץ יעד רק אם בניפוח
-        if (isInflating && targetPressure > 0) {
+        // Create a row for pressure values with better formatting
+        val pressureRow = Row.Builder()
+            .setTitle(carContext.getString(com.example.tiresairpressuremanagement.R.string.auto_current_pressure))
+            .addText(currentPressureText)
+        
+        // Add target pressure to the same row if inflating
+        if (isActiveOperation && targetPressure > 0) {
+            pressureRow.addText(" → ${String.format("%.1f PSI", targetPressure)}")
+        }
+        
+        paneBuilder.addRow(pressureRow.build())
+        
+        // Add operation mode row if there's an active operation
+        if (isActiveOperation && !modeText.isNullOrEmpty()) {
             paneBuilder.addRow(
                 Row.Builder()
-                    .setTitle(carContext.getString(com.example.tiresairpressuremanagement.R.string.target_pressure))
-                    .addText(String.format("%.1f PSI", targetPressure))
+                    .setTitle(modeText)
                     .build()
             )
         }
         
-        // הוספת שורת פעולת ניפוח/עצירה
+        // Add status message if target pressure is reached
+        if (isInflating && currentPressure >= targetPressure) {
+            paneBuilder.addRow(
+                Row.Builder()
+                    .setTitle(carContext.getString(com.example.tiresairpressuremanagement.R.string.pressure_reached))
+                    .build()
+            )
+            // Automatically stop inflation when target is reached
+            stopInflation()
+        }
+        
+        // Add the inflate/deflate control row
         paneBuilder.addRow(inflateDeflateRow)
         
         return PaneTemplate.Builder(paneBuilder.build())
@@ -140,20 +267,31 @@ class TiresPressureMainScreen(
         targetPressure = pressure
         isInflating = true
         invalidate()
+        
+        // Actually send the command to the device
+        coroutineScope.launch {
+            bleManager.sendCommand(BleCommand.StartTargetPressure(targetPressure = pressure))
+        }
     }
     
     private fun stopInflation() {
         coroutineScope.launch {
             bleManager.sendCommand(BleCommand.Stop())
-            isInflating = false
-            invalidate()
+            // Let the device status update handle the UI state
+            // The isInflating/isDeflating flags will be updated when we receive the status update
         }
+    }
+    
+    override fun onResume(owner: LifecycleOwner) {
+        super.onResume(owner)
+        // Request latest data when screen resumes
+        invalidate()
     }
     
     override fun onDestroy(owner: LifecycleOwner) {
         super.onDestroy(owner)
         // שליחת פקודת עצירה אם המסך נסגר במהלך ניפוח
-        if (isInflating) {
+        if (isInflating || isDeflating) {
             stopInflation()
         }
     }

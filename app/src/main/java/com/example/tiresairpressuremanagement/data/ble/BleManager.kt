@@ -710,6 +710,12 @@ class BleManager(private val context: Context) {
                         put("type", command.type)
                     }.toString()
                 }
+                is BleCommand.RequestStatus -> {
+                    JSONObject().apply {
+                        put("command", command.command)
+                        put("type", command.type)
+                    }.toString()
+                }
             }
             
             Log.d(TAG, "Sending command: $jsonString")
@@ -957,7 +963,22 @@ class BleManager(private val context: Context) {
         CoroutineScope(Dispatchers.Main).launch {
             android.util.Log.d(TAG, "Updating _deviceStatus StateFlow with: $deviceStatus")
             _deviceStatus.value = deviceStatus
-            android.util.Log.d(TAG, "StateFlow updated, new value: ${_deviceStatus.value}")
+            
+            // CRITICAL: Also update the _currentPressure flow used by Android Auto
+            val newPressure = deviceStatus.pressure
+            if (_currentPressure.value != newPressure) {
+                android.util.Log.d(TAG, "Updating _currentPressure to: $newPressure")
+                _currentPressure.value = newPressure
+            }
+            
+            // Update operation mode (inflation status)
+            val isCurrentlyInflating = deviceStatus.operationMode == DeviceStatus.MODE_INFLATE
+            if (_isInflating.value != isCurrentlyInflating) {
+                android.util.Log.d(TAG, "Updating _isInflating to: $isCurrentlyInflating")
+                _isInflating.value = isCurrentlyInflating
+            }
+            
+            android.util.Log.d(TAG, "StateFlow updated, new values: status=${_deviceStatus.value}, pressure=${_currentPressure.value}, inflating=${_isInflating.value}")
         }
     }
     
@@ -966,11 +987,20 @@ class BleManager(private val context: Context) {
         android.util.Log.d(TAG, "Received full device settings: $settingsResponse")
         saveFullDeviceSettings(settingsResponse)
         
+        // Parse the pressure from the response
+        val pressureValue = settingsResponse.pressure.toFloatOrNull() ?: 0f
+        
         // Update both device status and device settings
         _deviceStatus.value = DeviceStatus(
-            pressure = settingsResponse.pressure.toFloatOrNull() ?: 0f,
+            pressure = pressureValue,
             operationMode = settingsResponse.operationMode
         )
+        
+        // Also update the _currentPressure StateFlow
+        if (_currentPressure.value != pressureValue) {
+            android.util.Log.d(TAG, "Updating _currentPressure from settings to: $pressureValue")
+            _currentPressure.value = pressureValue
+        }
         
         _deviceSettings.value = settingsResponse.toDeviceSettings()
     }
@@ -1360,6 +1390,22 @@ class BleManager(private val context: Context) {
         Log.d(TAG, "Stopping inflation")
         _isInflating.value = false
         // כאן יש להוסיף את הלוגיקה לשליחת פקודת עצירת ניפוח למכשיר
+    }
+    
+    /**
+     * מתודה לביצוע קריאה חד פעמית של לחץ הצמיג.
+     * שימושית לרענון מדידות באופן מידי.
+     */
+    fun refreshPressureReading() {
+        if (_connectionState.value != ConnectionState.Connected) return
+        
+        // Get the latest pressure reading by requesting current status
+        try {
+            Log.d(TAG, "Requesting fresh pressure reading")
+            sendCommand(BleCommand.RequestStatus())
+        } catch (e: Exception) {
+            Log.e(TAG, "Error refreshing pressure reading: ${e.message}")
+        }
     }
     
     companion object {

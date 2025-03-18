@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import com.example.tiresairpressuremanagement.utils.BleConstants
+import androidx.core.graphics.drawable.IconCompat
 
 /**
  * מסך בחירת לחץ יעד לניפוח הצמיג.
@@ -34,6 +35,15 @@ class TiresPressureTargetScreen(
             itemListBuilder.addItem(
                 Row.Builder()
                     .setTitle("$pressure PSI")
+                    // Adding an icon is required for each row in Android Auto
+                    .setImage(
+                        CarIcon.Builder(
+                            IconCompat.createWithResource(
+                                carContext,
+                                android.R.drawable.ic_menu_compass
+                            )
+                        ).build()
+                    )
                     .setOnClickListener { 
                         startInflation(pressure.toFloat()) 
                     }

@@ -13,6 +13,7 @@ sealed class BleCommand {
         const val CMD_SIMULATION_MODE = 4
         const val CMD_LOG_LEVEL = 5
         const val CMD_GET_SETTINGS = 6
+        const val CMD_REQUEST_STATUS = 7
     }
     
     abstract val command: Int
@@ -56,6 +57,11 @@ sealed class BleCommand {
     
     data class RequestSettings(
         override val command: Int = CMD_GET_SETTINGS,
+        override val type: String = "command"
+    ) : BleCommand()
+    
+    data class RequestStatus(
+        override val command: Int = CMD_REQUEST_STATUS,
         override val type: String = "command"
     ) : BleCommand()
 } 

@@ -150,4 +150,10 @@
     <string name="connection_duration_minutes">Connected for %d minutes and %d seconds</string>
     <string name="connection_duration_hours">Connected for %d hours and %d minutes</string>
     <string name="permission_denied">הרשאות חסרות</string>
+    
+    <!-- Android Auto -->
+    <string name="auto_current_pressure">לחץ נוכחי:</string>
+    <string name="inflate">התחל ניפוח</string>
+    <string name="select_target_pressure">בחר לחץ יעד</string>
+    <string name="connect">התחבר</string>
 </resources>

@@ -163,98 +163,93 @@ class TiresPressureMainScreen(
     }
     
     private fun buildMainTemplate(): Template {
-        // Log the current pressure and operation mode
         Log.d(TAG, "Building template with pressure: $currentPressure, operation mode: $operationMode")
         
-        val currentPressureText = String.format("%.1f PSI", currentPressure)
-        
-        // Determine the current mode text
-        val modeText = when (operationMode) {
-            DeviceStatus.MODE_INFLATE -> carContext.getString(com.example.tiresairpressuremanagement.R.string.mode_inflating)
-            DeviceStatus.MODE_DEFLATE -> carContext.getString(com.example.tiresairpressuremanagement.R.string.mode_deflating)
-            else -> ""
-        }
-        
-        // Determine if we're in an active operation
         val isActiveOperation = operationMode == DeviceStatus.MODE_INFLATE || operationMode == DeviceStatus.MODE_DEFLATE
         
-        // Build the action row with appropriate text and icons based on the device's operation mode
-        val inflateDeflateRow = Row.Builder()
-            // Add a minimal title to satisfy the Row requirement
-            .setTitle(" ")
-            .addAction(
-                Action.Builder()
-                    .setTitle(
-                        if (isActiveOperation) 
-                            carContext.getString(com.example.tiresairpressuremanagement.R.string.stop) 
-                        else 
-                            carContext.getString(com.example.tiresairpressuremanagement.R.string.inflate)
-                    )
-                    .setIcon(
-                        if (isActiveOperation)
-                            CarIcon.Builder(IconCompat.createWithResource(
-                                carContext, 
-                                android.R.drawable.ic_media_pause
-                            )).build()
-                        else
-                            CarIcon.Builder(IconCompat.createWithResource(
-                                carContext, 
-                                android.R.drawable.ic_media_play
-                            )).build()
-                    )
-                    .setOnClickListener {
-                        if (isActiveOperation) {
-                            // שליחת פקודת עצירה
-                            stopInflation()
-                        } else {
-                            // מעבר למסך בחירת לחץ יעד
-                            screenManager.push(TiresPressureTargetScreen(carContext, bleManager))
-                        }
-                    }
-                    .build()
-            )
-            .build()
-        
         val paneBuilder = Pane.Builder()
-        
-        // Create a row for pressure values with better formatting
-        val pressureRow = Row.Builder()
-            .setTitle(carContext.getString(com.example.tiresairpressuremanagement.R.string.auto_current_pressure))
-            .addText(currentPressureText)
-        
-        // Add target pressure to the same row if inflating
-        if (isActiveOperation && targetPressure > 0) {
-            pressureRow.addText(" → ${String.format("%.1f PSI", targetPressure)}")
+
+        // Add single row for both current and target pressure with RTL markers
+        val currentPressureText = "\u200F" + "לחץ נוכחי: " + String.format("%.1f PSI", currentPressure) + "\u200F"
+        val targetPressureText = if (isActiveOperation && targetPressure > 0) {
+            "\u200F" + "לחץ יעד: " + String.format("%.1f PSI", targetPressure) + "\u200F"
+        } else {
+            " "
         }
-        
-        paneBuilder.addRow(pressureRow.build())
+
+        paneBuilder.addRow(
+            Row.Builder()
+                .setTitle(currentPressureText)
+                .addText(targetPressureText)
+                .build()
+        )
         
         // Add operation mode row if there's an active operation
-        if (isActiveOperation && !modeText.isNullOrEmpty()) {
+        if (isActiveOperation) {
+            val operationText = when (operationMode) {
+                DeviceStatus.MODE_INFLATE -> "\u200F" + carContext.getString(com.example.tiresairpressuremanagement.R.string.mode_inflating) + "\u200F"
+                DeviceStatus.MODE_DEFLATE -> "\u200F" + carContext.getString(com.example.tiresairpressuremanagement.R.string.mode_deflating) + "\u200F"
+                else -> ""
+            }
+            
             paneBuilder.addRow(
                 Row.Builder()
-                    .setTitle(modeText)
+                    .setTitle(operationText)
                     .build()
             )
+            
+            // Add status message if target pressure is reached
+            if (targetPressure > 0 && (
+                (operationMode == DeviceStatus.MODE_INFLATE && currentPressure >= targetPressure) ||
+                (operationMode == DeviceStatus.MODE_DEFLATE && currentPressure <= targetPressure)
+            )) {
+                paneBuilder.addRow(
+                    Row.Builder()
+                        .setTitle("\u200F" + carContext.getString(com.example.tiresairpressuremanagement.R.string.pressure_reached) + "\u200F")
+                        .build()
+                )
+            }
         }
         
-        // Add status message if target pressure is reached
-        if (isInflating && currentPressure >= targetPressure) {
-            paneBuilder.addRow(
-                Row.Builder()
-                    .setTitle(carContext.getString(com.example.tiresairpressuremanagement.R.string.pressure_reached))
-                    .build()
-            )
-            // Automatically stop inflation when target is reached
-            stopInflation()
-        }
-        
-        // Add the inflate/deflate control row
-        paneBuilder.addRow(inflateDeflateRow)
+        // Add the action button (start/stop)
+        paneBuilder.addRow(
+            Row.Builder()
+                .setTitle("\u200F" + " " + "\u200F")  // Empty title with RTL markers for better layout
+                .addAction(
+                    Action.Builder()
+                        .setTitle(
+                            if (isActiveOperation) 
+                                carContext.getString(com.example.tiresairpressuremanagement.R.string.stop) 
+                            else 
+                                carContext.getString(com.example.tiresairpressuremanagement.R.string.start)
+                        )
+                        .setIcon(
+                            if (isActiveOperation)
+                                CarIcon.Builder(IconCompat.createWithResource(
+                                    carContext, 
+                                    android.R.drawable.ic_media_pause
+                                )).build()
+                            else
+                                CarIcon.Builder(IconCompat.createWithResource(
+                                    carContext, 
+                                    android.R.drawable.ic_media_play
+                                )).build()
+                        )
+                        .setOnClickListener {
+                            if (isActiveOperation) {
+                                stopInflation()
+                            } else {
+                                screenManager.push(TiresPressureTargetScreen(carContext, bleManager))
+                            }
+                        }
+                        .build()
+                )
+                .build()
+        )
         
         return PaneTemplate.Builder(paneBuilder.build())
             .setHeaderAction(Action.APP_ICON)
-            .setTitle(carContext.getString(com.example.tiresairpressuremanagement.R.string.app_name))
+            .setTitle("\u200F" + carContext.getString(com.example.tiresairpressuremanagement.R.string.app_name) + "\u200F")
             .build()
     }
     

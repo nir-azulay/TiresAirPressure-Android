@@ -30,11 +30,11 @@ versionProps.store(versionPropsFile.newWriter(), null)
 def fullVersionName = "${versionMajor}.${versionMinor}.${versionPatch}.${versionBuild}"
 
 android {
-    namespace 'com.example.tiresairpressuremanagement'
+    namespace 'com.nazulay.tiresairpressuremanagement'
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.example.tiresairpressuremanagement"
+        applicationId "com.nazulay.tiresairpressuremanagement"
         minSdk 29
         targetSdk 34
         versionCode versionBuild

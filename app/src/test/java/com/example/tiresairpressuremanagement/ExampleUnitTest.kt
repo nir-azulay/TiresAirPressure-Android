@@ -1,4 +1,4 @@
-package com.example.tiresairpressuremanagement
+package com.nazulay.tiresairpressuremanagement
 
 import org.junit.Test
 

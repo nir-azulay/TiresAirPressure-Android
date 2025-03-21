@@ -165,8 +165,8 @@
     <string name="psi_unit">PSI</string>
     <string name="plus_symbol">+</string>
     <string name="minus_symbol">-</string>
-    <string name="connected_duration_seconds">Connected for %d seconds</string>
-    <string name="connected_duration_minutes">Connected for %d minutes and %d seconds</string>
-    <string name="connected_duration_hours">Connected for %d hours and %d minutes</string>
-    <string name="predefined_pressure_format">%d PSI</string>
+    <string name="connected_duration_seconds">Connected for %1$d seconds</string>
+    <string name="connected_duration_minutes">Connected for %1$d minutes and %2$d seconds</string>
+    <string name="connected_duration_hours">Connected for %1$d hours and %2$d minutes</string>
+    <string name="predefined_pressure_format">%1$d PSI</string>
 </resources>

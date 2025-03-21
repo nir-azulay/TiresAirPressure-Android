@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import com.example.tiresairpressuremanagement.utils.BleConstants
 import androidx.core.graphics.drawable.IconCompat
 import com.example.tiresairpressuremanagement.R
+import android.util.Log
 
 /**
  * מסך בחירת לחץ יעד לניפוח הצמיג.
@@ -23,11 +24,14 @@ class TiresPressureTargetScreen(
 ) : Screen(carContext) {
     
     private val coroutineScope = CoroutineScope(Dispatchers.Main + Job())
+    private val TAG = "TiresPressureTargetScreen"
     
     // ערכי לחץ מוגדרים מראש (בהתאם לדרישות המשתמש)
     private val predefinedPressures = listOf(8, 10, 12, 16, 20, 30, 38, 40)
     
     override fun onGetTemplate(): Template {
+        Log.d(TAG, "Building target pressure selection template")
+        
         // יצירת תבנית רשימה עם ערכי לחץ קבועים מראש
         val itemListBuilder = ItemList.Builder()
         
@@ -35,7 +39,7 @@ class TiresPressureTargetScreen(
         predefinedPressures.forEach { pressure ->
             itemListBuilder.addItem(
                 Row.Builder()
-                    .setTitle(String.format(carContext.getString(R.string.auto_pressure_format), pressure))
+                    .setTitle(String.format(carContext.getString(R.string.auto_pressure_format), pressure.toFloat()))
                     // Adding an icon is required for each row in Android Auto
                     .setImage(
                         CarIcon.Builder(
@@ -46,6 +50,7 @@ class TiresPressureTargetScreen(
                         ).build()
                     )
                     .setOnClickListener { 
+                        Log.d(TAG, "Selected pressure: $pressure")
                         startInflation(pressure.toFloat()) 
                     }
                     .build()
@@ -66,6 +71,8 @@ class TiresPressureTargetScreen(
      * @param targetPressure לחץ היעד הרצוי (ב-PSI)
      */
     private fun startInflation(targetPressure: Float) {
+        Log.d(TAG, "Starting inflation with target pressure: $targetPressure")
+        
         coroutineScope.launch {
             // שליחת פקודת התחלת ניפוח עם לחץ היעד
             bleManager.sendCommand(BleCommand.StartTargetPressure(targetPressure = targetPressure))
@@ -78,6 +85,7 @@ class TiresPressureTargetScreen(
                 val mainScreen = screenManager.top as? TiresPressureMainScreen
                 mainScreen?.startInflation(targetPressure)
             } catch (e: Exception) {
+                Log.e(TAG, "Error updating main screen: ${e.message}")
                 // אם מסיבה כלשהי המסך הראשי לא נמצא, נחזור למסך הראשון בסטק
                 screenManager.popToRoot()
             }

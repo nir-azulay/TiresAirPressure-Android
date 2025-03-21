@@ -128,7 +128,7 @@ fun MainScreen(
                     onClick = { viewModel.decreaseTargetPressure() },
                     modifier = Modifier.size(48.dp)
                 ) {
-                    Text("-", fontSize = 24.sp)
+                    Text(stringResource(R.string.minus_symbol), fontSize = 24.sp)
                 }
                 
                 Text(
@@ -140,7 +140,7 @@ fun MainScreen(
                     onClick = { viewModel.increaseTargetPressure() },
                     modifier = Modifier.size(48.dp)
                 ) {
-                    Text("+", fontSize = 24.sp)
+                    Text(stringResource(R.string.plus_symbol), fontSize = 24.sp)
                 }
             }
             
@@ -157,7 +157,7 @@ fun MainScreen(
                         onClick = { viewModel.setTargetPressure(pressure.toFloat()) },
                         modifier = Modifier.padding(vertical = 4.dp)
                     ) {
-                        Text("$pressure PSI")
+                        Text(stringResource(R.string.predefined_pressure_format, pressure))
                     }
                 }
             }

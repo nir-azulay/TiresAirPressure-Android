@@ -2,6 +2,6 @@
 <automotiveApp xmlns:android="http://schemas.android.com/apk/res/android">
     <uses name="template" />
     <uses name="notification" />
-    <uses name="navigation" />
+    <uses name="projection" />
     <category name="navigation" />
 </automotiveApp> 

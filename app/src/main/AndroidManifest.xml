@@ -75,11 +75,13 @@
         <!-- Android Auto Service -->
         <service
             android:name=".auto.TiresPressureCarAppService"
-            android:exported="true">
+            android:exported="true"
+            android:foregroundServiceType="connectedDevice">
             <intent-filter android:priority="1">
                 <action android:name="androidx.car.app.CarAppService" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="androidx.car.app.category.NAVIGATION" />
+                <category android:name="androidx.car.app.category.PROJECTION" />
             </intent-filter>
             
             <meta-data

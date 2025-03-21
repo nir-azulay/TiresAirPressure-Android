@@ -34,10 +34,10 @@
     
     <!-- Android Auto support -->
     <uses-feature
-        android:name="android.hardware.type.automotive"
+        android:name="android.software.car.templates_host"
         android:required="false" />
     <uses-feature
-        android:name="android.software.car.templates_host"
+        android:name="android.hardware.type.automotive"
         android:required="false" />
 
     <application
@@ -51,7 +51,12 @@
         android:theme="@style/Theme.TiresAirPressureManagement"
         tools:targetApi="31">
             
-        <!-- Meta-data for Android Auto min API level at application level -->
+        <!-- Meta-data for Android Auto -->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+            
+        <!-- Meta-data for Android Auto min API level -->
         <meta-data
             android:name="androidx.car.app.minCarApiLevel"
             android:value="1" />
@@ -61,7 +66,7 @@
             android:exported="true"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             android:theme="@style/Theme.TiresAirPressureManagement.Splash">
-            <intent-filter>
+            <intent-filter>                
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
@@ -71,8 +76,9 @@
         <service
             android:name=".auto.TiresPressureCarAppService"
             android:exported="true">
-            <intent-filter>
+            <intent-filter android:priority="1">
                 <action android:name="androidx.car.app.CarAppService" />
+                <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="androidx.car.app.category.NAVIGATION" />
             </intent-filter>
             
@@ -80,11 +86,6 @@
                 android:name="androidx.car.app.minCarApiLevel"
                 android:value="1" />
         </service>
-        
-        <!-- Meta-data for Android Auto -->
-        <meta-data
-            android:name="com.google.android.gms.car.application"
-            android:resource="@xml/automotive_app_desc" />
     </application>
 
 </manifest>

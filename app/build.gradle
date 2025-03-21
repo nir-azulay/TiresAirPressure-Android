@@ -16,7 +16,7 @@ if (versionPropsFile.canRead()) {
 
 def versionMajor = 1
 def versionMinor = 0
-def versionPatch = 0
+def versionPatch = 1
 
 // הגדלת מספר הבנייה בכל פעם
 versionBuild++
@@ -128,7 +128,6 @@ dependencies {
     
     // Android Auto
     implementation 'androidx.car.app:app:1.4.0'
-    implementation 'androidx.car.app:app-automotive:1.4.0'
     
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'

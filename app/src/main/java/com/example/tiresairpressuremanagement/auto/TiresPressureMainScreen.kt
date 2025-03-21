@@ -184,26 +184,29 @@ class TiresPressureMainScreen(
         // Row for current pressure
         paneBuilder.addRow(
             Row.Builder()
-                .setTitle("\u200F" + "לחץ נוכחי: " + String.format("%.1f PSI", currentPressure) + "\u200F")
+                .setTitle(carContext.getString(com.example.tiresairpressuremanagement.R.string.auto_current_pressure) + " " + 
+                         String.format(carContext.getString(com.example.tiresairpressuremanagement.R.string.auto_pressure_format), currentPressure))
                 .build()
         )
         
         // Always show target pressure row
         paneBuilder.addRow(
             Row.Builder()
-                .setTitle("\u200F" + "לחץ יעד: " + String.format("%.1f PSI", if (targetPressure > 0) targetPressure else 0.0f) + "\u200F")
+                .setTitle(carContext.getString(com.example.tiresairpressuremanagement.R.string.auto_target_pressure) + " " + 
+                         String.format(carContext.getString(com.example.tiresairpressuremanagement.R.string.auto_pressure_format), 
+                         if (targetPressure > 0) targetPressure else 0.0f))
                 .build()
         )
 
         // Create operation status text
         val operationText = when {
             isTargetPressureReached -> 
-                "\u200F" + carContext.getString(com.example.tiresairpressuremanagement.R.string.pressure_reached) + "\u200F"
+                carContext.getString(com.example.tiresairpressuremanagement.R.string.pressure_reached)
             operationMode == DeviceStatus.MODE_INFLATE -> 
-                "\u200F" + carContext.getString(com.example.tiresairpressuremanagement.R.string.mode_inflating) + "\u200F"
+                carContext.getString(com.example.tiresairpressuremanagement.R.string.mode_inflating)
             operationMode == DeviceStatus.MODE_DEFLATE -> 
-                "\u200F" + carContext.getString(com.example.tiresairpressuremanagement.R.string.mode_deflating) + "\u200F"
-            else -> "\u200F" + "בחר לחץ יעד" + "\u200F"  // Changed from empty space to a prompt
+                carContext.getString(com.example.tiresairpressuremanagement.R.string.mode_deflating)
+            else -> carContext.getString(com.example.tiresairpressuremanagement.R.string.auto_select_target)
         }
 
         // Always create a row with operation status and control button
@@ -247,7 +250,7 @@ class TiresPressureMainScreen(
         
         return PaneTemplate.Builder(paneBuilder.build())
             .setHeaderAction(Action.APP_ICON)
-            .setTitle("\u200F" + "ניהול לחץ אוויר בצמיגים" + "\u200F")
+            .setTitle(carContext.getString(com.example.tiresairpressuremanagement.R.string.auto_app_title))
             .build()
     }
     

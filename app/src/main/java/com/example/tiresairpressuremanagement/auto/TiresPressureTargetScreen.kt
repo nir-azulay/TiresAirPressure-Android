@@ -11,6 +11,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import com.example.tiresairpressuremanagement.utils.BleConstants
 import androidx.core.graphics.drawable.IconCompat
+import com.example.tiresairpressuremanagement.R
 
 /**
  * מסך בחירת לחץ יעד לניפוח הצמיג.
@@ -34,7 +35,7 @@ class TiresPressureTargetScreen(
         predefinedPressures.forEach { pressure ->
             itemListBuilder.addItem(
                 Row.Builder()
-                    .setTitle("$pressure PSI")
+                    .setTitle(String.format(carContext.getString(R.string.auto_pressure_format), pressure))
                     // Adding an icon is required for each row in Android Auto
                     .setImage(
                         CarIcon.Builder(

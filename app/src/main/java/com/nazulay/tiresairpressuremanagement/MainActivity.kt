@@ -46,25 +46,44 @@ import android.net.Uri
 class MainActivity : ComponentActivity() {
     private val TAG = "MainActivity"
     private var showPermissionDialog by mutableStateOf(false)
+    private var showPermissionSettingsDialog by mutableStateOf(false)
     private lateinit var bleManager: BleManager
     private var isConnectingToSavedDevice = false
     
-    // קבועים עבור מצב תצוגה
+    // Constants for display mode
     companion object {
         private const val THEME_MODE_PREF = "theme_mode_preference"
         private const val THEME_MODE_KEY = "theme_mode"
-        private const val THEME_MODE_SYSTEM = 0  // ברירת מחדל - לפי הגדרות המערכת
-        private const val THEME_MODE_LIGHT = 1   // מצב יום
-        private const val THEME_MODE_DARK = 2    // מצב לילה
+        private const val THEME_MODE_SYSTEM = 0
+        private const val THEME_MODE_LIGHT = 1
+        private const val THEME_MODE_DARK = 2
     }
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val allGranted = permissions.values.all { it }
+        Log.d(TAG, "Permission results: $permissions")
+        
         if (!allGranted) {
-            showPermissionDialog = true
+            // Check which permissions were denied
+            val deniedPermissions = permissions.filter { !it.value }.keys
+            Log.d(TAG, "Denied permissions: $deniedPermissions")
+            
+            // Check if any permission is permanently denied
+            val permanentlyDenied = deniedPermissions.any { permission ->
+                !shouldShowRequestPermissionRationale(permission)
+            }
+            
+            if (permanentlyDenied) {
+                // Show settings dialog if any permission is permanently denied
+                showPermissionSettingsDialog = true
+            } else {
+                // Show regular permission dialog for temporary denial
+                showPermissionDialog = true
+            }
         } else {
+            Log.d(TAG, "All permissions granted")
             tryConnectToSavedDevice()
         }
     }
@@ -73,45 +92,22 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            Log.d(TAG, getString(R.string.notification_permission_granted))
+            Log.d(TAG, "Notification permission granted")
         } else {
-            Log.d(TAG, getString(R.string.notification_permission_denied))
+            Log.d(TAG, "Notification permission denied")
+            // Don't show settings dialog for notification permission
+            // as it's not critical for app functionality
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        setTheme(R.style.Theme_TiresAirPressureManagement)
         super.onCreate(savedInstanceState)
-        android.util.Log.d(TAG, getString(R.string.on_create_called))
         
-        bleManager = BleManager(this)
-        checkAndRequestPermissions()
-        
-        val sharedPreferences = getSharedPreferences(getString(R.string.app_settings), Context.MODE_PRIVATE)
-        val isFirstLaunch = sharedPreferences.getBoolean(getString(R.string.is_first_launch), true)
-        
-        if (isFirstLaunch) {
-            sharedPreferences.edit().putBoolean(getString(R.string.is_first_launch), false).apply()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                requestNotificationPermission()
-            }
-        }
+        // Initialize BLE Manager
+        bleManager = BleManager(applicationContext)
         
         setContent {
-            android.util.Log.d(TAG, getString(R.string.setting_content))
-            
-            // קריאת הגדרת מצב התצוגה
-            val themePreferences = getSharedPreferences(THEME_MODE_PREF, Context.MODE_PRIVATE)
-            val themeMode = themePreferences.getInt(THEME_MODE_KEY, THEME_MODE_SYSTEM)
-            
-            // קביעת מצב התצוגה בהתאם להגדרות
-            val darkTheme = when (themeMode) {
-                THEME_MODE_LIGHT -> false
-                THEME_MODE_DARK -> true
-                else -> isSystemInDarkTheme()
-            }
-            
-            TiresAirPressureManagementTheme(darkTheme = darkTheme) {
+            TiresAirPressureManagementTheme {
                 AppContent()
             }
         }
@@ -147,8 +143,11 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun AppContent() {
         var currentScreen by remember { mutableStateOf(Screen.SPLASH) }
-        var showPermissionDialog by remember { mutableStateOf(false) }
-        var showPermissionSettingsDialog by remember { mutableStateOf(false) }
+        
+        // Check permissions when app starts
+        LaunchedEffect(Unit) {
+            checkAndRequestPermissions()
+        }
         
         // Observe connection state
         val connectionState by bleManager.connectionState.collectAsState()
@@ -293,27 +292,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkAndRequestPermissions() {
-        // בדיקה אם יש לנו את כל ההרשאות הנדרשות
         val missingPermissions = mutableListOf<String>()
         
-        // בדיקת הרשאות Bluetooth
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
-                missingPermissions.add(Manifest.permission.BLUETOOTH_SCAN)
-            }
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                missingPermissions.add(Manifest.permission.BLUETOOTH_CONNECT)
-            }
-        } else {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) {
-                missingPermissions.add(Manifest.permission.BLUETOOTH)
-            }
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED) {
-                missingPermissions.add(Manifest.permission.BLUETOOTH_ADMIN)
-            }
-        }
-        
-        // בדיקת הרשאות מיקום (נדרשות עבור סריקת Bluetooth)
+        // Always check location permissions as they're needed for BLE scanning
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             missingPermissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
         }
@@ -321,16 +302,49 @@ class MainActivity : ComponentActivity() {
             missingPermissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
         }
         
-        // אם יש הרשאות חסרות, בקש אותן
-        if (missingPermissions.isNotEmpty()) {
-            android.util.Log.d(TAG, "Missing permissions: $missingPermissions")
-            requestPermissionLauncher.launch(missingPermissions.toTypedArray())
+        // Add Bluetooth permissions based on Android version
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // Android 12 and above
+            arrayOf(
+                Manifest.permission.BLUETOOTH_SCAN,
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_ADVERTISE
+            ).forEach { permission ->
+                if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                    missingPermissions.add(permission)
+                }
+            }
         } else {
-            android.util.Log.d(TAG, "All required permissions granted")
+            // Android 11 and below
+            arrayOf(
+                Manifest.permission.BLUETOOTH,
+                Manifest.permission.BLUETOOTH_ADMIN
+            ).forEach { permission ->
+                if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                    missingPermissions.add(permission)
+                }
+            }
+        }
+        
+        // Request permissions if any are missing
+        if (missingPermissions.isNotEmpty()) {
+            Log.d(TAG, "Requesting missing permissions: $missingPermissions")
+            // Show rationale before requesting permissions
+            val shouldShowRationale = missingPermissions.any { permission ->
+                shouldShowRequestPermissionRationale(permission)
+            }
+            
+            if (shouldShowRationale) {
+                showPermissionDialog = true
+            } else {
+                requestPermissionLauncher.launch(missingPermissions.toTypedArray())
+            }
+        } else {
+            Log.d(TAG, "All required permissions are granted")
             tryConnectToSavedDevice()
         }
         
-        // בדיקת הרשאת התראות (נפרדת מהרשאות Bluetooth)
+        // Check notification permission separately (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (!hasNotificationPermission()) {
                 requestNotificationPermission()
@@ -447,3 +461,4 @@ private fun PermissionSettingsDialog(
         }
     )
 }
+

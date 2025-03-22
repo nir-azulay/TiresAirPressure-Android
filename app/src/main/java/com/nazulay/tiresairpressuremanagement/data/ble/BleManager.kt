@@ -497,12 +497,21 @@ class BleManager(private val context: Context) {
     }
     
     fun startScan() {
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+        if (!hasRequiredPermissions()) {
+            Log.e(TAG, "Cannot start scan: missing required permissions")
+            _connectionState.value = ConnectionState.PermissionDenied
             return
         }
+        
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+            Log.e(TAG, "BLUETOOTH_SCAN permission not granted")
+            _connectionState.value = ConnectionState.PermissionDenied
+            return
+        }
+        
         _connectionState.value = ConnectionState.Scanning
         bleScanner?.startScan(
-            emptyList(), // רשימה ריקה של סינונים
+            emptyList(),
             ScanSettings.Builder()
                 .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
                 .build(),
@@ -511,9 +520,16 @@ class BleManager(private val context: Context) {
     }
     
     fun stopScan() {
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+        if (!hasRequiredPermissions()) {
+            Log.e(TAG, "Cannot stop scan: missing required permissions")
             return
         }
+        
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+            Log.e(TAG, "BLUETOOTH_SCAN permission not granted")
+            return
+        }
+        
         bleScanner?.stopScan(scanCallback)
         if (_connectionState.value == ConnectionState.Scanning) {
             _connectionState.value = ConnectionState.Disconnected
@@ -858,9 +874,14 @@ class BleManager(private val context: Context) {
     private fun hasRequiredPermissions(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             hasPermission(Manifest.permission.BLUETOOTH_SCAN) &&
-            hasPermission(Manifest.permission.BLUETOOTH_CONNECT)
+            hasPermission(Manifest.permission.BLUETOOTH_CONNECT) &&
+            hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) &&
+            hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
         } else {
-            hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+            hasPermission(Manifest.permission.BLUETOOTH) &&
+            hasPermission(Manifest.permission.BLUETOOTH_ADMIN) &&
+            hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) &&
+            hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
         }
     }
     

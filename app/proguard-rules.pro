@@ -19,3 +19,92 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Keep permission-related classes and methods
+-keep class android.content.pm.PackageInfo { *; }
+-keep class android.content.pm.PackageManager { *; }
+-keep class android.content.Context { *; }
+-keep class androidx.core.content.ContextCompat { *; }
+-keep class androidx.core.app.ActivityCompat { *; }
+
+# Keep BLE-related classes
+-keep class android.bluetooth.** { *; }
+-keep class com.nazulay.tiresairpressuremanagement.data.ble.** { *; }
+-keep class com.nazulay.tiresairpressuremanagement.domain.models.** { *; }
+
+# Keep Activity Result API classes
+-keep class androidx.activity.result.** { *; }
+-keep class androidx.activity.result.contract.** { *; }
+
+# Keep Compose-related classes
+-keep class androidx.compose.** { *; }
+-keepclassmembers class * extends androidx.compose.runtime.State { *; }
+-keepclassmembers class * extends androidx.compose.runtime.MutableState { *; }
+
+# Keep ViewModel classes
+-keep class * extends androidx.lifecycle.ViewModel {
+    <init>();
+}
+-keep class * extends androidx.lifecycle.AndroidViewModel {
+    <init>(android.app.Application);
+}
+
+# Keep enum classes
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+# Keep Kotlin coroutines
+-keep class kotlinx.coroutines.** { *; }
+-keepclassmembernames class kotlinx.** {
+    volatile <fields>;
+}
+
+# Keep Kotlin serialization
+-keepattributes *Annotation*, InnerClasses
+-dontnote kotlinx.serialization.AnnotationsKt
+
+# Keep R8 full mode optimizations for your app's package
+-keep class com.nazulay.tiresairpressuremanagement.** { *; }
+
+# Keep permission strings
+-keepclassmembers class **.R$* {
+    public static <fields>;
+}
+
+# Keep manifest permissions
+-keepattributes RuntimeVisibleAnnotations
+-keep class android.Manifest { *; }
+-keep class android.Manifest$permission { *; }
+
+# Keep source file names and line numbers for better crash reporting
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
+
+# Keep Android Auto related classes if you're using it
+-keep class androidx.car.app.** { *; }
+
+# Keep Nordic Semiconductor BLE library classes if you're using them
+-keep class no.nordicsemi.android.ble.** { *; }
+
+# Keep Moshi classes (if you're using Moshi for JSON)
+-keep class com.squareup.moshi.** { *; }
+-keep interface com.squareup.moshi.** { *; }
+-keepclassmembers class ** {
+    @com.squareup.moshi.FromJson *;
+    @com.squareup.moshi.ToJson *;
+}
+
+# Keep any classes with @Keep annotation
+-keep class androidx.annotation.Keep
+-keep @androidx.annotation.Keep class * {*;}
+-keepclasseswithmembers class * {
+    @androidx.annotation.Keep <methods>;
+}
+-keepclasseswithmembers class * {
+    @androidx.annotation.Keep <fields>;
+}
+-keepclasseswithmembers class * {
+    @androidx.annotation.Keep <init>(...);
+}

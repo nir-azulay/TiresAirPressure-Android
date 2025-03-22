@@ -15,8 +15,8 @@ if (versionPropsFile.canRead()) {
 }
 
 def versionMajor = 1
-def versionMinor = 0
-def versionPatch = 1
+def versionMinor = 1
+def versionPatch = 0
 
 // הגדלת מספר הבנייה בכל פעם
 versionBuild++

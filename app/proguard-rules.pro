@@ -26,6 +26,12 @@
 -keep class android.content.Context { *; }
 -keep class androidx.core.content.ContextCompat { *; }
 -keep class androidx.core.app.ActivityCompat { *; }
+-keep class androidx.core.app.ComponentActivity { *; }
+-keep class android.app.Activity { *; }
+
+# Keep permission request related classes
+-keep class androidx.activity.result.contract.ActivityResultContracts$RequestMultiplePermissions { *; }
+-keep class androidx.activity.result.contract.ActivityResultContracts$RequestPermission { *; }
 
 # Keep BLE-related classes
 -keep class android.bluetooth.** { *; }
@@ -73,10 +79,16 @@
     public static <fields>;
 }
 
+# Keep all permission-related strings
+-keepclassmembers class **.R$string {
+    public static <fields>;
+}
+
 # Keep manifest permissions
 -keepattributes RuntimeVisibleAnnotations
 -keep class android.Manifest { *; }
 -keep class android.Manifest$permission { *; }
+-keep class android.Manifest$permission_group { *; }
 
 # Keep source file names and line numbers for better crash reporting
 -keepattributes SourceFile,LineNumberTable
@@ -108,3 +120,6 @@
 -keepclasseswithmembers class * {
     @androidx.annotation.Keep <init>(...);
 }
+
+# Keep MainActivity and its methods
+-keep class com.nazulay.tiresairpressuremanagement.MainActivity { *; }

@@ -4,12 +4,12 @@ plugins {
     id 'com.google.devtools.ksp'
 }
 
-// הוספת קוד לניהול מספר גרסה אוטומטי
+// Version management
 def versionPropsFile = file('version.properties')
 def versionBuild = 0
 
 if (versionPropsFile.canRead()) {
-    def Properties versionProps = new Properties()
+    def versionProps = new Properties()
     versionProps.load(new FileInputStream(versionPropsFile))
     versionBuild = versionProps['VERSION_BUILD'].toInteger()
 }
@@ -18,15 +18,15 @@ def versionMajor = 1
 def versionMinor = 1
 def versionPatch = 1
 
-// הגדלת מספר הבנייה בכל פעם
+// Increment build number
 versionBuild++
 
-// שמירת מספר הבנייה החדש בקובץ
+// Save new build number
 def versionProps = new Properties()
 versionProps['VERSION_BUILD'] = versionBuild.toString()
 versionProps.store(versionPropsFile.newWriter(), null)
 
-// יצירת מחרוזת גרסה מלאה
+// Create full version string
 def fullVersionName = "${versionMajor}.${versionMinor}.${versionPatch}.${versionBuild}"
 
 android {
@@ -41,26 +41,33 @@ android {
         versionName fullVersionName
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        vectorDrawables {
-            useSupportLibrary true
-        }
-
-        // הוספת BuildConfig fields
+        
         buildConfigField "String", "BUILD_TIME", "\"${new Date().format('yyyy-MM-dd HH:mm:ss')}\""
         buildConfigField "String", "VERSION_NAME", "\"${fullVersionName}\""
     }
 
     buildFeatures {
         compose true
-        buildConfig true  // הפעלת תכונת BuildConfig
+        buildConfig true
     }
 
     buildTypes {
         release {
             minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             buildConfigField "boolean", "DEBUG_MODE", "false"
             buildConfigField "String", "BUILD_TYPE", "\"RELEASE\""
+            
+            manifestPlaceholders = [
+                permissionBluetooth: true,
+                permissionBluetoothAdmin: true,
+                permissionBluetoothScan: true,
+                permissionBluetoothConnect: true,
+                permissionBluetoothAdvertise: true,
+                permissionLocation: true,
+                permissionNotifications: true
+            ]
         }
         debug {
             buildConfigField "boolean", "DEBUG_MODE", "true"
@@ -69,16 +76,20 @@ android {
             versionNameSuffix "-debug"
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+
     kotlinOptions {
         jvmTarget = '17'
     }
+
     composeOptions {
         kotlinCompilerExtensionVersion '1.5.1'
     }
+
     packaging {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'

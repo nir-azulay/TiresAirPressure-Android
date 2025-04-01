@@ -94,6 +94,8 @@ class SettingsViewModel(
             com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState.Disconnected -> "מנותק"
             com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState.PermissionDenied -> "הרשאה דרושה"
             com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState.Scanning -> "סורק..."
+            com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState.BluetoothDisabled -> "Bluetooth מושבת"
+            com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState.Error -> "שגיאת חיבור"
         }
     }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Lazily, "מנותק")
     

@@ -134,6 +134,8 @@ fun SettingsScreen(
                         ConnectionState.Disconnected -> Color(0xFFF44336).copy(alpha = 0.2f) // Red
                         ConnectionState.PermissionDenied -> Color(0xFFFFA500).copy(alpha = 0.2f) // Orange
                         ConnectionState.Scanning -> Color(0xFF2196F3).copy(alpha = 0.2f) // Blue
+                        ConnectionState.BluetoothDisabled -> Color(0xFFF44336).copy(alpha = 0.2f) // Red
+                        ConnectionState.Error -> Color(0xFFF44336).copy(alpha = 0.2f) // Red
                     }
                 )
             ) {
@@ -154,6 +156,8 @@ fun SettingsScreen(
                             ConnectionState.Disconnected -> Color(0xFFF44336) // Red
                             ConnectionState.PermissionDenied -> Color(0xFFFFA500) // Orange
                             ConnectionState.Scanning -> Color(0xFF2196F3) // Blue
+                            ConnectionState.BluetoothDisabled -> Color(0xFFF44336) // Red
+                            ConnectionState.Error -> Color(0xFFF44336) // Red
                         }
                     )
                     
@@ -169,6 +173,8 @@ fun SettingsScreen(
                                     ConnectionState.Disconnected -> Color(0xFFF44336) // Red
                                     ConnectionState.PermissionDenied -> Color(0xFFFFA500) // Orange
                                     ConnectionState.Scanning -> Color(0xFF2196F3) // Blue
+                                    ConnectionState.BluetoothDisabled -> Color(0xFFF44336) // Red
+                                    ConnectionState.Error -> Color(0xFFF44336) // Red
                                 }
                             )
                         }

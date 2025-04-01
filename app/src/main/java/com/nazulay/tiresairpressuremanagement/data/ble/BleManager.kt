@@ -497,26 +497,39 @@ class BleManager(private val context: Context) {
     }
     
     fun startScan() {
+        // First check if Bluetooth is enabled
+        if (bluetoothAdapter?.isEnabled != true) {
+            Log.e(TAG, "Bluetooth is not enabled")
+            _connectionState.value = ConnectionState.BluetoothDisabled
+            return
+        }
+
+        // Then check permissions
         if (!hasRequiredPermissions()) {
-            Log.e(TAG, "Cannot start scan: missing required permissions")
+            Log.e(TAG, "Missing required permissions")
             _connectionState.value = ConnectionState.PermissionDenied
             return
         }
         
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
-            Log.e(TAG, "BLUETOOTH_SCAN permission not granted")
+        try {
+            _connectionState.value = ConnectionState.Scanning
+            bleScanner?.startScan(
+                emptyList(),
+                ScanSettings.Builder()
+                    .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                    .build(),
+                scanCallback
+            ) ?: run {
+                Log.e(TAG, "BLE Scanner is null")
+                _connectionState.value = ConnectionState.Error
+            }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Security exception while starting scan: ${e.message}")
             _connectionState.value = ConnectionState.PermissionDenied
-            return
+        } catch (e: Exception) {
+            Log.e(TAG, "Error starting scan: ${e.message}")
+            _connectionState.value = ConnectionState.Error
         }
-        
-        _connectionState.value = ConnectionState.Scanning
-        bleScanner?.startScan(
-            emptyList(),
-            ScanSettings.Builder()
-                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-                .build(),
-            scanCallback
-        )
     }
     
     fun stopScan() {
@@ -872,17 +885,20 @@ class BleManager(private val context: Context) {
     }
     
     private fun hasRequiredPermissions(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        // Always check location permissions regardless of Android version
+        val hasLocationPermissions = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) &&
+                                   hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+        
+        // Check Bluetooth permissions based on Android version
+        val hasBluetoothPermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             hasPermission(Manifest.permission.BLUETOOTH_SCAN) &&
-            hasPermission(Manifest.permission.BLUETOOTH_CONNECT) &&
-            hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) &&
-            hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+            hasPermission(Manifest.permission.BLUETOOTH_CONNECT)
         } else {
             hasPermission(Manifest.permission.BLUETOOTH) &&
-            hasPermission(Manifest.permission.BLUETOOTH_ADMIN) &&
-            hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) &&
-            hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+            hasPermission(Manifest.permission.BLUETOOTH_ADMIN)
         }
+        
+        return hasLocationPermissions && hasBluetoothPermissions
     }
     
     private fun hasPermission(permission: String): Boolean {

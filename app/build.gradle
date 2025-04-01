@@ -44,6 +44,16 @@ android {
         
         buildConfigField "String", "BUILD_TIME", "\"${new Date().format('yyyy-MM-dd HH:mm:ss')}\""
         buildConfigField "String", "VERSION_NAME", "\"${fullVersionName}\""
+        
+        manifestPlaceholders = [
+            permissionBluetooth: true,
+            permissionBluetoothAdmin: true,
+            permissionBluetoothScan: true,
+            permissionBluetoothConnect: true,
+            permissionBluetoothAdvertise: true,
+            permissionLocation: true,
+            permissionNotifications: true
+        ]
     }
 
     buildFeatures {
@@ -58,16 +68,6 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             buildConfigField "boolean", "DEBUG_MODE", "false"
             buildConfigField "String", "BUILD_TYPE", "\"RELEASE\""
-            
-            manifestPlaceholders = [
-                permissionBluetooth: true,
-                permissionBluetoothAdmin: true,
-                permissionBluetoothScan: true,
-                permissionBluetoothConnect: true,
-                permissionBluetoothAdvertise: true,
-                permissionLocation: true,
-                permissionNotifications: true
-            ]
         }
         debug {
             buildConfigField "boolean", "DEBUG_MODE", "true"

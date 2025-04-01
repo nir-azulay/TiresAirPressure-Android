@@ -408,6 +408,8 @@ private fun ConnectionStatusCard(connectionState: ConnectionState, deviceName: S
                 ConnectionState.Disconnected -> Color(0xFFF44336).copy(alpha = 0.2f)
                 ConnectionState.PermissionDenied -> Color(0xFFF44336).copy(alpha = 0.2f)
                 ConnectionState.Scanning -> Color(0xFF2196F3).copy(alpha = 0.2f)
+                ConnectionState.BluetoothDisabled -> Color(0xFFF44336).copy(alpha = 0.2f)
+                ConnectionState.Error -> Color(0xFFF44336).copy(alpha = 0.2f)
             }
         )
     ) {
@@ -430,6 +432,8 @@ private fun ConnectionStatusCard(connectionState: ConnectionState, deviceName: S
                         ConnectionState.Disconnected -> Icons.Default.BluetoothDisabled
                         ConnectionState.PermissionDenied -> Icons.Default.BluetoothDisabled
                         ConnectionState.Scanning -> Icons.Default.Search
+                        ConnectionState.BluetoothDisabled -> Icons.Default.BluetoothDisabled
+                        ConnectionState.Error -> Icons.Default.BluetoothDisabled
                     },
                     contentDescription = null,
                     tint = when (connectionState) {
@@ -438,6 +442,8 @@ private fun ConnectionStatusCard(connectionState: ConnectionState, deviceName: S
                         ConnectionState.Disconnected -> Color(0xFFF44336)
                         ConnectionState.PermissionDenied -> Color(0xFFF44336)
                         ConnectionState.Scanning -> Color(0xFF2196F3)
+                        ConnectionState.BluetoothDisabled -> Color(0xFFF44336)
+                        ConnectionState.Error -> Color(0xFFF44336)
                     },
                     modifier = Modifier.size(20.dp)
                 )
@@ -449,6 +455,8 @@ private fun ConnectionStatusCard(connectionState: ConnectionState, deviceName: S
                         ConnectionState.Disconnected -> stringResource(R.string.disconnected)
                         ConnectionState.PermissionDenied -> stringResource(R.string.permission_denied)
                         ConnectionState.Scanning -> stringResource(R.string.scanning)
+                        ConnectionState.BluetoothDisabled -> stringResource(R.string.bluetooth_disabled)
+                        ConnectionState.Error -> stringResource(R.string.connection_error)
                     },
                     color = when (connectionState) {
                         ConnectionState.Connected -> Color(0xFF4CAF50)
@@ -456,6 +464,8 @@ private fun ConnectionStatusCard(connectionState: ConnectionState, deviceName: S
                         ConnectionState.Disconnected -> Color(0xFFF44336)
                         ConnectionState.PermissionDenied -> Color(0xFFF44336)
                         ConnectionState.Scanning -> Color(0xFF2196F3)
+                        ConnectionState.BluetoothDisabled -> Color(0xFFF44336)
+                        ConnectionState.Error -> Color(0xFFF44336)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium

@@ -49,6 +49,7 @@ import com.nazulay.tiresairpressuremanagement.data.repository.BleRepository
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.Lifecycle
+import com.nazulay.tiresairpressuremanagement.utils.LocaleHelper
 
 class MainActivity : ComponentActivity() {
     private val TAG = "MainActivity"
@@ -111,31 +112,38 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun attachBaseContext(newBase: Context) {
-        // Load saved language
-        val languageCode = newBase.getSharedPreferences(LANGUAGE_PREF, Context.MODE_PRIVATE)
-            .getString(LANGUAGE_KEY, Locale.getDefault().language) ?: Locale.getDefault().language
-
-        // Create configuration with saved language
-        val locale = Locale(languageCode)
-        Locale.setDefault(locale)
+        // Log current locale before attaching
+        val currentSystemLocale = Locale.getDefault()
+        Log.d(TAG, "MainActivity - System default locale before attaching: ${currentSystemLocale.language} (${currentSystemLocale.displayLanguage})")
         
-        val config = Configuration(newBase.resources.configuration)
-        config.setLocale(locale)
+        // Check shared preferences directly
+        val prefs = newBase.getSharedPreferences(LocaleHelper.LANGUAGE_PREF, Context.MODE_PRIVATE)
+        val savedLang = prefs.getString(LocaleHelper.LANGUAGE_KEY, null)
+        Log.d(TAG, "MainActivity - Saved language in SharedPreferences: $savedLang")
         
-        val context = newBase.createConfigurationContext(config)
+        // Use LocaleHelper to apply the saved locale
+        val contextWithLocale = LocaleHelper.applyLocale(newBase)
+        super.attachBaseContext(contextWithLocale)
         
-        // Apply updated configuration to resources
-        val resources = context.resources
-        val metrics = resources.displayMetrics
-        val configuration = resources.configuration
-        configuration.locale = locale
-        resources.updateConfiguration(configuration, metrics)
-        
-        super.attachBaseContext(context)
+        // Log the applied locale
+        val appliedLocale = contextWithLocale.resources.configuration.locales[0]
+        Log.d(TAG, "MainActivity - Base context attached with locale: ${appliedLocale.language} (${appliedLocale.displayLanguage})")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Log the current locale at the start of onCreate
+        val currentLocale = resources.configuration.locales[0]
+        Log.d(TAG, "MainActivity onCreate - Current locale: ${currentLocale.language} (${currentLocale.displayLanguage})")
+        Log.d(TAG, "MainActivity onCreate - System default locale: ${Locale.getDefault().language} (${Locale.getDefault().displayLanguage})")
+        
+        // Apply locale to resources to ensure consistent language
+        applyLocaleToResources()
+        
+        // Log the locale after applying to resources
+        val appliedLocale = resources.configuration.locales[0]
+        Log.d(TAG, "MainActivity onCreate - After applying locale to resources: ${appliedLocale.language} (${appliedLocale.displayLanguage})")
         
         // Initialize BLE Repository first
         bleRepository = BleRepository(applicationContext)
@@ -162,12 +170,34 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun applyLocaleToResources() {
+        val languageCode = LocaleHelper.getSavedLanguage(this)
+        Log.d(TAG, "MainActivity - Applying locale to resources: $languageCode")
+        
+        val locale = Locale(languageCode)
+        Locale.setDefault(locale)
+        
+        // Log default locale after setting
+        Log.d(TAG, "MainActivity - Default locale after setting: ${Locale.getDefault().language} (${Locale.getDefault().displayLanguage})")
+        
+        val config = resources.configuration
+        config.setLocale(locale)
+        
+        @Suppress("DEPRECATION")
+        resources.updateConfiguration(config, resources.displayMetrics)
+        
+        // Log configuration after update
+        val configLocale = resources.configuration.locales[0]
+        Log.d(TAG, "MainActivity - Resources configuration locale after update: ${configLocale.language} (${configLocale.displayLanguage})")
+    }
+
     // Add method to handle configuration changes
-    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+    override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        android.util.Log.d(TAG, "Configuration changed: ${newConfig.orientation}")
-        // No need to recreate the activity or reconnect BLE
-        // The activity will not be destroyed and recreated
+        Log.d(TAG, "Configuration changed: ${newConfig.locales[0]}")
+        
+        // Reapply our saved locale
+        applyLocaleToResources()
     }
 
     private fun tryConnectToSavedDevice() {

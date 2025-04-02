@@ -35,6 +35,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.nazulay.tiresairpressuremanagement.utils.LocaleHelper
 
 class SettingsViewModel(
     private val bleManager: BleManager,
@@ -65,10 +66,10 @@ class SettingsViewModel(
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return SettingsViewModel(
-                    bleManager = bleManager,
-                    application = application
-                ) as T
+                if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
+                    return SettingsViewModel(bleManager, application) as T
+                }
+                throw IllegalArgumentException("Unknown ViewModel class")
             }
         }
     }
@@ -450,16 +451,53 @@ class SettingsViewModel(
     // Function to set the app language
     fun setLanguage(languageCode: String) {
         if (languageCode != _selectedLanguage.value) {
+            val currentSystemLocale = Locale.getDefault()
+            Log.d(TAG, "Language change request - Current system locale: ${currentSystemLocale.language} (${currentSystemLocale.displayLanguage})")
+            Log.d(TAG, "Language change request - From: ${_selectedLanguage.value} to: $languageCode")
+            
+            // Check shared preferences before change
+            val prefs = application.getSharedPreferences(LocaleHelper.LANGUAGE_PREF, Context.MODE_PRIVATE)
+            val beforeChange = prefs.getString(LocaleHelper.LANGUAGE_KEY, "not set")
+            Log.d(TAG, "Language change request - SharedPreferences before change: $beforeChange")
+            
+            // Update viewmodel state
             _selectedLanguage.value = languageCode
-            saveSelectedLanguage(languageCode)
-            updateLocale(languageCode)
+            
+            // Update in AppSettingsManager first
+            appSettingsManager.updateLanguage(languageCode)
+            Log.d(TAG, "Language change - Updated in AppSettingsManager to: $languageCode")
+            
+            // Check shared preferences after AppSettingsManager update
+            val afterManagerChange = prefs.getString(LocaleHelper.LANGUAGE_KEY, "not set")
+            Log.d(TAG, "Language change - SharedPreferences after AppSettingsManager update: $afterManagerChange")
+            
+            // Use LocaleHelper to apply the language change which will restart the app
+            viewModelScope.launch {
+                Log.d(TAG, "Language change - Preparing to apply via LocaleHelper and restart")
+                delay(300) // Small delay to ensure UI feedback before restart
+                LocaleHelper.setLocale(application, languageCode)
+                Log.d(TAG, "Language change - LocaleHelper.setLocale called (app should restart)")
+            }
+        } else {
+            Log.d(TAG, "Language not changed - selected language is already: $languageCode")
         }
     }
 
     // Load saved language preference
     private fun loadSelectedLanguage(): String {
-        val sharedPreferences = application.getSharedPreferences(LANGUAGE_PREF, Context.MODE_PRIVATE)
-        return sharedPreferences.getString(LANGUAGE_KEY, getSystemLanguage()) ?: getSystemLanguage()
+        val locale = Locale.getDefault()
+        Log.d(TAG, "loadSelectedLanguage - Current system locale: ${locale.language} (${locale.displayLanguage})")
+        
+        // Check shared preferences directly
+        val prefs = application.getSharedPreferences(LocaleHelper.LANGUAGE_PREF, Context.MODE_PRIVATE)
+        val directPref = prefs.getString(LocaleHelper.LANGUAGE_KEY, "not set")
+        Log.d(TAG, "loadSelectedLanguage - Direct from SharedPreferences: $directPref")
+        
+        // Get from LocaleHelper
+        val language = LocaleHelper.getSavedLanguage(application)
+        Log.d(TAG, "loadSelectedLanguage - From LocaleHelper: $language")
+        
+        return language
     }
 
     // Save language preference
@@ -519,8 +557,8 @@ class SettingsViewModel(
     }
     
     fun updateLanguage(languageCode: String) {
-        appSettingsManager.updateLanguage(languageCode)
-        updateLocale(languageCode)
+        // We'll use setLanguage instead to provide a consistent approach
+        setLanguage(languageCode)
     }
     
     fun updateSimulationMode(enabled: Boolean) {

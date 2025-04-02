@@ -123,6 +123,14 @@ class MainActivity : ComponentActivity() {
         config.setLocale(locale)
         
         val context = newBase.createConfigurationContext(config)
+        
+        // Apply updated configuration to resources
+        val resources = context.resources
+        val metrics = resources.displayMetrics
+        val configuration = resources.configuration
+        configuration.locale = locale
+        resources.updateConfiguration(configuration, metrics)
+        
         super.attachBaseContext(context)
     }
 

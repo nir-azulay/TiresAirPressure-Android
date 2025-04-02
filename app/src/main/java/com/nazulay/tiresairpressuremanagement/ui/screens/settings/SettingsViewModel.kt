@@ -488,6 +488,13 @@ class SettingsViewModel(
         
         @Suppress("DEPRECATION")
         application.resources.updateConfiguration(config, application.resources.displayMetrics)
+        
+        // Force refresh of configuration
+        val resources = application.resources
+        val metrics = resources.displayMetrics
+        val configuration = resources.configuration
+        configuration.locale = locale
+        resources.updateConfiguration(configuration, metrics)
     }
 
     fun updatePredefinedPressure(index: Int, value: Float) {

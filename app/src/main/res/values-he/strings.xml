@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ניהול לחץ אוויר</string>
+    
+    <!-- כללי -->
+    <string name="settings">הגדרות</string>
+    <string name="back">חזור</string>
+    <string name="close">סגור</string>
+    <string name="ok">אישור</string>
+    <string name="message">הודעה</string>
+    <string name="start">התחל</string>
+    <string name="stop">עצור</string>
+    <string name="scan_devices">סרוק מכשירים</string>
+    <string name="stop_scan">עצור סריקה</string>
+    <string name="scanning">סורק...</string>
+    <string name="available_devices">מכשירים זמינים:</string>
+    <string name="not_connected">לא מחובר למכשיר</string>
+    <string name="connected">מחובר</string>
+    <string name="disconnected">מנותק</string>
+    <string name="connecting">מתחבר...</string>
+    <string name="app_version">גרסת האפליקציה</string>
+    <string name="version_number">1.0.0</string>
+    
+    <!-- לחץ -->
+    <string name="target_pressure">לחץ יעד</string>
+    <string name="pressure_format">%.1f PSI</string>
+    <string name="pressure_unit">PSI</string>
+    <string name="pressure_reached">הגעת ללחץ היעד</string>
+    <string name="increase_pressure">הגדל לחץ</string>
+    <string name="decrease_pressure">הפחת לחץ</string>
+    <string name="pressure_difference">הפרש לחץ:</string>
+    
+    <!-- הרשאות -->
+    <string name="permissions_required">נדרשות הרשאות</string>
+    <string name="permissions_explanation">האפליקציה זקוקה להרשאות כדי לסרוק ולהתחבר למכשירי Bluetooth.</string>
+    <string name="grant_permissions">אשר הרשאות</string>
+    <string name="open_settings">פתח הגדרות</string>
+    <string name="open_settings_permission_explanation">האפליקציה זקוקה להרשאות Bluetooth ומיקום כדי לפעול כראוי. אנא פתח את הגדרות האפליקציה ואפשר את ההרשאות הנדרשות.</string>
+    
+    <!-- מצבי פעולה -->
+    <string name="mode_inflating">מנפח...</string>
+    <string name="mode_deflating">מרוקן אוויר...</string>
+    
+    <!-- תיאורים -->
+    <string name="app_logo">לוגו האפליקציה</string>
+    <string name="settings_icon">הגדרות</string>
+    
+    <!-- לוגים -->
+    <string name="on_create_called">onCreate called</string>
+    <string name="setting_content">Setting content</string>
+    <string name="configuration_changed">Configuration changed: %1$s</string>
+    <string name="found_saved_device">Found saved device: %1$s</string>
+    <string name="no_saved_device">No saved device found</string>
+    <string name="displaying_main_screen">Displaying MainScreen</string>
+    <string name="user_initiated_disconnect">User initiated disconnect</string>
+    <string name="user_clicked_settings">User clicked settings</string>
+    <string name="user_clicked_about">User clicked about</string>
+    <string name="device_connected_callback">Device connected callback in MainActivity</string>
+    <string name="displaying_settings_screen">Displaying SettingsScreen</string>
+    <string name="user_clicked_back_from_settings">User clicked back from settings</string>
+    <string name="displaying_about_screen">Displaying AboutScreen</string>
+    <string name="user_clicked_back_from_about">User clicked back from about</string>
+    <string name="requesting_notification_permission">Requesting notification permission for Android 13+</string>
+    <string name="on_resume_called">onResume called</string>
+    <string name="on_pause_called">onPause called</string>
+    <string name="on_destroy_called">onDestroy called</string>
+    <string name="notification_permission_granted">Notification permission granted</string>
+    <string name="notification_permission_denied">Notification permission denied</string>
+    <string name="starting_device_scan">Starting device scan</string>
+    <string name="scan_results">Scan results: %1$d devices found</string>
+    <string name="connecting_to_device">Connecting to device: %1$s</string>
+    <string name="no_devices_found">לא נמצאו מכשירים</string>
+    
+    <!-- הגדרות -->
+    <string name="app_settings">AppSettings</string>
+    <string name="device_settings">DeviceSettings</string>
+    <string name="is_first_launch">isFirstLaunch</string>
+    <string name="selected_device_address">selectedDeviceAddress</string>
+    
+    <!-- מחרוזות חדשות שהועברו מהקוד -->
+    <string name="search_devices">חיפוש מכשירים</string>
+    <string name="available_devices_count">מכשירים זמינים (%d)</string>
+    <string name="no_devices_found_message">לא נמצאו מכשירים.\nלחץ על כפתור הסריקה לחיפוש מכשירים.</string>
+    <string name="scan_devices_hint">לחץ על \'סרוק מכשירים\' כדי לחפש.</string>
+    <string name="unknown_device">מכשיר לא ידוע</string>
+    <string name="signal_strength_format">עוצמת אות: %1$d dBm</string>
+    <string name="current_pressure">לחץ נוכחי</string>
+    <string name="decrease">הפחת</string>
+    <string name="increase">הוסף</string>
+    <string name="preset_pressures">לחצים מוגדרים מראש</string>
+    <string name="about">אודות</string>
+    <string name="exit_app">סגור אפליקציה</string>
+    <string name="back_button">חזור</string>
+    <string name="disconnect_device">נתק מכשיר</string>
+    <string name="developed_by">פותח על ידי</string>
+    <string name="developer_name">ניר אזולאי</string>
+    <string name="developer_email">nir.azulay@gmail.com</string>
+    <string name="version_format">גרסה 1.0</string>
+    <string name="target_reached_title">לחץ היעד הושג</string>
+    <string name="target_reached_message">לחץ היעד הושג בהצלחה!</string>
+    <string name="target_value">יעד: %1$.1f PSI</string>
+    <string name="current_value">נוכחי: %1$.1f PSI</string>
+    
+    <!-- מחרוזות למסך ההגדרות -->
+    <string name="device_settings_title">הגדרות מכשיר</string>
+    <string name="device_name">שם המכשיר</string>
+    <string name="wifi_settings">הגדרות WiFi</string>
+    <string name="scan_networks">סרוק רשתות</string>
+    <string name="exit_without_save">לצאת ללא שמירה?</string>
+    <string name="changes_not_saved">השינויים שביצעת לא יישמרו.</string>
+    <string name="exit_without_saving">צא ללא שמירה</string>
+    <string name="continue_editing">המשך עריכה</string>
+    <string name="discard">ביטול שינויים</string>
+    <string name="saving_settings">שומר הגדרות...</string>
+    <string name="device_will_reset">המכשיר יתאפס ויתחבר מחדש באופן אוטומטי.</string>
+    <string name="reconnecting_automatically">מתחבר מחדש באופן אוטומטי...</string>
+    <string name="returning_to_main_in_seconds">חזרה למסך הראשי בעוד %d שניות...</string>
+    <string name="unsaved_changes_message">יש לך שינויים שלא נשמרו ויש לשמור אותם כדי להחיל על המכשיר.</string>
+    <string name="connection_status">מצב חיבור: %s</string>
+    <string name="try_reconnect">נסה להתחבר מחדש</string>
+    <string name="hardware_settings">הגדרות חומרה</string>
+    <string name="calibration_settings">הגדרות כיול</string>
+    <string name="simulation_mode">מצב סימולציה</string>
+    <string name="enable_simulation_mode">הפעל מצב סימולציה</string>
+    <string name="simulation_mode_description">מצב סימולציה מאפשר בדיקת האפליקציה ללא חיבור למכשיר אמיתי</string>
+    <string name="save_settings">שמור הגדרות</string>
+    <string name="wifi_password">סיסמה</string>
+    <string name="relay_compressor_pin">Relay Compressor Pin</string>
+    <string name="relay_free_pin">Relay Free Pin</string>
+    <string name="sensor_pin">Sensor Pin</string>
+    <string name="sensor_value_at_0_psi">ערך חיישן ב-0 PSI</string>
+    <string name="sensor_value_at_50_psi">ערך חיישן ב-50 PSI</string>
+    <string name="precision_psi">דיוק (PSI)</string>
+    <string name="max_sec_for_status">זמן מקסימלי לסטטוס (שניות)</string>
+    <string name="measure_wait">זמן המתנה למדידה (שניות)</string>
+    <string name="auto_start">התחלה אוטומטית</string>
+    <string name="bt_pin_code">קוד PIN לבלוטות\'</string>
+    <string name="ssid">SSID</string>
+    <string name="password">סיסמה</string>
+    
+    <!-- מחרוזות כלליות נוספות -->
+    <string name="scanning_for_devices">סורק מכשירים...</string>
+    <string name="tap_to_connect">לחץ כדי להתחבר</string>
+    <string name="tire_pressure">לחץ אוויר בצמיגים</string>
+    <string name="front_left">קדמי שמאלי</string>
+    <string name="front_right">קדמי ימני</string>
+    <string name="rear_left">אחורי שמאלי</string>
+    <string name="rear_right">אחורי ימני</string>
+    
+    <!-- מחרוזות חדשות עבור מסך ה-About -->
+    <string name="about_screen_title">אודות</string>
+    <string name="app_description">אפליקציה לניהול לחץ אוויר בצמיגים</string>
+    <string name="contact_info">פרטי יצירת קשר</string>
+    <string name="copyright_notice">© %1$s 2024. כל הזכויות שמורות.</string>
+    <string name="connection_duration_seconds">מחובר למשך %1$d שניות</string>
+    <string name="connection_duration_minutes" formatted="false">מחובר למשך %1$d דקות ו-%2$d שניות</string>
+    <string name="connection_duration_hours" formatted="false">מחובר למשך %1$d שעות ו-%2$d דקות</string>
+    <string name="permission_denied">הרשאה דרושה</string>
+    
+    <!-- Android Auto -->
+    <string name="auto_current_pressure">לחץ נוכחי:</string>
+    <string name="auto_target_pressure">לחץ יעד:</string>
+    <string name="auto_select_target">בחר לחץ יעד</string>
+    <string name="auto_app_title">ניהול לחץ אוויר בצמיגים</string>
+    <string name="inflate">התחל ניפוח</string>
+    <string name="select_target_pressure">בחר לחץ יעד</string>
+    <string name="connect">התחבר</string>
+    <string name="auto_pressure_format">%.1f PSI</string>
+    
+    <!-- Mobile App Specific -->
+    <string name="psi_unit">PSI</string>
+    <string name="plus_symbol">+</string>
+    <string name="minus_symbol">-</string>
+    <string name="connected_duration_seconds">מחובר למשך %1$d שניות</string>
+    <string name="connected_duration_minutes" formatted="false">מחובר למשך %1$d דקות ו-%2$d שניות</string>
+    <string name="connected_duration_hours" formatted="false">מחובר למשך %1$d שעות ו-%2$d דקות</string>
+    <string name="predefined_pressure_format">לחץ %1$d</string>
+    
+    <!-- Connection states -->
+    <string name="bluetooth_disabled">Bluetooth מושבת</string>
+    <string name="connection_error">שגיאת חיבור</string>
+
+    <!-- Language Settings -->
+    <string name="language_settings">הגדרות שפה</string>
+    <string name="select_language">בחר שפה</string>
+    <string name="language_english">אנגלית</string>
+    <string name="language_hebrew">עברית</string>
+    <string name="language_changed">השפה שונתה</string>
+    <string name="restart_required">יש להפעיל מחדש את האפליקציה כדי להחיל את השינויים</string>
+
+    <!-- Predefined Pressures -->
+    <string name="loading_preset_pressures">טוען לחצי אוויר מוגדרים מראש...</string>
+    <string name="predefined_pressures">לחצי אוויר מוגדרים מראש</string>
+    <string name="predefined_pressure_1">לחץ אוויר 1 (8 PSI)</string>
+    <string name="predefined_pressure_2">לחץ אוויר 2 (10 PSI)</string>
+    <string name="predefined_pressure_3">לחץ אוויר 3 (12 PSI)</string>
+    <string name="predefined_pressure_4">לחץ אוויר 4 (16 PSI)</string>
+    <string name="predefined_pressure_5">לחץ אוויר 5 (20 PSI)</string>
+    <string name="predefined_pressure_6">לחץ אוויר 6 (30 PSI)</string>
+    <string name="predefined_pressure_7">לחץ אוויר 7 (38 PSI)</string>
+    <string name="predefined_pressure_8">לחץ אוויר 8 (40 PSI)</string>
+    <string name="predefined_pressures_description">הגדר את ערכי לחץ האוויר עבור כפתורי הבחירה המהירה</string>
+    <string name="pressure_value_hint">הכנס ערך לחץ אוויר</string>
+
+    <!-- Version Info -->
+    <string name="version_info_format">גרסה: %1$s\nבניה: %2$d\nסוג בנייה: %3$s\nזמן בנייה: %4$s\nגרסת SDK מינימלית: %5$d\nגרסת SDK יעד: %6$d\nמפתח: %7$s</string>
+
+    <!-- Display Mode -->
+    <string name="display_mode">מצב תצוגה</string>
+    <string name="system_default">ברירת מחדל של המערכת</string>
+    <string name="light_mode">מצב בהיר</string>
+    <string name="dark_mode">מצב כהה</string>
+    <string name="display_mode_change_notice">שינוי מצב התצוגה דורש הפעלה מחדש של האפליקציה</string>
+</resources> 

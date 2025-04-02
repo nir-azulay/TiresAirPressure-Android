@@ -144,6 +144,7 @@ fun SettingsScreen(
                             currentLanguage = appSettings.language,
                             onLanguageSelected = { 
                                 viewModel.updateLanguage(it)
+                                // Always show restart dialog when language is changed
                                 showRestartDialog = true
                             }
                         )

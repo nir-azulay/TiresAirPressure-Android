@@ -147,15 +147,21 @@ fun SettingsScreen(
                         
                         OutlinedButton(
                             onClick = {
-                                viewModel.discardChanges()
-                                onBackClick() // Return to main screen after discarding changes
+                                if (hasUnsavedChanges) {
+                                    viewModel.discardChanges()
+                                }
+                                onBackClick() // Return to main screen, always
                             },
                             modifier = Modifier
                                 .weight(1f),
-                            enabled = hasUnsavedChanges
+                            enabled = true // Always enabled
                         ) {
                             Text(
-                                text = stringResource(R.string.discard),
+                                text = if (hasUnsavedChanges) {
+                                    stringResource(R.string.discard)
+                                } else {
+                                    stringResource(R.string.close)
+                                },
                                 color = Color.White // Make button text white for better visibility
                             )
                         }

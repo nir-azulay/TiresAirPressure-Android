@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.content.res.Configuration
 import android.util.Log
+import java.util.Locale
 
 class TiresAirPressureApp : Application() {
     companion object {
@@ -11,8 +12,17 @@ class TiresAirPressureApp : Application() {
     }
 
     override fun attachBaseContext(base: Context) {
-        super.attachBaseContext(base)
-        Log.d(TAG, "Base context attached")
+        // Force English locale for the application
+        val localeToSwitchTo = Locale.ENGLISH
+        val localeUpdatedContext = updateBaseContextLocale(base, localeToSwitchTo)
+        super.attachBaseContext(localeUpdatedContext)
+        Log.d(TAG, "Base context attached, forced locale to English")
+    }
+    
+    private fun updateBaseContextLocale(context: Context, locale: Locale): Context {
+        val configuration = Configuration(context.resources.configuration)
+        configuration.setLocale(locale)
+        return context.createConfigurationContext(configuration)
     }
 
     override fun onCreate() {

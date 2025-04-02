@@ -48,6 +48,7 @@ import com.nazulay.tiresairpressuremanagement.data.repository.BleRepository
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.Lifecycle
+import java.util.*
 
 class MainActivity : ComponentActivity() {
     private val TAG = "MainActivity"
@@ -108,7 +109,16 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(newBase)
+        // Force English locale
+        val localeToSwitchTo = Locale.ENGLISH
+        val localeUpdatedContext = updateBaseContextLocale(newBase, localeToSwitchTo)
+        super.attachBaseContext(localeUpdatedContext)
+    }
+
+    private fun updateBaseContextLocale(context: Context, locale: Locale): Context {
+        val configuration = Configuration(context.resources.configuration)
+        configuration.setLocale(locale)
+        return context.createConfigurationContext(configuration)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

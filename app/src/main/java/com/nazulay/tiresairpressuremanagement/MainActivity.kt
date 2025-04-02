@@ -145,7 +145,12 @@ class MainActivity : ComponentActivity() {
         
         // Try to connect to saved devices when app starts
         lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
+            Log.d(TAG, "Attempting to connect to saved devices")
+            val savedDevices = bleRepository.getSavedDevices()
+            Log.d(TAG, "Found ${savedDevices.size} saved devices")
+            
+            if (savedDevices.isNotEmpty()) {
+                isConnectingToSavedDevice = true
                 bleRepository.connectToSavedDevices()
             }
         }
@@ -166,20 +171,16 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun tryConnectToSavedDevice() {
-        val sharedPreferences = getSharedPreferences(getString(R.string.device_settings), Context.MODE_PRIVATE)
-        val primaryDeviceAddress = sharedPreferences.getString(getString(R.string.selected_device_address), null)
-        val secondaryDeviceAddress = sharedPreferences.getString("secondDeviceAddress", null)
+        // Use BleRepository to get saved devices
+        val savedDevices = bleRepository.getSavedDevices()
         
-        if (primaryDeviceAddress != null) {
-            android.util.Log.d(TAG, getString(R.string.found_saved_device, primaryDeviceAddress))
+        if (savedDevices.isNotEmpty()) {
+            Log.d(TAG, "Found saved devices, attempting to connect")
             isConnectingToSavedDevice = true
-            bleManager.connectToSavedDevice()
-        } else if (secondaryDeviceAddress != null) {
-            android.util.Log.d(TAG, "Found secondary saved device: $secondaryDeviceAddress")
-            isConnectingToSavedDevice = true
+            // Use BleManager to connect to saved device
             bleManager.connectToSavedDevice()
         } else {
-            android.util.Log.d(TAG, getString(R.string.no_saved_device))
+            Log.d(TAG, getString(R.string.no_saved_device))
             isConnectingToSavedDevice = false
         }
     }
@@ -426,10 +427,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        android.util.Log.d(TAG, "onResume called")
-        // ננסה להתחבר מחדש אם אנחנו מנותקים
-        if (bleManager.connectionState.value == ConnectionState.Disconnected) {
-            tryConnectToSavedDevice()
+        Log.d(TAG, "onResume called")
+        // Try to reconnect if we're disconnected and have saved devices
+        lifecycleScope.launch {
+            if (bleManager.connectionState.value == ConnectionState.Disconnected) {
+                val savedDevices = bleRepository.getSavedDevices()
+                if (savedDevices.isNotEmpty()) {
+                    Log.d(TAG, "Found saved devices in onResume, attempting to connect")
+                    bleRepository.connectToSavedDevices()
+                }
+            }
         }
     }
     

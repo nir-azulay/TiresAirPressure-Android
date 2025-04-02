@@ -1051,33 +1051,25 @@ class BleManager(
     }
     
     fun saveSelectedDevice(deviceAddress: String) {
-        val sharedPreferences = context.getSharedPreferences("DeviceSettings", Context.MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
+        // Get the device name
+        val deviceName = bluetoothGatt?.device?.name ?: "Unknown Device"
         
-        // Get the current saved device
-        val currentSavedDevice = sharedPreferences.getString("selectedDeviceAddress", null)
-        
-        if (currentSavedDevice != null && currentSavedDevice != deviceAddress) {
-            // If we have a different device saved, move it to second position
-            editor.putString("secondDeviceAddress", currentSavedDevice)
-        }
-        
-        // Save the new device as the primary device
-        editor.putString("selectedDeviceAddress", deviceAddress)
-        editor.apply()
+        // Use the repository to save the device which will use SavedDevicesManager internally
+        bleRepository?.saveConnectedDevice(deviceAddress, deviceName)
+        Log.d(TAG, "Saved device to repository: $deviceName ($deviceAddress)")
     }
 
     fun connectToSavedDevice() {
-        val sharedPreferences = context.getSharedPreferences("DeviceSettings", Context.MODE_PRIVATE)
-        val primaryDeviceAddress = sharedPreferences.getString("selectedDeviceAddress", null)
-        val secondaryDeviceAddress = sharedPreferences.getString("secondDeviceAddress", null)
+        // Get devices from SavedDevicesManager instead of private SharedPreferences
+        val savedDevices = bleRepository?.getSavedDevices() ?: emptyList()
         
-        if (primaryDeviceAddress != null) {
-            Log.d(TAG, "Attempting to connect to primary saved device: $primaryDeviceAddress")
+        if (savedDevices.isNotEmpty()) {
+            val primaryDevice = savedDevices[0]
+            Log.d(TAG, "Attempting to connect to primary saved device: ${primaryDevice.address}")
             
             // Check if we're already connected to this device
             if (_connectionState.value == ConnectionState.Connected && 
-                bluetoothGatt?.device?.address == primaryDeviceAddress) {
+                bluetoothGatt?.device?.address == primaryDevice.address) {
                 Log.d(TAG, "Already connected to primary device, no need to reconnect")
                 return
             }
@@ -1090,13 +1082,14 @@ class BleManager(
             }
             
             // Connect to the primary device
-            connect(primaryDeviceAddress)
-        } else if (secondaryDeviceAddress != null) {
-            Log.d(TAG, "No primary device found, attempting to connect to secondary device: $secondaryDeviceAddress")
+            connect(primaryDevice.address)
+        } else if (savedDevices.size > 1) {
+            val secondaryDevice = savedDevices[1]
+            Log.d(TAG, "No primary device found, attempting to connect to secondary device: ${secondaryDevice.address}")
             
             // Check if we're already connected to this device
             if (_connectionState.value == ConnectionState.Connected && 
-                bluetoothGatt?.device?.address == secondaryDeviceAddress) {
+                bluetoothGatt?.device?.address == secondaryDevice.address) {
                 Log.d(TAG, "Already connected to secondary device, no need to reconnect")
                 return
             }
@@ -1109,7 +1102,7 @@ class BleManager(
             }
             
             // Connect to the secondary device
-            connect(secondaryDeviceAddress)
+            connect(secondaryDevice.address)
         } else {
             Log.d(TAG, "No saved devices to connect to")
         }

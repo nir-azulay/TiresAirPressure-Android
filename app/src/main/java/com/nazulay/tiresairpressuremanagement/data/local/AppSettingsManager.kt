@@ -25,7 +25,6 @@ class AppSettingsManager private constructor(private val context: Context) {
         private const val TAG = "AppSettingsManager"
         private const val APP_SETTINGS_PREF = "app_settings_preferences"
         private const val THEME_MODE_KEY = "theme_mode"
-        private const val LANGUAGE_KEY = "language"
         private const val SIMULATION_MODE_KEY = "simulation_mode"
         private const val PREDEFINED_PRESSURES_KEY_PREFIX = "predefined_pressure_"
     }
@@ -37,7 +36,6 @@ class AppSettingsManager private constructor(private val context: Context) {
     private fun loadSettings(): AppSettings {
         return AppSettings(
             themeMode = prefs.getInt(THEME_MODE_KEY, 0),
-            language = prefs.getString(LANGUAGE_KEY, "en") ?: "en",
             simulationMode = prefs.getBoolean(SIMULATION_MODE_KEY, false),
             predefinedPressures = loadPredefinedPressures()
         )
@@ -52,7 +50,6 @@ class AppSettingsManager private constructor(private val context: Context) {
     fun updateSettings(settings: AppSettings) {
         prefs.edit().apply {
             putInt(THEME_MODE_KEY, settings.themeMode)
-            putString(LANGUAGE_KEY, settings.language)
             putBoolean(SIMULATION_MODE_KEY, settings.simulationMode)
             putString(PREDEFINED_PRESSURES_KEY_PREFIX, settings.predefinedPressures.joinToString(","))
             apply()
@@ -64,11 +61,6 @@ class AppSettingsManager private constructor(private val context: Context) {
     fun updateThemeMode(themeMode: Int) {
         val currentSettings = _settings.value
         updateSettings(currentSettings.copy(themeMode = themeMode))
-    }
-
-    fun updateLanguage(language: String) {
-        val currentSettings = _settings.value
-        updateSettings(currentSettings.copy(language = language))
     }
 
     fun updateSimulationMode(enabled: Boolean) {

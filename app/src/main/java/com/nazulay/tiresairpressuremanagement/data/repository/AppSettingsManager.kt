@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Manager class for application settings that are stored locally
- * This includes theme, language, simulation mode, and predefined pressures
+ * This includes theme, simulation mode, and predefined pressures
  */
 class AppSettingsManager(private val context: Context) {
     
@@ -21,7 +21,6 @@ class AppSettingsManager(private val context: Context) {
         
         // Settings keys
         private const val THEME_MODE_KEY = "theme_mode"
-        private const val LANGUAGE_KEY = "language"
         private const val SIMULATION_MODE_KEY = "simulation_mode"
         private const val PREDEFINED_PRESSURES_KEY_PREFIX = "predefined_pressure_" 
     }
@@ -40,11 +39,6 @@ class AppSettingsManager(private val context: Context) {
             SettingsViewModel.THEME_MODE_SYSTEM
         )
         
-        val language = sharedPreferences.getString(
-            LANGUAGE_KEY, 
-            getCurrentSystemLanguage()
-        ) ?: getCurrentSystemLanguage()
-        
         val simulationMode = sharedPreferences.getBoolean(
             SIMULATION_MODE_KEY, 
             false
@@ -54,7 +48,6 @@ class AppSettingsManager(private val context: Context) {
         
         return AppSettings(
             themeMode = themeMode,
-            language = language,
             simulationMode = simulationMode,
             predefinedPressures = predefinedPressures
         )
@@ -85,15 +78,6 @@ class AppSettingsManager(private val context: Context) {
         editor.apply()
     }
     
-    private fun getCurrentSystemLanguage(): String {
-        val deviceLanguage = java.util.Locale.getDefault().language
-        return when (deviceLanguage) {
-            SettingsViewModel.LANGUAGE_HEBREW, 
-            SettingsViewModel.LANGUAGE_ENGLISH -> deviceLanguage
-            else -> SettingsViewModel.LANGUAGE_ENGLISH
-        }
-    }
-    
     fun updateThemeMode(mode: Int) {
         if (mode in SettingsViewModel.THEME_MODE_SYSTEM..SettingsViewModel.THEME_MODE_DARK) {
             sharedPreferences.edit().putInt(THEME_MODE_KEY, mode).apply()
@@ -101,13 +85,6 @@ class AppSettingsManager(private val context: Context) {
             _settings.value = _settings.value.copy(themeMode = mode)
             Log.d(TAG, "Theme mode updated to: $mode")
         }
-    }
-    
-    fun updateLanguage(languageCode: String) {
-        sharedPreferences.edit().putString(LANGUAGE_KEY, languageCode).apply()
-        
-        _settings.value = _settings.value.copy(language = languageCode)
-        Log.d(TAG, "Language updated to: $languageCode")
     }
     
     fun updateSimulationMode(enabled: Boolean) {

@@ -24,7 +24,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import com.nazulay.tiresairpressuremanagement.data.ble.BleManager
 import com.nazulay.tiresairpressuremanagement.R
-import java.util.Locale
 import kotlinx.coroutines.flow.SharingStarted
 import com.nazulay.tiresairpressuremanagement.data.local.AppSettingsManager
 import kotlinx.coroutines.delay
@@ -35,7 +34,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.nazulay.tiresairpressuremanagement.utils.LocaleHelper
 
 class SettingsViewModel(
     private val bleManager: BleManager,
@@ -50,15 +48,9 @@ class SettingsViewModel(
         const val THEME_MODE_LIGHT = 1
         const val THEME_MODE_DARK = 2
         
-        // Language constants
-        const val LANGUAGE_HEBREW = "he"
-        const val LANGUAGE_ENGLISH = "en"
-        
         // Preference constants
         const val THEME_MODE_PREF = "theme_mode_preferences"
         const val THEME_MODE_KEY = "theme_mode"
-        const val LANGUAGE_PREF = "language_preferences"
-        const val LANGUAGE_KEY = "selected_language"
         
         fun provideFactory(
             application: Application,
@@ -128,10 +120,6 @@ class SettingsViewModel(
     private val _themeMode = MutableStateFlow(THEME_MODE_SYSTEM)
     val themeMode: StateFlow<Int> = _themeMode.asStateFlow()
     
-    // Language selection state
-    private val _selectedLanguage = MutableStateFlow(loadSelectedLanguage())
-    val selectedLanguage: StateFlow<String> = _selectedLanguage.asStateFlow()
-    
     // Predefined pressure states
     private val _predefinedPressure1 = MutableStateFlow(8f)
     private val _predefinedPressure2 = MutableStateFlow(10f)
@@ -146,9 +134,8 @@ class SettingsViewModel(
         Log.d(TAG, "Initializing SettingsViewModel")
         Log.d(TAG, "Initial Connection State from BleManager: ${bleManager.connectionState.value}")
         
-        // Load theme and language
+        // Load theme
         loadThemeMode()
-        // selectedLanguage is already initialized with loadSelectedLanguage()
 
         // Predefined pressures are handled by AppSettingsManager
 
@@ -440,125 +427,11 @@ class SettingsViewModel(
         Log.d(TAG, "Theme mode loaded: $savedMode")
     }
 
-    // Function to get available languages
-    fun getAvailableLanguages(): List<Pair<String, String>> {
-        return listOf(
-            LANGUAGE_ENGLISH to application.getString(R.string.language_english),
-            LANGUAGE_HEBREW to application.getString(R.string.language_hebrew)
-        )
-    }
-
-    // Function to set the app language
-    fun setLanguage(languageCode: String) {
-        if (languageCode != _selectedLanguage.value) {
-            val currentSystemLocale = Locale.getDefault()
-            Log.d(TAG, "Language change request - Current system locale: ${currentSystemLocale.language} (${currentSystemLocale.displayLanguage})")
-            Log.d(TAG, "Language change request - From: ${_selectedLanguage.value} to: $languageCode")
-            
-            // Check shared preferences before change
-            val prefs = application.getSharedPreferences(LocaleHelper.LANGUAGE_PREF, Context.MODE_PRIVATE)
-            val beforeChange = prefs.getString(LocaleHelper.LANGUAGE_KEY, "not set")
-            Log.d(TAG, "Language change request - SharedPreferences before change: $beforeChange")
-            
-            // Update viewmodel state
-            _selectedLanguage.value = languageCode
-            
-            // Update in AppSettingsManager first
-            appSettingsManager.updateLanguage(languageCode)
-            Log.d(TAG, "Language change - Updated in AppSettingsManager to: $languageCode")
-            
-            // Check shared preferences after AppSettingsManager update
-            val afterManagerChange = prefs.getString(LocaleHelper.LANGUAGE_KEY, "not set")
-            Log.d(TAG, "Language change - SharedPreferences after AppSettingsManager update: $afterManagerChange")
-            
-            // Use LocaleHelper to apply the language change which will restart the app
-            viewModelScope.launch {
-                Log.d(TAG, "Language change - Preparing to apply via LocaleHelper and restart")
-                delay(300) // Small delay to ensure UI feedback before restart
-                LocaleHelper.setLocale(application, languageCode)
-                Log.d(TAG, "Language change - LocaleHelper.setLocale called (app should restart)")
-            }
-        } else {
-            Log.d(TAG, "Language not changed - selected language is already: $languageCode")
-        }
-    }
-
-    // Load saved language preference
-    private fun loadSelectedLanguage(): String {
-        val locale = Locale.getDefault()
-        Log.d(TAG, "loadSelectedLanguage - Current system locale: ${locale.language} (${locale.displayLanguage})")
-        
-        // Check shared preferences directly
-        val prefs = application.getSharedPreferences(LocaleHelper.LANGUAGE_PREF, Context.MODE_PRIVATE)
-        val directPref = prefs.getString(LocaleHelper.LANGUAGE_KEY, "not set")
-        Log.d(TAG, "loadSelectedLanguage - Direct from SharedPreferences: $directPref")
-        
-        // Get from LocaleHelper
-        val language = LocaleHelper.getSavedLanguage(application)
-        Log.d(TAG, "loadSelectedLanguage - From LocaleHelper: $language")
-        
-        return language
-    }
-
-    // Save language preference
-    private fun saveSelectedLanguage(languageCode: String) {
-        val sharedPreferences = application.getSharedPreferences(LANGUAGE_PREF, Context.MODE_PRIVATE)
-        sharedPreferences.edit().putString(LANGUAGE_KEY, languageCode).apply()
-    }
-
-    // Get system language
-    private fun getSystemLanguage(): String {
-        return Locale.getDefault().language.let { lang ->
-            when (lang) {
-                LANGUAGE_HEBREW, LANGUAGE_ENGLISH -> lang
-                else -> LANGUAGE_ENGLISH // Default to English for unsupported languages
-            }
-        }
-    }
-
-    // Update app locale
-    private fun updateLocale(languageCode: String) {
-        val locale = Locale(languageCode)
-        Locale.setDefault(locale)
-        
-        val config = Configuration(application.resources.configuration)
-        config.setLocale(locale)
-        
-        @Suppress("DEPRECATION")
-        application.resources.updateConfiguration(config, application.resources.displayMetrics)
-        
-        // Force refresh of configuration
-        val resources = application.resources
-        val metrics = resources.displayMetrics
-        val configuration = resources.configuration
-        configuration.locale = locale
-        resources.updateConfiguration(configuration, metrics)
-    }
-
-    fun updatePredefinedPressure(index: Int, value: Float) {
-        val validValue = value.coerceIn(0f, 150f) // Limit pressure between 0 and 150 PSI
-        when (index) {
-            1 -> _predefinedPressure1.value = validValue
-            2 -> _predefinedPressure2.value = validValue
-            3 -> _predefinedPressure3.value = validValue
-            4 -> _predefinedPressure4.value = validValue
-            5 -> _predefinedPressure5.value = validValue
-            6 -> _predefinedPressure6.value = validValue
-            7 -> _predefinedPressure7.value = validValue
-            8 -> _predefinedPressure8.value = validValue
-        }
-    }
-
     // App Settings Functions
     fun updateThemeMode(mode: Int) {
         if (mode in THEME_MODE_SYSTEM..THEME_MODE_DARK) {
             appSettingsManager.updateThemeMode(mode)
         }
-    }
-    
-    fun updateLanguage(languageCode: String) {
-        // We'll use setLanguage instead to provide a consistent approach
-        setLanguage(languageCode)
     }
     
     fun updateSimulationMode(enabled: Boolean) {

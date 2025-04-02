@@ -59,7 +59,6 @@ fun SettingsScreen(
     onBackClick: () -> Unit,
     forceReconnect: () -> Unit = {}
 ) {
-    var showRestartDialog by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
     val deviceSettings by viewModel.deviceSettings.collectAsState()
     val appSettings by viewModel.appSettings.collectAsState()
@@ -68,11 +67,6 @@ fun SettingsScreen(
     // Get connection state cleanly from the ViewModel
     val connectionState by viewModel.connectionState.collectAsState()
     
-    // Log connection state changes for debugging
-    LaunchedEffect(connectionState) {
-        Log.d("SettingsScreen", "Connection state from ViewModel: $connectionState")
-    }
-
     // Launched effect to handle navigation back after saving
     LaunchedEffect(isSaving) {
         if (isSaving) {
@@ -133,20 +127,6 @@ fun SettingsScreen(
                         DisplayModeSettings(
                             currentMode = appSettings.themeMode,
                             onModeSelected = { viewModel.updateThemeMode(it) }
-                        )
-                    }
-                }
-
-                // Language Settings Card
-                item {
-                    SettingsCard {
-                        LanguageSettings(
-                            currentLanguage = appSettings.language,
-                            onLanguageSelected = { 
-                                viewModel.updateLanguage(it)
-                                // Always show restart dialog when language is changed
-                                showRestartDialog = true
-                            }
                         )
                     }
                 }
@@ -351,20 +331,6 @@ fun SettingsScreen(
         }
     }
 
-    // Restart Dialog
-    if (showRestartDialog) {
-        AlertDialog(
-            onDismissRequest = { showRestartDialog = false },
-            title = { Text(stringResource(R.string.language_changed)) },
-            text = { Text(stringResource(R.string.restart_required)) },
-            confirmButton = {
-                TextButton(onClick = { showRestartDialog = false }) {
-                    Text(stringResource(R.string.ok))
-                }
-            }
-        )
-    }
-    
     // Saving Dialog
     if (isSaving) {
         // Track the saving/reconnection state
@@ -544,60 +510,6 @@ private fun ThemeButton(
             Spacer(Modifier.height(4.dp))
             Text(text, style = MaterialTheme.typography.labelSmall)
         }
-    }
-}
-
-@Composable
-private fun LanguageSettings(
-    currentLanguage: String,
-    onLanguageSelected: (String) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
-        Text(
-            text = stringResource(R.string.language_settings),
-            style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp), // Smaller title
-            color = Color.White, // Match MainScreen text color
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally) // Space out buttons
-        ) {
-            LanguageButton(
-                text = stringResource(R.string.language_english),
-                isSelected = currentLanguage == SettingsViewModel.LANGUAGE_ENGLISH,
-                onClick = { onLanguageSelected(SettingsViewModel.LANGUAGE_ENGLISH) }
-            )
-            LanguageButton(
-                text = stringResource(R.string.language_hebrew),
-                isSelected = currentLanguage == SettingsViewModel.LANGUAGE_HEBREW,
-                onClick = { onLanguageSelected(SettingsViewModel.LANGUAGE_HEBREW) }
-            )
-        }
-        // Note: The restart required notice is shown as a dialog now, so no text here.
-    }
-}
-
-// Helper for language buttons
-@Composable
-private fun LanguageButton(
-    text: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-     Button(
-        onClick = onClick,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    ) {
-        Text(text)
     }
 }
 
@@ -975,7 +887,10 @@ private fun WifiSettings(
             if (availableNetworks.isNotEmpty()) {
                  TextButton(onClick = { showNetworkList = !showNetworkList }) {
                      Text(
-                         text = if (showNetworkList) "Hide List" else "Show List (${availableNetworks.size})",
+                         text = if (showNetworkList) 
+                             stringResource(R.string.hide_list) 
+                         else 
+                             stringResource(R.string.show_list_count, availableNetworks.size),
                          color = MaterialTheme.colorScheme.primary
                      )
                  }
@@ -1035,11 +950,11 @@ private fun SignalStrengthIndicator(level: Int) {
         else -> Icons.Default.SignalWifiOff
     }
     val description = when (WifiManager.calculateSignalLevel(level, 4)) {
-        0 -> "Weak signal"
-        1 -> "Fair signal"
-        2 -> "Good signal"
-        3 -> "Excellent signal"
-        else -> "No signal"
+        0 -> stringResource(R.string.weak_signal)
+        1 -> stringResource(R.string.fair_signal)
+        2 -> stringResource(R.string.good_signal)
+        3 -> stringResource(R.string.excellent_signal)
+        else -> stringResource(R.string.no_signal)
     }
     Icon(
         icon,

@@ -180,14 +180,6 @@
     <string name="bluetooth_disabled">Bluetooth Disabled</string>
     <string name="connection_error">Connection Error</string>
 
-    <!-- Language Settings -->
-    <string name="language_settings">Language Settings</string>
-    <string name="select_language">Select Language</string>
-    <string name="language_english">English</string>
-    <string name="language_hebrew">Hebrew</string>
-    <string name="language_changed">Language Changed</string>
-    <string name="restart_required">Please restart the app to apply changes</string>
-
     <!-- Predefined Pressures -->
     <string name="loading_preset_pressures">Loading preset pressures...</string>
     <string name="predefined_pressures">Predefined Pressures</string>
@@ -211,4 +203,14 @@
     <string name="light_mode">Light Mode</string>
     <string name="dark_mode">Dark Mode</string>
     <string name="display_mode_change_notice">Changing display mode requires app restart</string>
+    
+    <!-- WiFi Network List -->
+    <string name="show_list">Show List</string>
+    <string name="hide_list">Hide List</string>
+    <string name="show_list_count">Show List (%d)</string>
+    <string name="weak_signal">Weak signal</string>
+    <string name="fair_signal">Fair signal</string>
+    <string name="good_signal">Good signal</string>
+    <string name="excellent_signal">Excellent signal</string>
+    <string name="no_signal">No signal</string>
 </resources>

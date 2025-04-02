@@ -290,6 +290,17 @@ class MainActivity : ComponentActivity() {
                         onBackClick = {
                             android.util.Log.d(TAG, "User clicked back from settings")
                             currentScreen = Screen.MAIN
+                            // No special reconnection logic needed here
+                            // The onResume() method will handle reconnection if needed
+                        },
+                        forceReconnect = {
+                            android.util.Log.d(TAG, "Force reconnect callback triggered from SettingsScreen")
+                            if (bleManager.connectionState.value == ConnectionState.Disconnected) {
+                                android.util.Log.d(TAG, "Device is disconnected, calling tryConnectToSavedDevice")
+                                tryConnectToSavedDevice()
+                            } else {
+                                android.util.Log.d(TAG, "Device is not disconnected, no need to reconnect")
+                            }
                         }
                     )
                 }

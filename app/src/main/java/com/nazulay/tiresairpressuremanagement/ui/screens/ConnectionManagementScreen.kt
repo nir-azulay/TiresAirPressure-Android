@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.nazulay.tiresairpressuremanagement.data.ble.BleManager
 import com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState
 import com.nazulay.tiresairpressuremanagement.domain.models.BleDevice
@@ -60,7 +61,13 @@ fun ConnectionManagementScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.search_devices)) },
+                title = { 
+                    Text(
+                        text = stringResource(R.string.search_devices),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    ) 
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary

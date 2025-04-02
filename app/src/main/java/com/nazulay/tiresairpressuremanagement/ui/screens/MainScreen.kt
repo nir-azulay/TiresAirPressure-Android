@@ -45,6 +45,9 @@ import androidx.compose.material.icons.filled.Settings
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.clickable
 import android.util.Log
+import android.app.Application
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.LocalContentColor
 
 private const val TAG = "MainScreen"
 
@@ -69,7 +72,7 @@ fun MainScreen(
     
     // Create MainViewModel instance
     val viewModel: MainViewModel = viewModel(
-        factory = MainViewModel.provideFactory(bleManager.application, bleManager)
+        factory = MainViewModel.provideFactory(LocalContext.current.applicationContext as Application, bleManager)
     )
     
     // State for target reached dialog
@@ -210,7 +213,13 @@ fun MainScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.app_name)) },
+                title = { 
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        fontSize = 16.sp, // Smaller font size for the app title
+                        fontWeight = FontWeight.Medium // Medium weight for better readability at smaller size
+                    ) 
+                },
                 actions = {
                     IconButton(onClick = onSettingsClick) {
                         Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.settings))
@@ -295,8 +304,7 @@ fun MainScreen(
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp)
-                                    .verticalScroll(rememberScrollState()),
+                                    .padding(16.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
@@ -320,7 +328,7 @@ fun MainScreen(
                                             isInflating = false // Update UI immediately
                                         } else {
                                             // Start inflation
-                                            bleManager.sendCommand(BleCommand.StartTargetPressure(targetPressure))
+                                            bleManager.sendCommand(BleCommand.StartTargetPressure(targetPressure = targetPressure))
                                             android.util.Log.d(TAG, "Sent START command with target: $targetPressure")
                                             isInflating = true // Update UI immediately
                                         }
@@ -362,8 +370,7 @@ fun MainScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp)
-                                .verticalScroll(rememberScrollState()),
+                                .padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
@@ -387,7 +394,7 @@ fun MainScreen(
                                         isInflating = false // Update UI immediately
                                     } else {
                                         // Start inflation
-                                        bleManager.sendCommand(BleCommand.StartTargetPressure(targetPressure))
+                                        bleManager.sendCommand(BleCommand.StartTargetPressure(targetPressure = targetPressure))
                                         android.util.Log.d(TAG, "Sent START command with target: $targetPressure")
                                         isInflating = true // Update UI immediately
                                     }
@@ -833,9 +840,6 @@ private fun PresetPressureCard(
 ) {
     val predefinedPressures by viewModel.predefinedPressures.collectAsState()
     
-    // Log the collected pressures
-    Log.d("PresetPressureCard", "Collected predefinedPressures: $predefinedPressures")
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -870,20 +874,20 @@ private fun PresetPressureCard(
                 // First row of preset buttons (up to 4)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally)
                 ) {
                     predefinedPressures.take(4).forEach {
                         PresetPressureButton(pressure = it, onSelect = onPresetSelected)
                     }
                 }
                 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 
                 // Second row of preset buttons (remaining)
                 if (predefinedPressures.size > 4) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                        horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally)
                     ) {
                         predefinedPressures.drop(4).forEach {
                             PresetPressureButton(pressure = it, onSelect = onPresetSelected)
@@ -903,18 +907,18 @@ fun PresetPressureButton(
     Button(
         onClick = { onSelect(pressure) },
         modifier = Modifier
-            .width(70.dp)
-            .height(40.dp),
-        shape = RoundedCornerShape(8.dp),
-        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
+            .width(55.dp)  // Slightly narrower
+            .height(36.dp), // Slightly shorter
+        shape = RoundedCornerShape(6.dp), // Smaller corner radius
+        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 2.dp), // Smaller padding
         colors = ButtonDefaults.buttonColors(
             containerColor = Color(0xFFBBDEFB) // Light blue color from screenshot
         )
     ) {
         Text(
-            text = "$pressure",
+            text = pressure.toInt().toString(), // Format as integer
             textAlign = TextAlign.Center,
-            fontSize = 16.sp,
+            fontSize = 13.sp, // Smaller font size
             fontWeight = FontWeight.Bold,
             color = Color.Black
         )

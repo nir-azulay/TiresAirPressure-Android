@@ -85,7 +85,8 @@ class SettingsViewModel(
     val availableNetworks: StateFlow<List<ScanResult>> = _availableNetworks.asStateFlow()
     
     // BLE Device Settings
-    val deviceSettings: StateFlow<DeviceSettings?> = bleManager.deviceSettings
+    private val _localDeviceSettings = MutableStateFlow<DeviceSettings?>(null)
+    val deviceSettings: StateFlow<DeviceSettings?> = _localDeviceSettings
     
     // BLE Device Status
     val deviceStatus: StateFlow<DeviceStatus?> = bleManager.deviceStatus
@@ -118,6 +119,10 @@ class SettingsViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), mapConnectionStateToString(bleManager.connectionState.value))
     
+    // Flag to track if settings have been modified
+    private val _hasUnsavedChanges = MutableStateFlow(false)
+    val hasUnsavedChanges: StateFlow<Boolean> = _hasUnsavedChanges.asStateFlow()
+    
     // מצב תצוגה נוכחי
     private val _themeMode = MutableStateFlow(THEME_MODE_SYSTEM)
     val themeMode: StateFlow<Int> = _themeMode.asStateFlow()
@@ -145,6 +150,16 @@ class SettingsViewModel(
         // selectedLanguage is already initialized with loadSelectedLanguage()
 
         // Predefined pressures are handled by AppSettingsManager
+
+        // Observe device settings from BleManager
+        viewModelScope.launch {
+            bleManager.deviceSettings.collect { settings ->
+                if (_localDeviceSettings.value == null) {
+                    // Initialize local settings on first load
+                    _localDeviceSettings.value = settings
+                }
+            }
+        }
 
         // The ViewModel now automatically reflects the state from the single BleManager instance.
         // No need for explicit collection here for connection/device states.
@@ -176,6 +191,14 @@ class SettingsViewModel(
         try {
             bleManager.requestDeviceSettings()
             bleManager.sendCommand(BleCommand.RequestSettings())
+            
+            // Update local settings from BleManager only if there are no unsaved changes
+            if (!_hasUnsavedChanges.value) {
+                viewModelScope.launch {
+                    delay(1000) // Give device time to respond
+                    _localDeviceSettings.value = bleManager.deviceSettings.value
+                }
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error requesting device settings: ${e.message}")
         }
@@ -275,10 +298,10 @@ class SettingsViewModel(
         precision: Float? = null,
         btPinCode: String? = null
     ) {
-        val currentSettings = deviceSettings.value
+        val currentSettings = _localDeviceSettings.value
         if (currentSettings != null) {
              // Create the settings object with potentially updated values
-            val settingsToSend = currentSettings.copy(
+            val updatedSettings = currentSettings.copy(
                 deviceName = deviceName ?: currentSettings.deviceName,
                 wifiSsid = wifiSsid ?: currentSettings.wifiSsid,
                 wifiPassword = wifiPassword ?: currentSettings.wifiPassword,
@@ -293,14 +316,14 @@ class SettingsViewModel(
                 precision = precision ?: currentSettings.precision,
                 btPinCode = btPinCode ?: currentSettings.btPinCode
             )
-            Log.d(TAG, "updateDeviceSettings triggering save with: $settingsToSend")
             
-            // Call the actual save function, passing the constructed settings
-            // The save function will use the _predefinedPressure values from the ViewModel's state
-             saveDeviceSettingsInternal(settingsToSend) { /* Optional callback */ }
-
+            Log.d(TAG, "Updating local device settings: $updatedSettings")
+            
+            // Only update local settings without sending to device
+            _localDeviceSettings.value = updatedSettings
+            _hasUnsavedChanges.value = true
         } else {
-             Log.w(TAG, "Cannot update/save null device settings from updateDeviceSettings")
+             Log.w(TAG, "Cannot update null device settings from updateDeviceSettings")
         }
     }
     
@@ -328,18 +351,59 @@ class SettingsViewModel(
                 //       are status/read-only, not part of settings update command
                 simulationMode = settingsToSave.simulationMode // Simulation mode IS part of update
             ))
+            _hasUnsavedChanges.value = false
             delay(1500) 
             onComplete()
         }
     }
     
-    // Public save function called by the UI (doesn't need settings param)
-    fun saveDeviceSettings(onComplete: () -> Unit) {
-        val currentSettings = deviceSettings.value
-        if (currentSettings != null) {
-             saveDeviceSettingsInternal(currentSettings, onComplete)
-        } else {
-             Log.w(TAG, "Cannot save null device settings")
+    // Public save function called by the UI - implements simplified restart flow
+    fun saveDeviceSettingsAndReconnect(forceReconnect: () -> Unit = {}) {
+        val settingsToSave = _localDeviceSettings.value ?: run {
+            Log.w(TAG, "Cannot save null device settings")
+            return
+        }
+
+        viewModelScope.launch {
+            Log.d(TAG, "Saving device settings via BleManager: $settingsToSave")
+            bleManager.sendCommand(BleCommand.UpdateSettings(
+                // ... map settingsToSave fields to command fields ...
+                wifiSsid = settingsToSave.wifiSsid,
+                wifiPassword = settingsToSave.wifiPassword,
+                deviceName = settingsToSave.deviceName,
+                relayCompressorPin = settingsToSave.relayCompressorPin,
+                relayFreePin = settingsToSave.relayFreePin,
+                sensorPin = settingsToSave.sensorPin,
+                sensorValueAt0PSI = settingsToSave.sensorValueAt0PSI,
+                sensorValueAt50PSI = settingsToSave.sensorValueAt50PSI,
+                precision = settingsToSave.precision,
+                maxSecForStatus = settingsToSave.maxSecForStatus,
+                measureWait = settingsToSave.measureWait,
+                autoStart = settingsToSave.autoStart,
+                btPinCode = settingsToSave.btPinCode,
+                simulationMode = settingsToSave.simulationMode
+            ))
+            
+            _hasUnsavedChanges.value = false
+
+            // Don't disconnect - let the device handle reconnection automatically
+            // The device will reset itself after receiving the settings
+            Log.d(TAG, "Settings saved. The device will reset and reconnect automatically.")
+            
+            // Schedule a delayed call to force reconnection after 5 seconds
+            delay(5000) // Wait 5 seconds
+            Log.d(TAG, "Calling forceReconnect callback to trigger onResume")
+            forceReconnect() // Call the provided callback to force reconnection
+        }
+    }
+    
+    // Add a new method to discard changes
+    fun discardChanges() {
+        viewModelScope.launch {
+            // Reset local settings to the actual device settings
+            _localDeviceSettings.value = bleManager.deviceSettings.value
+            _hasUnsavedChanges.value = false
+            Log.d(TAG, "Discarded all unsaved changes")
         }
     }
     
@@ -472,11 +536,18 @@ class SettingsViewModel(
                 if (currentState != ConnectionState.Connected) {
                     // If we're not connected according to the state, try to trigger an update
                     Log.d(TAG, "Not connected according to state, requesting device settings to update state")
-                    requestDeviceSettings()
+                    // Just request the connection state update without updating settings
+                    bleManager.requestDeviceSettings()
                 } else {
                     // We're connected according to the state, verify by requesting settings
                     Log.d(TAG, "Connected according to state, verifying by requesting settings")
-                    requestDeviceSettings()
+                    // If we don't have unsaved changes, update our local copy with the device settings
+                    if (!_hasUnsavedChanges.value) {
+                        requestDeviceSettings()
+                    } else {
+                        // Just ping the device without overwriting our unsaved changes
+                        bleManager.requestDeviceSettings()
+                    }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error checking connection state: ${e.message}", e)

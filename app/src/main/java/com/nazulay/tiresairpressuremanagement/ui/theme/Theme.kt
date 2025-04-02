@@ -1,6 +1,7 @@
 package com.nazulay.tiresairpressuremanagement.ui.theme
 
 import android.app.Activity
+import android.content.Context
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -53,12 +54,24 @@ fun TiresAirPressureManagementTheme(
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    // Get theme mode preference from SharedPreferences
+    val context = LocalContext.current
+    val sharedPreferences = context.getSharedPreferences("theme_mode_preferences", Context.MODE_PRIVATE)
+    val themeModeValue = sharedPreferences.getInt("theme_mode", 0) // 0 = system, 1 = light, 2 = dark
+    
+    // Determine if dark theme should be used based on settings
+    val shouldUseDarkTheme = when (themeModeValue) {
+        1 -> false // Light mode
+        2 -> true // Dark mode
+        else -> darkTheme // System default (follows system setting)
+    }
+    
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            if (shouldUseDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        darkTheme -> DarkColorScheme
+        shouldUseDarkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
     val view = LocalView.current
@@ -66,7 +79,7 @@ fun TiresAirPressureManagementTheme(
         SideEffect {
             val window = (view.context as Activity).window
             window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !shouldUseDarkTheme
         }
     }
 

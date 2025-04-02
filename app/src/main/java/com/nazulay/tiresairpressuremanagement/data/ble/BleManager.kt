@@ -592,18 +592,18 @@ class BleManager(
                 _connectionState.value = ConnectionState.Connecting
                 android.util.Log.d(TAG, "Connection state set to CONNECTING")
                 
-                // Connect with autoConnect = false for immediate connection
+                // Connect with autoConnect = true for automatic reconnection
                 bluetoothGatt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     android.util.Log.d(TAG, "Using Android M+ connection API with LE transport")
                     device.connectGatt(
                         context,
-                        false, // Use false for immediate connection
+                        true, // Use true for automatic reconnection
                         gattCallback,
                         BluetoothDevice.TRANSPORT_LE
                     )
                 } else {
                     android.util.Log.d(TAG, "Using legacy connection API")
-                    device.connectGatt(context, false, gattCallback)
+                    device.connectGatt(context, true, gattCallback)
                 }
                 
                 if (bluetoothGatt == null) {
@@ -1412,7 +1412,8 @@ class BleManager(
         val bluetoothDevice = bluetoothAdapter?.getRemoteDevice(device.address)
         if (bluetoothDevice != null) {
             _connectionState.value = ConnectionState.Connecting
-            bluetoothGatt = bluetoothDevice.connectGatt(context, false, gattCallback)
+            bluetoothGatt = bluetoothDevice.connectGatt(context, true, gattCallback)
+            Log.d(TAG, "ConnectGatt called with autoConnect=true for automatic reconnection")
         } else {
             Log.e(TAG, "Device not found: ${device.address}")
             _connectionState.value = ConnectionState.Disconnected

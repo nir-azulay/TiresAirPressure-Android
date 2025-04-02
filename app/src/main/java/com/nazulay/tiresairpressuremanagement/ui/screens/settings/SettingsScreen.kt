@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
@@ -37,7 +38,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.nazulay.tiresairpressuremanagement.R
 import com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState
@@ -47,17 +50,20 @@ import com.nazulay.tiresairpressuremanagement.ui.screens.settings.SettingsViewMo
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import androidx.compose.material3.LocalContentColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    forceReconnect: () -> Unit = {}
 ) {
     var showRestartDialog by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
     val deviceSettings by viewModel.deviceSettings.collectAsState()
     val appSettings by viewModel.appSettings.collectAsState()
+    val hasUnsavedChanges by viewModel.hasUnsavedChanges.collectAsState()
     
     // Get connection state cleanly from the ViewModel
     val connectionState by viewModel.connectionState.collectAsState()
@@ -67,221 +73,279 @@ fun SettingsScreen(
         Log.d("SettingsScreen", "Connection state from ViewModel: $connectionState")
     }
 
+    // Launched effect to handle navigation back after saving
+    LaunchedEffect(isSaving) {
+        if (isSaving) {
+            delay(5500) // Wait 5.5 seconds (slightly longer than the 5s in ViewModel)
+            Log.d("SettingsScreen", "Settings saved, returning to main screen for reconnection")
+            onBackClick() // Return to main screen to let regular app flow handle reconnection
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.settings)) },
+                title = { 
+                    Text(
+                        text = stringResource(R.string.settings),
+                        fontSize = 16.sp, // Smaller font size for the app title
+                        fontWeight = FontWeight.Medium // Medium weight for better readability at smaller size
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                )
             )
         }
     ) { paddingValues ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .background(Color(0xFF121212)) // Match MainScreen dark background
         ) {
-            // App Settings Section
-            item {
-                Text(
-                    text = stringResource(R.string.app_settings),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(vertical = 16.dp)
-                )
-            }
-
-            // Display Mode Card
-            item {
-                SettingsCard {
-                    DisplayModeSettings(
-                        currentMode = appSettings.themeMode,
-                        onModeSelected = { viewModel.updateThemeMode(it) }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // App Settings Section
+                item {
+                    Text(
+                        text = stringResource(R.string.app_settings),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Color.White, // Ensure consistent text color
+                        modifier = Modifier.padding(vertical = 16.dp)
                     )
                 }
-            }
 
-            // Language Settings Card
-            item {
-                SettingsCard {
-                    LanguageSettings(
-                        currentLanguage = appSettings.language,
-                        onLanguageSelected = { 
-                            viewModel.updateLanguage(it)
-                            showRestartDialog = true
-                        }
-                    )
-                }
-            }
-
-            // Simulation Mode Card
-            item {
-                SettingsCard {
-                    SimulationModeSettings(
-                        isEnabled = appSettings.simulationMode,
-                        onToggle = { viewModel.updateSimulationMode(it) }
-                    )
-                }
-            }
-
-            // Predefined Pressures Card
-            item {
-                SettingsCard {
-                    PredefinedPressuresSettings(
-                        pressures = appSettings.predefinedPressures,
-                        onPressuresUpdated = { viewModel.updatePredefinedPressures(it) }
-                    )
-                }
-            }
-
-            // Device Settings Section Header
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.device_settings),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(vertical = 16.dp)
-                )
-            }
-
-            // Only show device settings if connected (safe comparison)
-            if (connectionState == ConnectionState.Connected) {
-                val currentSettings = deviceSettings // Capture the value locally
-                if (currentSettings != null) { // Use the local variable for the check
-                    // Device Name Card
-                    item {
-                        SettingsCard {
-                            OutlinedTextField(
-                                value = currentSettings.deviceName, // Use local variable
-                                onValueChange = { viewModel.updateDeviceSettings(deviceName = it) },
-                                label = { Text(stringResource(R.string.device_name)) },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
+                // Display Mode Card
+                item {
+                    SettingsCard {
+                        DisplayModeSettings(
+                            currentMode = appSettings.themeMode,
+                            onModeSelected = { viewModel.updateThemeMode(it) }
+                        )
                     }
+                }
 
-                    // WiFi Settings Card
-                    item {
-                        val networks by viewModel.availableNetworks.collectAsState()
-                        SettingsCard {
-                            WifiSettings(
-                                wifiSsid = currentSettings.wifiSsid, 
-                                wifiPassword = currentSettings.wifiPassword,
-                                availableNetworks = networks, // Pass the collected networks
-                                onSsidChanged = { ssid -> viewModel.updateDeviceSettings(wifiSsid = ssid) },
-                                onPasswordChanged = { password -> viewModel.updateDeviceSettings(wifiPassword = password) },
-                                onScanClicked = { viewModel.scanWifiNetworks() }, // Call scan function
-                                onNetworkSelected = { selectedSsid -> 
-                                    // Update the SSID field when a network is selected from the list
-                                    viewModel.updateDeviceSettings(wifiSsid = selectedSsid)
-                                } 
-                            )
-                        }
+                // Language Settings Card
+                item {
+                    SettingsCard {
+                        LanguageSettings(
+                            currentLanguage = appSettings.language,
+                            onLanguageSelected = { 
+                                viewModel.updateLanguage(it)
+                                showRestartDialog = true
+                            }
+                        )
                     }
+                }
 
-                    // Hardware Settings Card
-                    item {
-                        SettingsCard {
-                            HardwareSettings(
-                                settings = currentSettings, // Use local variable
-                                onSettingsChanged = { updatedSettings -> 
-                                    viewModel.updateDeviceSettings(
-                                        relayCompressorPin = updatedSettings.relayCompressorPin,
-                                        relayFreePin = updatedSettings.relayFreePin,
-                                        sensorPin = updatedSettings.sensorPin,
-                                        autoStart = updatedSettings.autoStart,
-                                        maxSecForStatus = updatedSettings.maxSecForStatus,
-                                        sensorValueAt0PSI = updatedSettings.sensorValueAt0PSI,
-                                        sensorValueAt50PSI = updatedSettings.sensorValueAt50PSI,
-                                        measureWait = updatedSettings.measureWait,
-                                        precision = updatedSettings.precision,
-                                        btPinCode = updatedSettings.btPinCode
+                // Simulation Mode Card
+                item {
+                    SettingsCard {
+                        SimulationModeSettings(
+                            isEnabled = appSettings.simulationMode,
+                            onToggle = { viewModel.updateSimulationMode(it) }
+                        )
+                    }
+                }
+
+                // Predefined Pressures Card
+                item {
+                    SettingsCard {
+                        PredefinedPressuresSettings(
+                            pressures = appSettings.predefinedPressures,
+                            onPressuresUpdated = { viewModel.updatePredefinedPressures(it) }
+                        )
+                    }
+                }
+
+                // Device Settings Section Header
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.device_settings),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Color.White, // Ensure consistent text color
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                }
+
+                // Only show device settings if connected (safe comparison)
+                if (connectionState == ConnectionState.Connected) {
+                    val currentSettings = deviceSettings // Capture the value locally
+                    if (currentSettings != null) { // Use the local variable for the check
+                        // Device Name Card
+                        item {
+                            SettingsCard {
+                                // Define a common text field configuration
+                                val textFieldColors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedTextColor = Color.White,
+                                    focusedTextColor = Color.White,
+                                    unfocusedBorderColor = Color.Gray,
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    cursorColor = Color.White
+                                )
+                                
+                                OutlinedTextField(
+                                    value = currentSettings.deviceName, // Use local variable
+                                    onValueChange = { viewModel.updateDeviceSettings(deviceName = it) },
+                                    label = { Text(stringResource(R.string.device_name), color = Color.White.copy(alpha = 0.8f)) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = textFieldColors
+                                )
+                            }
+                        }
+
+                        // WiFi Settings Card
+                        item {
+                            val networks by viewModel.availableNetworks.collectAsState()
+                            SettingsCard {
+                                WifiSettings(
+                                    wifiSsid = currentSettings.wifiSsid, 
+                                    wifiPassword = currentSettings.wifiPassword,
+                                    availableNetworks = networks, // Pass the collected networks
+                                    onSsidChanged = { ssid -> viewModel.updateDeviceSettings(wifiSsid = ssid) },
+                                    onPasswordChanged = { password -> viewModel.updateDeviceSettings(wifiPassword = password) },
+                                    onScanClicked = { viewModel.scanWifiNetworks() }, // Call scan function
+                                    onNetworkSelected = { selectedSsid -> 
+                                        // Update the SSID field when a network is selected from the list
+                                        viewModel.updateDeviceSettings(wifiSsid = selectedSsid)
+                                    } 
+                                )
+                            }
+                        }
+
+                        // Hardware Settings Card
+                        item {
+                            SettingsCard {
+                                HardwareSettings(
+                                    settings = currentSettings, // Use local variable
+                                    onSettingsChanged = { updatedSettings -> 
+                                        viewModel.updateDeviceSettings(
+                                            relayCompressorPin = updatedSettings.relayCompressorPin,
+                                            relayFreePin = updatedSettings.relayFreePin,
+                                            sensorPin = updatedSettings.sensorPin,
+                                            autoStart = updatedSettings.autoStart,
+                                            maxSecForStatus = updatedSettings.maxSecForStatus,
+                                            sensorValueAt0PSI = updatedSettings.sensorValueAt0PSI,
+                                            sensorValueAt50PSI = updatedSettings.sensorValueAt50PSI,
+                                            measureWait = updatedSettings.measureWait,
+                                            precision = updatedSettings.precision,
+                                            btPinCode = updatedSettings.btPinCode
+                                        )
+                                    }
+                                )
+                            }
+                        }
+
+                        // Save Device Settings Button
+                        item {
+                            Column {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 6.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Button(
+                                        onClick = {
+                                            isSaving = true
+                                            viewModel.saveDeviceSettingsAndReconnect(forceReconnect)
+                                        },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                    ) {
+                                        Text(stringResource(R.string.save_settings))
+                                    }
+                                    
+                                    OutlinedButton(
+                                        onClick = {
+                                            viewModel.discardChanges()
+                                        },
+                                        modifier = Modifier
+                                            .weight(1f),
+                                        enabled = hasUnsavedChanges
+                                    ) {
+                                        Text(stringResource(R.string.discard))
+                                    }
+                                }
+                                
+                                if (hasUnsavedChanges) {
+                                    Text(
+                                        text = stringResource(R.string.unsaved_changes_message),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color.Yellow,
+                                        modifier = Modifier.padding(bottom = 8.dp)
                                     )
                                 }
-                            )
+                            }
                         }
-                    }
-
-                    // Save Device Settings Button
-                    item {
-                        Button(
-                            onClick = {
-                                isSaving = true
-                                viewModel.saveDeviceSettings { 
-                                    isSaving = false
-                                    onBackClick()
+                    } else {
+                        item {
+                            SettingsCard {
+                                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator()
+                                    Text("Loading device settings...", modifier = Modifier.padding(top = 60.dp))
                                 }
-                            },
-                            enabled = !isSaving,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 16.dp)
-                        ) {
-                            if (isSaving) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                            } else {
-                                Text(stringResource(R.string.save_settings))
                             }
                         }
                     }
                 } else {
+                    // Not connected message
                     item {
                         SettingsCard {
-                            Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator()
-                                Text("Loading device settings...", modifier = Modifier.padding(top = 60.dp))
-                            }
-                        }
-                    }
-                }
-            } else {
-                // Not connected message
-                item {
-                    SettingsCard {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = stringResource(R.string.not_connected),
-                                color = MaterialTheme.colorScheme.error,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                            
-                            Text(
-                                text = "Current connection state: ${connectionState}", // Use the state directly
-                                color = Color.Gray,
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(bottom = 16.dp)
-                            )
-                            
-                            Button(
-                                onClick = { 
-                                    // Use the ViewModel's method to attempt connection
-                                    viewModel.connectToSavedDeviceIfNeeded() 
-                                },
-                                modifier = Modifier.fillMaxWidth()
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Icon(
-                                    Icons.Default.Refresh,
-                                    contentDescription = null,
-                                    modifier = Modifier.padding(end = 8.dp)
+                                Text(
+                                    text = stringResource(R.string.not_connected),
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(bottom = 8.dp)
                                 )
-                                Text(stringResource(R.string.try_reconnect))
+                                
+                                Text(
+                                    text = "Current connection state: ${connectionState}", // Use the state directly
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant, // Use theme color
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(bottom = 16.dp)
+                                )
+                                
+                                Button(
+                                    onClick = { 
+                                        // Use the ViewModel's method to attempt connection
+                                        viewModel.connectToSavedDeviceIfNeeded() 
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(
+                                        Icons.Default.Refresh,
+                                        contentDescription = null,
+                                        modifier = Modifier.padding(end = 8.dp)
+                                    )
+                                    Text(stringResource(R.string.try_reconnect))
+                                }
                             }
                         }
                     }
                 }
-            }
-            
-            // Bottom spacing
-            item {
-                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Bottom spacing
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
             }
         }
     }
@@ -302,10 +366,61 @@ fun SettingsScreen(
     
     // Saving Dialog
     if (isSaving) {
+        // Track the saving/reconnection state
+        var reconnectingState by remember { mutableStateOf(0) } // 0: saving, 1: reconnecting
+        
+        // Update state based on time
+        LaunchedEffect(isSaving) {
+            // Start with saving state
+            reconnectingState = 0
+            
+            // After 2.5 seconds, transition to reconnecting state
+            delay(2500)
+            if (isSaving) {
+                reconnectingState = 1
+                Log.d("SettingsScreen", "Transitioning to reconnection state in dialog")
+            }
+        }
+        
         AlertDialog(
             onDismissRequest = { },
             title = { Text(stringResource(R.string.saving_settings)) },
-            text = { Text(stringResource(R.string.device_will_reset)) },
+            text = { 
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = if (reconnectingState == 0) {
+                            stringResource(R.string.device_will_reset)
+                        } else {
+                            stringResource(R.string.reconnecting_automatically)
+                        },
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    CircularProgressIndicator()
+                    
+                    // Show countdown for reconnection state
+                    if (reconnectingState == 1) {
+                        val remainingTime = remember { mutableStateOf(3) }
+                        
+                        LaunchedEffect(reconnectingState) {
+                            for (i in 3 downTo 1) {
+                                remainingTime.value = i
+                                delay(1000)
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.returning_to_main_in_seconds, remainingTime.value),
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            },
             confirmButton = { }
         )
     }
@@ -318,7 +433,7 @@ private fun SettingsCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = Color(0xFF1E2530) // Match MainScreen card color
         )
     ) {
         Box(
@@ -363,27 +478,33 @@ private fun DisplayModeSettings(
     ) {
         Text(
             text = stringResource(R.string.display_mode),
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp), // Smaller title
+            color = Color.White, // Match MainScreen text color
             modifier = Modifier.padding(bottom = 8.dp)
         )
         
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min), // Ensure row height adapts to content
+            horizontalArrangement = Arrangement.spacedBy(8.dp) // Add spacing
         ) {
             ThemeButton(
+                modifier = Modifier.weight(1f), // Make buttons share space equally
                 icon = Icons.Default.SettingsBrightness,
                 text = stringResource(R.string.system_default),
                 isSelected = currentMode == SettingsViewModel.THEME_MODE_SYSTEM,
                 onClick = { onModeSelected(SettingsViewModel.THEME_MODE_SYSTEM) }
             )
             ThemeButton(
+                modifier = Modifier.weight(1f), // Make buttons share space equally
                 icon = Icons.Default.LightMode,
                 text = stringResource(R.string.light_mode),
                 isSelected = currentMode == SettingsViewModel.THEME_MODE_LIGHT,
                 onClick = { onModeSelected(SettingsViewModel.THEME_MODE_LIGHT) }
             )
             ThemeButton(
+                modifier = Modifier.weight(1f), // Make buttons share space equally
                 icon = Icons.Default.DarkMode,
                 text = stringResource(R.string.dark_mode),
                 isSelected = currentMode == SettingsViewModel.THEME_MODE_DARK,
@@ -394,7 +515,7 @@ private fun DisplayModeSettings(
         Text(
             text = stringResource(R.string.display_mode_change_notice),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Color.White.copy(alpha = 0.7f), // Match MainScreen text color with reduced opacity
             modifier = Modifier.padding(top = 8.dp)
         )
     }
@@ -402,6 +523,7 @@ private fun DisplayModeSettings(
 
 @Composable
 private fun ThemeButton(
+    modifier: Modifier = Modifier, // Add modifier parameter
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     text: String,
     isSelected: Boolean,
@@ -414,7 +536,7 @@ private fun ThemeButton(
     Button(
         onClick = onClick,
         colors = colors,
-        modifier = Modifier.height(IntrinsicSize.Min)
+        modifier = modifier.height(IntrinsicSize.Min) // Apply modifier here
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(icon, contentDescription = text)
@@ -436,7 +558,8 @@ private fun LanguageSettings(
     ) {
         Text(
             text = stringResource(R.string.language_settings),
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp), // Smaller title
+            color = Color.White, // Match MainScreen text color
             modifier = Modifier.padding(bottom = 8.dp)
         )
         
@@ -482,26 +605,34 @@ private fun SimulationModeSettings(
     isEnabled: Boolean,
     onToggle: (Boolean) -> Unit
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = stringResource(R.string.simulation_mode),
-            style = MaterialTheme.typography.titleMedium
-        )
-        
+        Column {
+            Text(
+                text = stringResource(R.string.simulation_mode),
+                style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp), // Smaller title
+                color = Color.White // Match MainScreen text color
+            )
+            Text(
+                text = stringResource(R.string.simulation_mode_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.7f) // Match MainScreen text color with reduced opacity
+            )
+        }
         Switch(
             checked = isEnabled,
             onCheckedChange = onToggle,
-            modifier = Modifier.padding(vertical = 8.dp)
-        )
-        
-        Text(
-            text = stringResource(R.string.simulation_mode_description),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                uncheckedThumbColor = Color.Gray,
+                uncheckedTrackColor = Color.DarkGray
+            )
         )
     }
 }
@@ -518,13 +649,14 @@ private fun PredefinedPressuresSettings(
     ) {
         Text(
             text = stringResource(R.string.predefined_pressures),
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp), // Smaller title
+            color = Color.White // Match MainScreen text color
         )
         
         Text(
             text = stringResource(R.string.predefined_pressures_description),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Color.White.copy(alpha = 0.7f), // Match MainScreen text color with reduced opacity
             modifier = Modifier.padding(vertical = 4.dp)
         )
         
@@ -576,7 +708,12 @@ private fun PressureSpinner(
     maxValue: Float = 150f
 ) {
     Column {
-        Text(label, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(bottom = 4.dp))
+        Text(
+            text = label, 
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.White, // Match MainScreen text color
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -594,6 +731,7 @@ private fun PressureSpinner(
             Text(
                 text = "%.1f".format(value), // Format to one decimal place
                 style = MaterialTheme.typography.bodyLarge,
+                color = Color.White, // Match MainScreen text color
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
             
@@ -621,7 +759,18 @@ private fun HardwareSettings(
     ) {
         Text(
             text = stringResource(R.string.hardware_settings),
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp), // Smaller title
+            color = Color.White, // Match MainScreen text color
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        
+        // Define a common text field configuration
+        val textFieldColors = OutlinedTextFieldDefaults.colors(
+            unfocusedTextColor = Color.White,
+            focusedTextColor = Color.White,
+            unfocusedBorderColor = Color.Gray,
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            cursorColor = Color.White
         )
         
         OutlinedTextField(
@@ -629,11 +778,12 @@ private fun HardwareSettings(
             onValueChange = { value -> 
                 onSettingsChanged(settings.copy(relayCompressorPin = value.toIntOrNull() ?: 0))
             },
-            label = { Text(stringResource(R.string.relay_compressor_pin)) },
+            label = { Text(stringResource(R.string.relay_compressor_pin), color = Color.White.copy(alpha = 0.8f)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp)
+                .padding(vertical = 4.dp),
+            colors = textFieldColors
         )
         
         OutlinedTextField(
@@ -641,11 +791,12 @@ private fun HardwareSettings(
             onValueChange = { value -> 
                 onSettingsChanged(settings.copy(relayFreePin = value.toIntOrNull() ?: 0))
             },
-            label = { Text(stringResource(R.string.relay_free_pin)) },
+            label = { Text(stringResource(R.string.relay_free_pin), color = Color.White.copy(alpha = 0.8f)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp)
+                .padding(vertical = 4.dp),
+            colors = textFieldColors
         )
         
         OutlinedTextField(
@@ -653,11 +804,12 @@ private fun HardwareSettings(
             onValueChange = { value -> 
                 onSettingsChanged(settings.copy(sensorPin = value.toIntOrNull() ?: 0))
             },
-            label = { Text(stringResource(R.string.sensor_pin)) },
+            label = { Text(stringResource(R.string.sensor_pin), color = Color.White.copy(alpha = 0.8f)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp)
+                .padding(vertical = 4.dp),
+            colors = textFieldColors
         )
         
         OutlinedTextField(
@@ -665,11 +817,12 @@ private fun HardwareSettings(
             onValueChange = { value -> 
                 onSettingsChanged(settings.copy(maxSecForStatus = value.toIntOrNull() ?: 30))
             },
-            label = { Text(stringResource(R.string.max_sec_for_status)) },
+            label = { Text(stringResource(R.string.max_sec_for_status), color = Color.White.copy(alpha = 0.8f)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp)
+                .padding(vertical = 4.dp),
+            colors = textFieldColors
         )
         
         OutlinedTextField(
@@ -677,11 +830,12 @@ private fun HardwareSettings(
             onValueChange = { value -> 
                 onSettingsChanged(settings.copy(measureWait = value.toFloatOrNull() ?: 2f))
             },
-            label = { Text(stringResource(R.string.measure_wait)) },
+            label = { Text(stringResource(R.string.measure_wait), color = Color.White.copy(alpha = 0.8f)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp)
+                .padding(vertical = 4.dp),
+            colors = textFieldColors
         )
         
         Row(
@@ -692,7 +846,8 @@ private fun HardwareSettings(
         ) {
             Text(
                 text = stringResource(R.string.auto_start),
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.White
             )
             
             Switch(
@@ -708,11 +863,12 @@ private fun HardwareSettings(
             onValueChange = { value -> 
                 onSettingsChanged(settings.copy(sensorValueAt0PSI = value.toIntOrNull() ?: 0))
             },
-            label = { Text(stringResource(R.string.sensor_value_at_0_psi)) },
+            label = { Text(stringResource(R.string.sensor_value_at_0_psi), color = Color.White.copy(alpha = 0.8f)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp)
+                .padding(vertical = 4.dp),
+            colors = textFieldColors
         )
         
         OutlinedTextField(
@@ -720,11 +876,12 @@ private fun HardwareSettings(
             onValueChange = { value -> 
                 onSettingsChanged(settings.copy(sensorValueAt50PSI = value.toIntOrNull() ?: 1023))
             },
-            label = { Text(stringResource(R.string.sensor_value_at_50_psi)) },
+            label = { Text(stringResource(R.string.sensor_value_at_50_psi), color = Color.White.copy(alpha = 0.8f)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp)
+                .padding(vertical = 4.dp),
+            colors = textFieldColors
         )
         
         OutlinedTextField(
@@ -732,11 +889,12 @@ private fun HardwareSettings(
             onValueChange = { value -> 
                 onSettingsChanged(settings.copy(precision = value.toFloatOrNull() ?: 1f))
             },
-            label = { Text(stringResource(R.string.precision_psi)) },
+            label = { Text(stringResource(R.string.precision_psi), color = Color.White.copy(alpha = 0.8f)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp)
+                .padding(vertical = 4.dp),
+            colors = textFieldColors
         )
         
         OutlinedTextField(
@@ -744,11 +902,12 @@ private fun HardwareSettings(
             onValueChange = { value -> 
                 onSettingsChanged(settings.copy(btPinCode = value))
             },
-            label = { Text(stringResource(R.string.bt_pin_code)) },
+            label = { Text(stringResource(R.string.bt_pin_code), color = Color.White.copy(alpha = 0.8f)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp)
+                .padding(vertical = 4.dp),
+            colors = textFieldColors
         )
     }
 }
@@ -765,6 +924,15 @@ private fun WifiSettings(
 ) {
     var showNetworkList by remember { mutableStateOf(false) }
 
+    // Define a common text field configuration
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        unfocusedTextColor = Color.White,
+        focusedTextColor = Color.White,
+        unfocusedBorderColor = Color.Gray,
+        focusedBorderColor = MaterialTheme.colorScheme.primary,
+        cursorColor = Color.White
+    )
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -773,23 +941,26 @@ private fun WifiSettings(
     ) {
         Text(
             text = stringResource(R.string.wifi_settings),
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+            color = Color.White
         )
         
         OutlinedTextField(
             value = wifiSsid,
             onValueChange = onSsidChanged,
-            label = { Text(stringResource(R.string.ssid)) },
-            modifier = Modifier.fillMaxWidth()
+            label = { Text(stringResource(R.string.ssid), color = Color.White.copy(alpha = 0.8f)) },
+            modifier = Modifier.fillMaxWidth(),
+            colors = textFieldColors
         )
         
         OutlinedTextField(
             value = wifiPassword,
             onValueChange = onPasswordChanged,
-            label = { Text(stringResource(R.string.password)) },
+            label = { Text(stringResource(R.string.password), color = Color.White.copy(alpha = 0.8f)) },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = textFieldColors
         )
 
         Row(
@@ -802,13 +973,23 @@ private fun WifiSettings(
             }
             if (availableNetworks.isNotEmpty()) {
                  TextButton(onClick = { showNetworkList = !showNetworkList }) {
-                     Text(if (showNetworkList) "Hide List" else "Show List (${availableNetworks.size})")
+                     Text(
+                         text = if (showNetworkList) "Hide List" else "Show List (${availableNetworks.size})",
+                         color = MaterialTheme.colorScheme.primary
+                     )
                  }
             }
         }
 
         AnimatedVisibility(visible = showNetworkList && availableNetworks.isNotEmpty()) {
-            Card(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFF1E2530) // Match MainScreen card color
+                )
+            ) {
                  Column(
                      modifier = Modifier
                          .fillMaxWidth()
@@ -859,5 +1040,9 @@ private fun SignalStrengthIndicator(level: Int) {
         3 -> "Excellent signal"
         else -> "No signal"
     }
-    Icon(icon, contentDescription = "$description ($level dBm)")
+    Icon(
+        icon,
+        contentDescription = "$description ($level dBm)",
+        tint = LocalContentColor.current // Ensure icon tint adapts
+    )
 } 

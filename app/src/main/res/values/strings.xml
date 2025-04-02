@@ -110,8 +110,12 @@
     <string name="changes_not_saved">השינויים שביצעת לא יישמרו.</string>
     <string name="exit_without_saving">צא ללא שמירה</string>
     <string name="continue_editing">המשך עריכה</string>
+    <string name="discard">ביטול שינויים</string>
     <string name="saving_settings">שומר הגדרות...</string>
-    <string name="device_will_reset">המכשיר יתאפס ויתחבר מחדש אוטומטית</string>
+    <string name="device_will_reset">המכשיר יתאפס ויתחבר מחדש באופן אוטומטי.</string>
+    <string name="reconnecting_automatically">מתחבר מחדש באופן אוטומטי...</string>
+    <string name="returning_to_main_in_seconds">חזרה למסך הראשי בעוד %d שניות...</string>
+    <string name="unsaved_changes_message">יש לך שינויים שלא נשמרו ויש לשמור אותם כדי להחיל על המכשיר.</string>
     <string name="connection_status">מצב חיבור: %s</string>
     <string name="try_reconnect">נסה להתחבר מחדש</string>
     <string name="hardware_settings">הגדרות חומרה</string>

@@ -57,7 +57,8 @@ class MainViewModel(
     
     // Use app settings for predefined pressures
     val predefinedPressures = appSettingsManager.settings.map { settings ->
-        Log.d("MainViewModel", "AppSettings updated. PredefinedPressures: ${settings.predefinedPressures}")
+        // Remove or comment out this logging statement to reduce log spam
+        // Log.d("MainViewModel", "AppSettings updated. PredefinedPressures: ${settings.predefinedPressures}")
         settings.predefinedPressures
     }.stateIn(
         scope = viewModelScope,

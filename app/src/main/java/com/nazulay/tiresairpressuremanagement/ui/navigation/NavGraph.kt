@@ -4,10 +4,14 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.nazulay.tiresairpressuremanagement.ui.screens.main.MainScreen
+import com.nazulay.tiresairpressuremanagement.ui.screens.MainScreen
 import com.nazulay.tiresairpressuremanagement.ui.screens.settings.SettingsScreen
 import com.nazulay.tiresairpressuremanagement.ui.screens.settings.SettingsViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalContext
+import android.app.Application
+import com.nazulay.tiresairpressuremanagement.data.ble.BleManager
+import com.nazulay.tiresairpressuremanagement.data.repository.BleRepository
 
 object NavDestinations {
     const val MAIN_SCREEN = "main"
@@ -24,15 +28,45 @@ fun NavGraph(
         startDestination = startDestination
     ) {
         composable(NavDestinations.MAIN_SCREEN) {
+            // Create BleManager instance
+            val context = LocalContext.current
+            val application = context.applicationContext as Application
+            // Initialize BLE Repository first
+            val bleRepository = BleRepository(application)
+            // Initialize BLE Manager with repository
+            val bleManager = BleManager(application, bleRepository)
+            
             MainScreen(
-                onNavigateToSettings = {
+                bleManager = bleManager,
+                onDisconnect = {
+                    // Handle disconnect - could navigate to a connection screen
+                },
+                onSettingsClick = {
                     navController.navigate(NavDestinations.SETTINGS_SCREEN)
+                },
+                onAboutClick = {
+                    // Handle about navigation if needed
+                },
+                onExitClick = {
+                    // Handle exit action if needed
                 }
             )
         }
         
         composable(NavDestinations.SETTINGS_SCREEN) {
-            val viewModel: SettingsViewModel = viewModel()
+            // Get the same BleManager instance for settings
+            val context = LocalContext.current
+            val application = context.applicationContext as Application
+            val bleRepository = BleRepository(application)
+            val bleManager = BleManager(application, bleRepository)
+            
+            val viewModel: SettingsViewModel = viewModel(
+                factory = SettingsViewModel.provideFactory(
+                    application = application,
+                    bleManager = bleManager
+                )
+            )
+            
             SettingsScreen(
                 viewModel = viewModel,
                 onBackClick = {

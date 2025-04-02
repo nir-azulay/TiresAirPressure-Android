@@ -163,7 +163,7 @@ class TiresPressureMainScreen(
                         )
                         .setOnClickListener { 
                             Log.d(TAG, "Connect button clicked")
-                            bleManager.connectToSavedDevice() 
+                            tryConnectWithRetry()
                         }
                         .build()
                 )
@@ -283,6 +283,14 @@ class TiresPressureMainScreen(
         super.onResume(owner)
         // Request latest data when screen resumes
         invalidate()
+        
+        // Try to reconnect if disconnected
+        if (connectionState != ConnectionState.Connected) {
+            Log.d(TAG, "Screen resumed but not connected, attempting reconnection")
+            coroutineScope.launch {
+                bleManager.connectToSavedDevice()
+            }
+        }
     }
     
     override fun onDestroy(owner: LifecycleOwner) {
@@ -290,6 +298,36 @@ class TiresPressureMainScreen(
         // שליחת פקודת עצירה אם המסך נסגר במהלך ניפוח
         if (isInflating || isDeflating) {
             stopInflation()
+        }
+    }
+
+    /**
+     * Attempts to connect to the saved device with multiple retries,
+     * using the same approach as the main app.
+     */
+    private fun tryConnectWithRetry() {
+        coroutineScope.launch {
+            Log.d(TAG, "Attempting to connect with retry")
+            
+            // Show connecting message with template invalidation
+            invalidate()
+            
+            // First attempt
+            bleManager.connectToSavedDevice()
+            
+            // Check connection after a delay and retry if needed
+            delay(10000) // Wait 10 seconds
+            if (connectionState != ConnectionState.Connected) {
+                Log.d(TAG, "First connection attempt failed, trying again")
+                bleManager.connectToSavedDevice()
+                
+                // Third attempt if needed
+                delay(10000) // Wait another 10 seconds
+                if (connectionState != ConnectionState.Connected) {
+                    Log.d(TAG, "Second connection attempt failed, trying one last time")
+                    bleManager.connectToSavedDevice()
+                }
+            }
         }
     }
 } 

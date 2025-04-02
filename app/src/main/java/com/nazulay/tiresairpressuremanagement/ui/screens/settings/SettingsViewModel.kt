@@ -34,6 +34,9 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.nazulay.tiresairpressuremanagement.utils.LocaleHelper
+import com.nazulay.tiresairpressuremanagement.utils.getActivity
+import com.nazulay.tiresairpressuremanagement.MainActivity
 
 class SettingsViewModel(
     private val bleManager: BleManager,
@@ -43,14 +46,8 @@ class SettingsViewModel(
     companion object {
         private const val TAG = "SettingsViewModel"
         
-        // Theme mode constants
-        const val THEME_MODE_SYSTEM = 0
-        const val THEME_MODE_LIGHT = 1
+        // Theme mode constants - keep only dark mode as reference
         const val THEME_MODE_DARK = 2
-        
-        // Preference constants
-        const val THEME_MODE_PREF = "theme_mode_preferences"
-        const val THEME_MODE_KEY = "theme_mode"
         
         fun provideFactory(
             application: Application,
@@ -116,10 +113,6 @@ class SettingsViewModel(
     private val _hasUnsavedChanges = MutableStateFlow(false)
     val hasUnsavedChanges: StateFlow<Boolean> = _hasUnsavedChanges.asStateFlow()
     
-    // מצב תצוגה נוכחי
-    private val _themeMode = MutableStateFlow(THEME_MODE_SYSTEM)
-    val themeMode: StateFlow<Int> = _themeMode.asStateFlow()
-    
     // Predefined pressure states
     private val _predefinedPressure1 = MutableStateFlow(8f)
     private val _predefinedPressure2 = MutableStateFlow(10f)
@@ -130,13 +123,14 @@ class SettingsViewModel(
     private val _predefinedPressure7 = MutableStateFlow(38f)
     private val _predefinedPressure8 = MutableStateFlow(40f)
     
+    // Language state
+    private val _currentLanguage = MutableStateFlow(LocaleHelper.getSelectedLanguage(application))
+    val currentLanguage: StateFlow<String> = _currentLanguage.asStateFlow()
+    
     init {
         Log.d(TAG, "Initializing SettingsViewModel")
         Log.d(TAG, "Initial Connection State from BleManager: ${bleManager.connectionState.value}")
         
-        // Load theme
-        loadThemeMode()
-
         // Predefined pressures are handled by AppSettingsManager
 
         // Observe device settings from BleManager
@@ -404,36 +398,13 @@ class SettingsViewModel(
         _availableNetworks.value = emptyList()
     }
     
-    // פונקציה לשינוי מצב התצוגה
-    fun setThemeMode(mode: Int) {
-        if (mode in THEME_MODE_SYSTEM..THEME_MODE_DARK) {
-            _themeMode.value = mode
-            saveThemeMode()
-        }
-    }
-    
-    // שמירת מצב התצוגה
-    private fun saveThemeMode() {
-        val sharedPreferences = application.getSharedPreferences(THEME_MODE_PREF, Context.MODE_PRIVATE)
-        sharedPreferences.edit().putInt(THEME_MODE_KEY, _themeMode.value).apply()
-        Log.d(TAG, "Theme mode saved: ${_themeMode.value}")
-    }
-    
-    // טעינת מצב התצוגה
-    private fun loadThemeMode() {
-        val sharedPreferences = application.getSharedPreferences(THEME_MODE_PREF, Context.MODE_PRIVATE)
-        val savedMode = sharedPreferences.getInt(THEME_MODE_KEY, THEME_MODE_SYSTEM)
-        _themeMode.value = savedMode
-        Log.d(TAG, "Theme mode loaded: $savedMode")
-    }
-
-    // App Settings Functions
+    // Replace the updateThemeMode method with a no-op
     fun updateThemeMode(mode: Int) {
-        if (mode in THEME_MODE_SYSTEM..THEME_MODE_DARK) {
-            appSettingsManager.updateThemeMode(mode)
-        }
+        // No-op - we're enforcing dark mode only
+        Log.d(TAG, "Theme mode change requested but ignored - using dark mode only")
     }
     
+    // App Settings Functions
     fun updateSimulationMode(enabled: Boolean) {
         appSettingsManager.updateSimulationMode(enabled)
     }
@@ -483,6 +454,19 @@ class SettingsViewModel(
             ConnectionState.Scanning -> application.getString(R.string.scanning)
             ConnectionState.BluetoothDisabled -> application.getString(R.string.bluetooth_disabled)
             ConnectionState.Error -> application.getString(R.string.connection_error)
+        }
+    }
+
+    // Add this method to update language
+    fun updateLanguage(languageCode: String) {
+        viewModelScope.launch {
+            _currentLanguage.update { languageCode }
+            // Get the activity reference from the application context
+            val activity = application.getActivity()
+            if (activity is MainActivity) {
+                // Update language immediately
+                activity.updateLanguage(languageCode)
+            }
         }
     }
 } 

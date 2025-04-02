@@ -205,6 +205,10 @@
     <string name="dark_mode">Dark Mode</string>
     <string name="display_mode_change_notice">Changing display mode requires app restart</string>
     
+    <!-- Language -->
+    <string name="language">Language</string>
+    <string name="language_change_notice">Changing language will restart the app</string>
+    
     <!-- WiFi Network List -->
     <string name="show_list">Show List</string>
     <string name="hide_list">Hide List</string>
@@ -214,4 +218,5 @@
     <string name="good_signal">Good signal</string>
     <string name="excellent_signal">Excellent signal</string>
     <string name="no_signal">No signal</string>
+    <string name="networks_found">networks found</string>
 </resources>

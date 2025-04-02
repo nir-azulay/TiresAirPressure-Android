@@ -7,7 +7,6 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
@@ -33,6 +32,7 @@ private val DarkColorScheme = darkColorScheme(
     onError = Color.Black
 )
 
+// Light color scheme is no longer needed but kept for reference
 private val LightColorScheme = lightColorScheme(
     primary = Color(0xFF1976D2),      // Deeper Blue
     secondary = Color(0xFF26A69A),     // Teal
@@ -50,36 +50,31 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun TiresAirPressureManagementTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    // Dark theme parameter is no longer used but kept for compatibility
+    darkTheme: Boolean = true,
+    // Dynamic color parameter remains but will only apply to dark theme
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    // Get theme mode preference from SharedPreferences
-    val context = LocalContext.current
-    val sharedPreferences = context.getSharedPreferences("theme_mode_preferences", Context.MODE_PRIVATE)
-    val themeModeValue = sharedPreferences.getInt("theme_mode", 0) // 0 = system, 1 = light, 2 = dark
-    
-    // Determine if dark theme should be used based on settings
-    val shouldUseDarkTheme = when (themeModeValue) {
-        1 -> false // Light mode
-        2 -> true // Dark mode
-        else -> darkTheme // System default (follows system setting)
-    }
+    // Always use dark theme regardless of system settings or preferences
+    val shouldUseDarkTheme = true
     
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
-            if (shouldUseDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            // Always use dynamic dark color scheme if available
+            dynamicDarkColorScheme(context)
         }
-        shouldUseDarkTheme -> DarkColorScheme
-        else -> LightColorScheme
+        else -> DarkColorScheme // Always use dark color scheme
     }
+    
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
             window.statusBarColor = colorScheme.primary.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !shouldUseDarkTheme
+            // Always use dark status bar appearance
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
         }
     }
 

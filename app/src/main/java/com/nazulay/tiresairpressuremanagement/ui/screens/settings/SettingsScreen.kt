@@ -24,6 +24,8 @@ import androidx.compose.material.icons.filled.SignalWifiOff
 import androidx.compose.material.icons.filled.SignalWifiStatusbarConnectedNoInternet4
 import androidx.compose.material.icons.filled.SignalWifiStatusbar4Bar
 import androidx.compose.material.icons.filled.SignalWifi4Bar
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
@@ -38,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,6 +54,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import androidx.compose.material3.LocalContentColor
+import com.nazulay.tiresairpressuremanagement.utils.LocaleHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,9 +74,11 @@ fun SettingsScreen(
     // Launched effect to handle navigation back after saving
     LaunchedEffect(isSaving) {
         if (isSaving) {
-            delay(5500) // Wait 5.5 seconds (slightly longer than the 5s in ViewModel)
+            // Wait 5 seconds after saving settings
+            delay(5000)
             Log.d("SettingsScreen", "Settings saved, returning to main screen for reconnection")
-            onBackClick() // Return to main screen to let regular app flow handle reconnection
+            // Return to main screen to let regular app flow handle reconnection
+            onBackClick() 
         }
     }
 
@@ -97,6 +103,65 @@ fun SettingsScreen(
                     navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
+        },
+        bottomBar = {
+            // Always show save and cancel buttons at the bottom
+            BottomAppBar(
+                containerColor = Color(0xFF1E2530),
+                contentColor = Color.White
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    // Show message if there are unsaved changes
+                    if (hasUnsavedChanges) {
+                        Text(
+                            text = stringResource(R.string.unsaved_changes_message),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Yellow,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+                    
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                isSaving = true
+                                viewModel.saveDeviceSettingsAndReconnect(forceReconnect)
+                            },
+                            modifier = Modifier
+                                .weight(1f),
+                            enabled = connectionState == ConnectionState.Connected
+                        ) {
+                            Text(
+                                text = stringResource(R.string.save_settings),
+                                color = Color.White // Make button text white for better visibility
+                            )
+                        }
+                        
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.discardChanges()
+                                onBackClick() // Return to main screen after discarding changes
+                            },
+                            modifier = Modifier
+                                .weight(1f),
+                            enabled = hasUnsavedChanges
+                        ) {
+                            Text(
+                                text = stringResource(R.string.discard),
+                                color = Color.White // Make button text white for better visibility
+                            )
+                        }
+                    }
+                }
+            }
         }
     ) { paddingValues ->
         Box(
@@ -121,32 +186,22 @@ fun SettingsScreen(
                     )
                 }
 
-                // Display Mode Card
-                item {
-                    SettingsCard {
-                        DisplayModeSettings(
-                            currentMode = appSettings.themeMode,
-                            onModeSelected = { viewModel.updateThemeMode(it) }
-                        )
-                    }
-                }
-
-                // Simulation Mode Card
-                item {
-                    SettingsCard {
-                        SimulationModeSettings(
-                            isEnabled = appSettings.simulationMode,
-                            onToggle = { viewModel.updateSimulationMode(it) }
-                        )
-                    }
-                }
-
                 // Predefined Pressures Card
                 item {
                     SettingsCard {
                         PredefinedPressuresSettings(
                             pressures = appSettings.predefinedPressures,
                             onPressuresUpdated = { viewModel.updatePredefinedPressures(it) }
+                        )
+                    }
+                }
+
+                // Language Settings Card
+                item {
+                    SettingsCard {
+                        LanguageSettings(
+                            currentLanguage = viewModel.currentLanguage.value,
+                            onLanguageSelected = { viewModel.updateLanguage(it) }
                         )
                     }
                 }
@@ -166,6 +221,16 @@ fun SettingsScreen(
                 if (connectionState == ConnectionState.Connected) {
                     val currentSettings = deviceSettings // Capture the value locally
                     if (currentSettings != null) { // Use the local variable for the check
+                        // Add Simulation Mode Card to Device Settings
+                        item {
+                            SettingsCard {
+                                SimulationModeSettings(
+                                    isEnabled = appSettings.simulationMode,
+                                    onToggle = { viewModel.updateSimulationMode(it) }
+                                )
+                            }
+                        }
+                        
                         // Device Name Card
                         item {
                             SettingsCard {
@@ -229,49 +294,8 @@ fun SettingsScreen(
                                 )
                             }
                         }
-
-                        // Save Device Settings Button
-                        item {
-                            Column {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 6.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Button(
-                                        onClick = {
-                                            isSaving = true
-                                            viewModel.saveDeviceSettingsAndReconnect(forceReconnect)
-                                        },
-                                        modifier = Modifier
-                                            .weight(1f)
-                                    ) {
-                                        Text(stringResource(R.string.save_settings))
-                                    }
-                                    
-                                    OutlinedButton(
-                                        onClick = {
-                                            viewModel.discardChanges()
-                                        },
-                                        modifier = Modifier
-                                            .weight(1f),
-                                        enabled = hasUnsavedChanges
-                                    ) {
-                                        Text(stringResource(R.string.discard))
-                                    }
-                                }
-                                
-                                if (hasUnsavedChanges) {
-                                    Text(
-                                        text = stringResource(R.string.unsaved_changes_message),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color.Yellow,
-                                        modifier = Modifier.padding(bottom = 8.dp)
-                                    )
-                                }
-                            }
-                        }
+                        
+                        // Remove save/cancel buttons from here as they're now in the bottom bar
                     } else {
                         item {
                             SettingsCard {
@@ -316,16 +340,19 @@ fun SettingsScreen(
                                         contentDescription = null,
                                         modifier = Modifier.padding(end = 8.dp)
                                     )
-                                    Text(stringResource(R.string.try_reconnect))
+                                    Text(
+                                        text = stringResource(R.string.try_reconnect),
+                                        color = Color.White // Make button text white for better visibility
+                                    )
                                 }
                             }
                         }
                     }
                 }
                 
-                // Bottom spacing
+                // Bottom spacing to make sure content is not hidden by bottom app bar
                 item {
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(96.dp))
                 }
             }
         }
@@ -434,86 +461,6 @@ private fun CustomRadioButton(
 }
 
 @Composable
-private fun DisplayModeSettings(
-    currentMode: Int,
-    onModeSelected: (Int) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
-        Text(
-            text = stringResource(R.string.display_mode),
-            style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp), // Smaller title
-            color = Color.White, // Match MainScreen text color
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Min), // Ensure row height adapts to content
-            horizontalArrangement = Arrangement.spacedBy(8.dp) // Add spacing
-        ) {
-            ThemeButton(
-                modifier = Modifier.weight(1f), // Make buttons share space equally
-                icon = Icons.Default.SettingsBrightness,
-                text = stringResource(R.string.system_default),
-                isSelected = currentMode == SettingsViewModel.THEME_MODE_SYSTEM,
-                onClick = { onModeSelected(SettingsViewModel.THEME_MODE_SYSTEM) }
-            )
-            ThemeButton(
-                modifier = Modifier.weight(1f), // Make buttons share space equally
-                icon = Icons.Default.LightMode,
-                text = stringResource(R.string.light_mode),
-                isSelected = currentMode == SettingsViewModel.THEME_MODE_LIGHT,
-                onClick = { onModeSelected(SettingsViewModel.THEME_MODE_LIGHT) }
-            )
-            ThemeButton(
-                modifier = Modifier.weight(1f), // Make buttons share space equally
-                icon = Icons.Default.DarkMode,
-                text = stringResource(R.string.dark_mode),
-                isSelected = currentMode == SettingsViewModel.THEME_MODE_DARK,
-                onClick = { onModeSelected(SettingsViewModel.THEME_MODE_DARK) }
-            )
-        }
-        
-        Text(
-            text = stringResource(R.string.display_mode_change_notice),
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.White.copy(alpha = 0.7f), // Match MainScreen text color with reduced opacity
-            modifier = Modifier.padding(top = 8.dp)
-        )
-    }
-}
-
-@Composable
-private fun ThemeButton(
-    modifier: Modifier = Modifier, // Add modifier parameter
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    text: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    val colors = ButtonDefaults.buttonColors(
-        containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-        contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-    )
-    Button(
-        onClick = onClick,
-        colors = colors,
-        modifier = modifier.height(IntrinsicSize.Min) // Apply modifier here
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(icon, contentDescription = text)
-            Spacer(Modifier.height(4.dp))
-            Text(text, style = MaterialTheme.typography.labelSmall)
-        }
-    }
-}
-
-@Composable
 private fun SimulationModeSettings(
     isEnabled: Boolean,
     onToggle: (Boolean) -> Unit
@@ -525,7 +472,9 @@ private fun SimulationModeSettings(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
+        Column(
+            modifier = Modifier.weight(1f) // Add weight to limit width and prevent pushing Switch off screen
+        ) {
             Text(
                 text = stringResource(R.string.simulation_mode),
                 style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp), // Smaller title
@@ -534,7 +483,8 @@ private fun SimulationModeSettings(
             Text(
                 text = stringResource(R.string.simulation_mode_description),
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.7f) // Match MainScreen text color with reduced opacity
+                color = Color.White.copy(alpha = 0.7f), // Match MainScreen text color with reduced opacity
+                modifier = Modifier.padding(end = 8.dp) // Add padding to ensure space between text and switch
             )
         }
         Switch(
@@ -836,6 +786,8 @@ private fun WifiSettings(
     onNetworkSelected: (String) -> Unit
 ) {
     var showNetworkList by remember { mutableStateOf(false) }
+    var showNetworkDropdown by remember { mutableStateOf(false) }
+    var passwordVisible by remember { mutableStateOf(false) } // Track password visibility state
 
     // Define a common text field configuration
     val textFieldColors = OutlinedTextFieldDefaults.colors(
@@ -858,22 +810,84 @@ private fun WifiSettings(
             color = Color.White
         )
         
-        OutlinedTextField(
-            value = wifiSsid,
-            onValueChange = onSsidChanged,
-            label = { Text(stringResource(R.string.ssid), color = Color.White.copy(alpha = 0.8f)) },
-            modifier = Modifier.fillMaxWidth(),
-            colors = textFieldColors
-        )
+        // WiFi SSID field with dropdown
+        Box {
+            OutlinedTextField(
+                value = wifiSsid,
+                onValueChange = onSsidChanged,
+                label = { Text(stringResource(R.string.ssid), color = Color.White.copy(alpha = 0.8f)) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = textFieldColors,
+                trailingIcon = {
+                    if (availableNetworks.isNotEmpty()) {
+                        IconButton(onClick = { showNetworkDropdown = true }) {
+                            Icon(
+                                Icons.Default.SignalWifi4Bar,
+                                contentDescription = "Select WiFi Network",
+                                tint = Color.White
+                            )
+                        }
+                    }
+                }
+            )
+            
+            // Dropdown menu for WiFi networks
+            DropdownMenu(
+                expanded = showNetworkDropdown,
+                onDismissRequest = { showNetworkDropdown = false },
+                modifier = Modifier
+                    .background(Color(0xFF1E2530))
+                    .heightIn(max = 300.dp) // Limit height
+            ) {
+                availableNetworks.forEach { network ->
+                    DropdownMenuItem(
+                        text = {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = network.SSID,
+                                    color = Color.White,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                SignalStrengthIndicator(level = network.level)
+                            }
+                        },
+                        onClick = {
+                            onNetworkSelected(network.SSID)
+                            showNetworkDropdown = false
+                        },
+                        modifier = Modifier.background(Color(0xFF1E2530))
+                    )
+                }
+            }
+        }
         
+        // Password field with visibility toggle
         OutlinedTextField(
             value = wifiPassword,
             onValueChange = onPasswordChanged,
             label = { Text(stringResource(R.string.password), color = Color.White.copy(alpha = 0.8f)) },
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = Modifier.fillMaxWidth(),
-            colors = textFieldColors
+            colors = textFieldColors,
+            trailingIcon = {
+                // Toggle button for password visibility
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(
+                        // Show different icon based on password visibility
+                        imageVector = if (passwordVisible) 
+                            Icons.Filled.Visibility 
+                        else 
+                            Icons.Filled.VisibilityOff,
+                        contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                        tint = Color.White.copy(alpha = 0.7f)
+                    )
+                }
+            }
         )
 
         Row(
@@ -881,19 +895,45 @@ private fun WifiSettings(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Button(onClick = onScanClicked) {
-                Text(stringResource(R.string.scan_networks))
+            Button(
+                onClick = onScanClicked,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Icon(
+                    Icons.Default.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 4.dp)
+                )
+                Text(
+                    text = stringResource(R.string.scan_networks),
+                    color = Color.White
+                )
             }
+            
             if (availableNetworks.isNotEmpty()) {
-                 TextButton(onClick = { showNetworkList = !showNetworkList }) {
-                     Text(
-                         text = if (showNetworkList) 
-                             stringResource(R.string.hide_list) 
-                         else 
-                             stringResource(R.string.show_list_count, availableNetworks.size),
-                         color = MaterialTheme.colorScheme.primary
-                     )
-                 }
+                Text(
+                    text = "${availableNetworks.size} " + stringResource(id = R.string.networks_found),
+                    color = Color.White.copy(alpha = 0.7f),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+
+        // Keep the original list view option for those who prefer it
+        if (availableNetworks.isNotEmpty()) {
+            TextButton(
+                onClick = { showNetworkList = !showNetworkList },
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text(
+                    text = if (showNetworkList) 
+                        stringResource(R.string.hide_list) 
+                    else 
+                        stringResource(R.string.show_list),
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
 
@@ -961,4 +1001,50 @@ private fun SignalStrengthIndicator(level: Int) {
         contentDescription = "$description ($level dBm)",
         tint = LocalContentColor.current // Ensure icon tint adapts
     )
+}
+
+@Composable
+private fun LanguageSettings(
+    currentLanguage: String,
+    onLanguageSelected: (String) -> Unit
+) {
+    val supportedLanguages = remember { 
+        LocaleHelper.getSupportedLanguages()
+    }
+    
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.language),
+            style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+            color = Color.White
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        supportedLanguages.forEach { (code, displayName) ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onLanguageSelected(code) }
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = displayName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White
+                )
+                
+                RadioButton(
+                    selected = currentLanguage == code,
+                    onClick = { onLanguageSelected(code) }
+                )
+            }
+        }
+    }
 } 

@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.Locale
+import com.nazulay.tiresairpressuremanagement.ui.screens.settings.SettingsViewModel
 
 /**
  * Manager class for application settings that are stored locally
@@ -35,7 +36,7 @@ class AppSettingsManager private constructor(private val context: Context) {
 
     private fun loadSettings(): AppSettings {
         return AppSettings(
-            themeMode = prefs.getInt(THEME_MODE_KEY, 0),
+            themeMode = SettingsViewModel.THEME_MODE_DARK,
             simulationMode = prefs.getBoolean(SIMULATION_MODE_KEY, false),
             predefinedPressures = loadPredefinedPressures()
         )
@@ -49,18 +50,17 @@ class AppSettingsManager private constructor(private val context: Context) {
 
     fun updateSettings(settings: AppSettings) {
         prefs.edit().apply {
-            putInt(THEME_MODE_KEY, settings.themeMode)
+            putInt(THEME_MODE_KEY, SettingsViewModel.THEME_MODE_DARK)
             putBoolean(SIMULATION_MODE_KEY, settings.simulationMode)
             putString(PREDEFINED_PRESSURES_KEY_PREFIX, settings.predefinedPressures.joinToString(","))
             apply()
         }
-        _settings.value = settings
+        _settings.value = settings.copy(themeMode = SettingsViewModel.THEME_MODE_DARK)
         Log.d(TAG, "Settings updated: $settings")
     }
 
     fun updateThemeMode(themeMode: Int) {
-        val currentSettings = _settings.value
-        updateSettings(currentSettings.copy(themeMode = themeMode))
+        Log.d(TAG, "Theme mode change requested but ignored - using dark mode only")
     }
 
     fun updateSimulationMode(enabled: Boolean) {

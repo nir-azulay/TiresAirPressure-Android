@@ -49,6 +49,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.Lifecycle
 import java.util.*
+import com.nazulay.tiresairpressuremanagement.utils.LocaleHelper
+import com.nazulay.tiresairpressuremanagement.utils.ActivityProvider
 
 class MainActivity : ComponentActivity() {
     private val TAG = "MainActivity"
@@ -109,16 +111,17 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun attachBaseContext(newBase: Context) {
-        // Force English locale
-        val localeToSwitchTo = Locale.ENGLISH
-        val localeUpdatedContext = updateBaseContextLocale(newBase, localeToSwitchTo)
+        // Use LocaleHelper to apply the saved language
+        val languageCode = LocaleHelper.getSelectedLanguage(newBase)
+        val localeUpdatedContext = LocaleHelper.setLocale(newBase, languageCode)
         super.attachBaseContext(localeUpdatedContext)
     }
 
-    private fun updateBaseContextLocale(context: Context, locale: Locale): Context {
-        val configuration = Configuration(context.resources.configuration)
-        configuration.setLocale(locale)
-        return context.createConfigurationContext(configuration)
+    // Method to update language from within the app
+    fun updateLanguage(languageCode: String) {
+        LocaleHelper.setLocale(this, languageCode)
+        // Recreate the activity to apply the language change
+        recreate()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -284,14 +287,35 @@ class MainActivity : ComponentActivity() {
                         onBackClick = {
                             android.util.Log.d(TAG, "User clicked back from settings")
                             currentScreen = Screen.MAIN
-                            // No special reconnection logic needed here
-                            // The onResume() method will handle reconnection if needed
+                            
+                            // After returning to main screen, implement a delayed reconnection attempt
+                            // if the device isn't connected yet
+                            lifecycleScope.launch {
+                                // First try to reconnect immediately
+                                tryConnectToSavedDevice()
+                                
+                                // Then check connection after 10 seconds
+                                delay(10000)
+                                if (bleManager.connectionState.value != ConnectionState.Connected) {
+                                    android.util.Log.d(TAG, "Device still not connected after 10 seconds, trying reconnection again")
+                                    tryConnectToSavedDevice()
+                                }
+                            }
                         },
                         forceReconnect = {
                             android.util.Log.d(TAG, "Force reconnect callback triggered from SettingsScreen")
                             if (bleManager.connectionState.value == ConnectionState.Disconnected) {
                                 android.util.Log.d(TAG, "Device is disconnected, calling tryConnectToSavedDevice")
                                 tryConnectToSavedDevice()
+                                
+                                // Add a second reconnection attempt after 10 seconds if the first attempt fails
+                                lifecycleScope.launch {
+                                    delay(10000)
+                                    if (bleManager.connectionState.value != ConnectionState.Connected) {
+                                        android.util.Log.d(TAG, "Device still not connected after 10 seconds, trying reconnection again")
+                                        tryConnectToSavedDevice()
+                                    }
+                                }
                             } else {
                                 android.util.Log.d(TAG, "Device is not disconnected, no need to reconnect")
                             }

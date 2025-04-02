@@ -34,10 +34,8 @@ class AppSettingsManager(private val context: Context) {
     private fun loadSettings(): AppSettings {
         Log.d(TAG, "Loading app settings from SharedPreferences")
         
-        val themeMode = sharedPreferences.getInt(
-            THEME_MODE_KEY, 
-            SettingsViewModel.THEME_MODE_SYSTEM
-        )
+        // Always use dark theme
+        val themeMode = SettingsViewModel.THEME_MODE_DARK
         
         val simulationMode = sharedPreferences.getBoolean(
             SIMULATION_MODE_KEY, 
@@ -79,12 +77,8 @@ class AppSettingsManager(private val context: Context) {
     }
     
     fun updateThemeMode(mode: Int) {
-        if (mode in SettingsViewModel.THEME_MODE_SYSTEM..SettingsViewModel.THEME_MODE_DARK) {
-            sharedPreferences.edit().putInt(THEME_MODE_KEY, mode).apply()
-            
-            _settings.value = _settings.value.copy(themeMode = mode)
-            Log.d(TAG, "Theme mode updated to: $mode")
-        }
+        // No-op - always use dark mode
+        Log.d(TAG, "Theme mode update ignored - using dark mode only")
     }
     
     fun updateSimulationMode(enabled: Boolean) {

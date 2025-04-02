@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Tires Air Pressure Management</string>
+    <string name="app_name">ניהול לחץ אוויר</string>
     
     <!-- כללי -->
     <string name="settings">הגדרות</string>
@@ -10,22 +10,22 @@
     <string name="message">הודעה</string>
     <string name="start">התחל</string>
     <string name="stop">עצור</string>
-    <string name="scan_devices">Scan for Devices</string>
+    <string name="scan_devices">סרוק מכשירים</string>
     <string name="stop_scan">עצור סריקה</string>
-    <string name="scanning">Scanning...</string>
+    <string name="scanning">סורק...</string>
     <string name="available_devices">מכשירים זמינים:</string>
     <string name="not_connected">לא מחובר למכשיר</string>
-    <string name="connected">Connected</string>
-    <string name="disconnected">Disconnected</string>
-    <string name="connecting">Connecting...</string>
+    <string name="connected">מחובר</string>
+    <string name="disconnected">מנותק</string>
+    <string name="connecting">מתחבר...</string>
     <string name="app_version">גרסת האפליקציה</string>
     <string name="version_number">1.0.0</string>
     
     <!-- לחץ -->
-    <string name="target_pressure">לחץ יעד:</string>
+    <string name="target_pressure">לחץ יעד</string>
     <string name="pressure_format">%.1f PSI</string>
     <string name="pressure_unit">PSI</string>
-    <string name="pressure_reached">הגעת ללחץ היעד!</string>
+    <string name="pressure_reached">הגעת ללחץ היעד</string>
     <string name="increase_pressure">הגדל לחץ</string>
     <string name="decrease_pressure">הפחת לחץ</string>
     <string name="pressure_difference">הפרש לחץ:</string>
@@ -38,8 +38,8 @@
     <string name="open_settings_permission_explanation">האפליקציה זקוקה להרשאות Bluetooth ומיקום כדי לפעול כראוי. אנא פתח את הגדרות האפליקציה ואפשר את ההרשאות הנדרשות.</string>
     
     <!-- מצבי פעולה -->
-    <string name="mode_inflating">מנפח ...</string>
-    <string name="mode_deflating">מרוקן ...</string>
+    <string name="mode_inflating">מנפח...</string>
+    <string name="mode_deflating">מוציא אוויר...</string>
     
     <!-- תיאורים -->
     <string name="app_logo">לוגו האפליקציה</string>
@@ -69,7 +69,7 @@
     <string name="starting_device_scan">Starting device scan</string>
     <string name="scan_results">Scan results: %1$d devices found</string>
     <string name="connecting_to_device">Connecting to device: %1$s</string>
-    <string name="no_devices_found">No devices found during scan</string>
+    <string name="no_devices_found">לא נמצאו מכשירים</string>
     
     <!-- הגדרות -->
     <string name="app_settings">AppSettings</string>
@@ -78,9 +78,9 @@
     <string name="selected_device_address">selectedDeviceAddress</string>
     
     <!-- מחרוזות חדשות שהועברו מהקוד -->
-    <string name="search_devices">Search Devices</string>
-    <string name="available_devices_count">Available Devices (%d)</string>
-    <string name="no_devices_found_message">No devices found.\nTap the scan button to search for devices.</string>
+    <string name="search_devices">חיפוש מכשירים</string>
+    <string name="available_devices_count">מכשירים זמינים (%d)</string>
+    <string name="no_devices_found_message">לא נמצאו מכשירים.\nלחץ על כפתור הסריקה לחיפוש מכשירים.</string>
     <string name="scan_devices_hint">לחץ על \'סרוק מכשירים\' כדי לחפש.</string>
     <string name="unknown_device">מכשיר לא ידוע</string>
     <string name="signal_strength_format">עוצמת אות: %1$d dBm</string>
@@ -105,14 +105,14 @@
     <string name="device_settings_title">הגדרות מכשיר</string>
     <string name="device_name">שם המכשיר</string>
     <string name="wifi_settings">הגדרות WiFi</string>
-    <string name="scan_networks">סרוק רשתות זמינות</string>
+    <string name="scan_networks">סרוק רשתות</string>
     <string name="exit_without_save">לצאת ללא שמירה?</string>
     <string name="changes_not_saved">השינויים שביצעת לא יישמרו.</string>
     <string name="exit_without_saving">צא ללא שמירה</string>
     <string name="continue_editing">המשך עריכה</string>
     <string name="saving_settings">שומר הגדרות...</string>
     <string name="device_will_reset">המכשיר יתאפס ויתחבר מחדש אוטומטית</string>
-    <string name="connection_status">סטטוס חיבור: %1$s</string>
+    <string name="connection_status">מצב חיבור: %s</string>
     <string name="try_reconnect">נסה להתחבר מחדש</string>
     <string name="hardware_settings">הגדרות חומרה</string>
     <string name="calibration_settings">הגדרות כיול</string>
@@ -131,6 +131,8 @@
     <string name="measure_wait">זמן המתנה למדידה (שניות)</string>
     <string name="auto_start">התחלה אוטומטית</string>
     <string name="bt_pin_code">קוד PIN לבלוטות\'</string>
+    <string name="ssid">SSID</string>
+    <string name="password">סיסמה</string>
     
     <!-- מחרוזות כלליות נוספות -->
     <string name="scanning_for_devices">סורק מכשירים...</string>
@@ -146,10 +148,10 @@
     <string name="app_description">אפליקציה לניהול לחץ אוויר בצמיגים</string>
     <string name="contact_info">פרטי יצירת קשר</string>
     <string name="copyright_notice">© %1$s 2024. כל הזכויות שמורות.</string>
-    <string name="connection_duration_seconds">Connected for %d seconds</string>
-    <string name="connection_duration_minutes">Connected for %d minutes and %d seconds</string>
-    <string name="connection_duration_hours">Connected for %d hours and %d minutes</string>
-    <string name="permission_denied">Permission Denied</string>
+    <string name="connection_duration_seconds">Connected for %1$d seconds</string>
+    <string name="connection_duration_minutes" formatted="false">Connected for %1$d minutes and %2$d seconds</string>
+    <string name="connection_duration_hours" formatted="false">Connected for %1$d hours and %2$d minutes</string>
+    <string name="permission_denied">הרשאה דרושה</string>
     
     <!-- Android Auto -->
     <string name="auto_current_pressure">לחץ נוכחי:</string>
@@ -159,18 +161,50 @@
     <string name="inflate">התחל ניפוח</string>
     <string name="select_target_pressure">בחר לחץ יעד</string>
     <string name="connect">התחבר</string>
-    <string name="auto_pressure_format">%1$.1f PSI</string>
+    <string name="auto_pressure_format">%.1f PSI</string>
     
     <!-- Mobile App Specific -->
     <string name="psi_unit">PSI</string>
     <string name="plus_symbol">+</string>
     <string name="minus_symbol">-</string>
     <string name="connected_duration_seconds">Connected for %1$d seconds</string>
-    <string name="connected_duration_minutes">Connected for %1$d minutes and %2$d seconds</string>
-    <string name="connected_duration_hours">Connected for %1$d hours and %2$d minutes</string>
+    <string name="connected_duration_minutes" formatted="false">Connected for %1$d minutes and %2$d seconds</string>
+    <string name="connected_duration_hours" formatted="false">Connected for %1$d hours and %2$d minutes</string>
     <string name="predefined_pressure_format">%1$d PSI</string>
     
     <!-- Connection states -->
-    <string name="bluetooth_disabled">Bluetooth Disabled</string>
-    <string name="connection_error">Connection Error</string>
+    <string name="bluetooth_disabled">Bluetooth מושבת</string>
+    <string name="connection_error">שגיאת חיבור</string>
+
+    <!-- Language Settings -->
+    <string name="language_settings">הגדרות שפה</string>
+    <string name="select_language">בחר שפה</string>
+    <string name="language_english">אנגלית</string>
+    <string name="language_hebrew">עברית</string>
+    <string name="language_changed">השפה שונתה</string>
+    <string name="restart_required">יש להפעיל מחדש את האפליקציה כדי להחיל את השינויים</string>
+
+    <!-- Predefined Pressures -->
+    <string name="loading_preset_pressures">Loading preset pressures...</string>
+    <string name="predefined_pressures">לחצי אוויר מוגדרים מראש</string>
+    <string name="predefined_pressure_1">לחץ אוויר 1 (8 PSI)</string>
+    <string name="predefined_pressure_2">לחץ אוויר 2 (10 PSI)</string>
+    <string name="predefined_pressure_3">לחץ אוויר 3 (12 PSI)</string>
+    <string name="predefined_pressure_4">לחץ אוויר 4 (16 PSI)</string>
+    <string name="predefined_pressure_5">לחץ אוויר 5 (20 PSI)</string>
+    <string name="predefined_pressure_6">לחץ אוויר 6 (30 PSI)</string>
+    <string name="predefined_pressure_7">לחץ אוויר 7 (38 PSI)</string>
+    <string name="predefined_pressure_8">לחץ אוויר 8 (40 PSI)</string>
+    <string name="predefined_pressures_description">הגדר את ערכי לחץ האוויר עבור כפתורי הבחירה המהירה</string>
+    <string name="pressure_value_hint">הכנס ערך לחץ אוויר</string>
+
+    <!-- Version Info -->
+    <string name="version_info_format">Version: %1$s\nBuild: %2$d\nBuild Type: %3$s\nBuild Time: %4$s\nMin SDK: %5$d\nTarget SDK: %6$d\nDeveloper: %7$s</string>
+
+    <!-- Display Mode -->
+    <string name="display_mode">Display Mode</string>
+    <string name="system_default">System Default</string>
+    <string name="light_mode">Light Mode</string>
+    <string name="dark_mode">Dark Mode</string>
+    <string name="display_mode_change_notice">Changing display mode requires app restart</string>
 </resources>

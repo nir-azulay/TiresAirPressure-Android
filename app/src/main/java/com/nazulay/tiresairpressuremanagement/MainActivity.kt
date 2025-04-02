@@ -42,6 +42,13 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.content.res.Configuration
+import java.util.Locale
+import kotlinx.coroutines.launch
+import com.nazulay.tiresairpressuremanagement.data.repository.BleRepository
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.Lifecycle
 
 class MainActivity : ComponentActivity() {
     private val TAG = "MainActivity"
@@ -49,6 +56,7 @@ class MainActivity : ComponentActivity() {
     private var showPermissionSettingsDialog by mutableStateOf(false)
     private lateinit var bleManager: BleManager
     private var isConnectingToSavedDevice = false
+    private lateinit var bleRepository: BleRepository
     
     // Constants for display mode
     companion object {
@@ -57,6 +65,8 @@ class MainActivity : ComponentActivity() {
         private const val THEME_MODE_SYSTEM = 0
         private const val THEME_MODE_LIGHT = 1
         private const val THEME_MODE_DARK = 2
+        private const val LANGUAGE_PREF = "language_preference"
+        private const val LANGUAGE_KEY = "selected_language"
     }
 
     private val requestPermissionLauncher = registerForActivityResult(
@@ -100,12 +110,38 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun attachBaseContext(newBase: Context) {
+        // Load saved language
+        val languageCode = newBase.getSharedPreferences(LANGUAGE_PREF, Context.MODE_PRIVATE)
+            .getString(LANGUAGE_KEY, Locale.getDefault().language) ?: Locale.getDefault().language
+
+        // Create configuration with saved language
+        val locale = Locale(languageCode)
+        Locale.setDefault(locale)
+        
+        val config = Configuration(newBase.resources.configuration)
+        config.setLocale(locale)
+        
+        val context = newBase.createConfigurationContext(config)
+        super.attachBaseContext(context)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Initialize BLE Manager
-        bleManager = BleManager(applicationContext)
+        // Initialize BLE Repository first
+        bleRepository = BleRepository(applicationContext)
         
+        // Initialize BLE Manager with repository
+        bleManager = BleManager(applicationContext, bleRepository)
+        
+        // Try to connect to saved devices when app starts
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                bleRepository.connectToSavedDevices()
+            }
+        }
+
         setContent {
             TiresAirPressureManagementTheme {
                 AppContent()
@@ -260,7 +296,7 @@ class MainActivity : ComponentActivity() {
                 Screen.ABOUT -> {
                     android.util.Log.d(TAG, "Displaying AboutScreen")
                     AboutScreen(
-                        onNavigateBack = {
+                        onBackClick = {
                             android.util.Log.d(TAG, "User clicked back from about")
                             currentScreen = Screen.MAIN
                         }

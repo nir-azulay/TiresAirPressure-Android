@@ -14,16 +14,22 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.asStateFlow
 import androidx.lifecycle.ViewModelProvider
 import android.content.Context
+import com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState
+import com.nazulay.tiresairpressuremanagement.data.local.AppSettingsManager
+import android.util.Log
 
 class MainViewModel(
     private val bleRepository: BleRepository,
     private val applicationContext: Context
 ) : ViewModel() {
+    
+    private val appSettingsManager = AppSettingsManager.getInstance(applicationContext)
     
     companion object {
         fun provideFactory(
@@ -49,7 +55,23 @@ class MainViewModel(
     private val _currentPressure = MutableStateFlow(0f)
     val currentPressure: StateFlow<Float> = _currentPressure.asStateFlow()
     
-    val isConnected = bleRepository.connectionState
+    // Use app settings for predefined pressures
+    val predefinedPressures = appSettingsManager.settings.map { settings ->
+        Log.d("MainViewModel", "AppSettings updated. PredefinedPressures: ${settings.predefinedPressures}")
+        settings.predefinedPressures
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+    
+    val isConnected = bleRepository.connectionState.map { state ->
+        state == ConnectionState.Connected
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
     val scanResults = bleRepository.scanResults
     
     private val _isScanning = MutableStateFlow(false)
@@ -57,8 +79,6 @@ class MainViewModel(
     
     private val _permissionGranted = MutableStateFlow(false)
     val permissionGranted: StateFlow<Boolean> = _permissionGranted
-    
-    val predefinedPressures = BleConstants.PREDEFINED_PRESSURES
     
     init {
         checkPermissions()

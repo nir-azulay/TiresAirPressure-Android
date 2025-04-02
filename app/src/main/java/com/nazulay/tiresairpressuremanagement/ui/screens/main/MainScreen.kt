@@ -147,20 +147,10 @@ fun MainScreen(
             Spacer(modifier = Modifier.height(16.dp))
             
             // Predefined Pressure Buttons
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp)
-            ) {
-                items(listOf(8, 10, 12, 16, 20, 30, 38)) { pressure ->
-                    OutlinedButton(
-                        onClick = { viewModel.setTargetPressure(pressure.toFloat()) },
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    ) {
-                        Text(stringResource(R.string.predefined_pressure_format, pressure))
-                    }
-                }
-            }
+            PresetPressureCard(
+                onPresetSelected = { pressure -> viewModel.setTargetPressure(pressure) },
+                viewModel = viewModel
+            )
             
             Spacer(modifier = Modifier.height(24.dp))
             
@@ -380,5 +370,82 @@ private fun StartStopButton(
             text = stringResource(if (isOperating) R.string.stop else R.string.start),
             style = MaterialTheme.typography.titleLarge
         )
+    }
+}
+
+@Composable
+private fun PresetPressureCard(
+    onPresetSelected: (Float) -> Unit,
+    viewModel: MainViewModel
+) {
+    val predefinedPressures by viewModel.predefinedPressures.collectAsState()
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF2C3440) // Slightly lighter than the main cards
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stringResource(R.string.preset_pressures),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            
+            if (predefinedPressures.isEmpty()) {
+                // Show loading or placeholder
+                Text(
+                    text = stringResource(R.string.loading_preset_pressures),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.7f)
+                )
+            } else {
+                // First row of preset buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    predefinedPressures.take(4).forEach { pressure ->
+                        PresetPressureButton(pressure = pressure, onSelect = onPresetSelected)
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Second row of preset buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    predefinedPressures.drop(4).forEach { pressure ->
+                        PresetPressureButton(pressure = pressure, onSelect = onPresetSelected)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PresetPressureButton(
+    pressure: Float,
+    onSelect: (Float) -> Unit
+) {
+    OutlinedButton(
+        onClick = { onSelect(pressure) },
+        modifier = Modifier.padding(vertical = 4.dp)
+    ) {
+        Text(stringResource(R.string.predefined_pressure_format, pressure))
     }
 } 

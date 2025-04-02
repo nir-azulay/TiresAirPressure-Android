@@ -1,38 +1,37 @@
 package com.nazulay.tiresairpressuremanagement.utils
 
+import android.content.Context
 import com.nazulay.tiresairpressuremanagement.BuildConfig
+import com.nazulay.tiresairpressuremanagement.R
+import java.text.SimpleDateFormat
+import java.util.*
 
 object Version {
-    val VERSION_NAME = BuildConfig.VERSION_NAME
-    val VERSION_CODE = BuildConfig.VERSION_CODE
-    val BUILD_TYPE = when(BuildConfig.BUILD_TYPE) {
-        "DEBUG" -> BuildType.DEBUG
-        "BETA" -> BuildType.BETA
-        else -> BuildType.RELEASE
-    }
-    const val MIN_SDK_VERSION = 24
-    const val TARGET_SDK_VERSION = 34
-    
-    val BUILD_TIME = BuildConfig.BUILD_TIME
-    const val DEVELOPER = "ניר אזולאי"
-    
-    enum class BuildType {
-        DEBUG, RELEASE, BETA
-    }
-    
-    fun getFullVersionInfo(): String {
-        return """
-            גרסה: $VERSION_NAME
-            קוד גרסה: $VERSION_CODE
-            סוג בנייה: $BUILD_TYPE
-            זמן בנייה: $BUILD_TIME
-            גרסת SDK מינימלית: $MIN_SDK_VERSION
-            גרסת SDK יעד: $TARGET_SDK_VERSION
-            מפתח: $DEVELOPER
-        """.trimIndent()
-    }
-    
-    fun getShortVersionInfo(): String {
-        return "v$VERSION_NAME ($BUILD_TYPE)"
+    const val VERSION_NAME = BuildConfig.VERSION_NAME
+    const val VERSION_CODE = BuildConfig.VERSION_CODE
+    const val BUILD_TYPE = BuildConfig.BUILD_TYPE
+    const val MIN_SDK_VERSION = BuildConfig.MIN_SDK_VERSION
+    const val TARGET_SDK_VERSION = BuildConfig.TARGET_SDK_VERSION
+    const val BUILD_TIME = BuildConfig.BUILD_TIME
+    const val DEVELOPER = "Nir Azulay"
+
+    fun getVersionInfo(context: Context): String {
+        val buildTime = try {
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+            val outputFormat = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
+            val date = inputFormat.parse(BUILD_TIME)
+            outputFormat.format(date ?: Date())
+        } catch (e: Exception) {
+            BUILD_TIME // Fallback to raw string if parsing fails
+        }
+        return context.getString(R.string.version_info_format,
+            VERSION_NAME,
+            VERSION_CODE,
+            BUILD_TYPE,
+            buildTime,
+            MIN_SDK_VERSION,
+            TARGET_SDK_VERSION,
+            DEVELOPER
+        )
     }
 } 

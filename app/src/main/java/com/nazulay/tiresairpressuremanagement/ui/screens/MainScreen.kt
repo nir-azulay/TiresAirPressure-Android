@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.clickable
+import android.util.Log
 
 private const val TAG = "MainScreen"
 
@@ -65,6 +66,11 @@ fun MainScreen(
     // Define min and max pressure values
     val minPressure = 5f
     val maxPressure = 40f
+    
+    // Create MainViewModel instance
+    val viewModel: MainViewModel = viewModel(
+        factory = MainViewModel.provideFactory(bleManager.application, bleManager)
+    )
     
     // State for target reached dialog
     var showTargetReachedDialog by remember { mutableStateOf(false) }
@@ -285,39 +291,49 @@ fun MainScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Top
                         ) {
-                            // Target pressure selector
-                            TargetPressureCard(
-                                targetPressure = targetPressure,
-                                onTargetPressureChange = { targetPressure = it },
-                                minPressure = minPressure,
-                                maxPressure = maxPressure
-                            )
-                            
-                            // Start/Stop button
-                            InflationControlButton(
-                                isInflating = isInflating,
-                                onInflationToggle = {
-                                    isInflating = !isInflating
-                                    android.util.Log.d(TAG, "Inflation state changed to: $isInflating")
-                                    val command = if (isInflating) {
-                                        android.util.Log.d(TAG, "Sending Start command with target pressure: $targetPressure")
-                                        BleCommand.StartTargetPressure(targetPressure = targetPressure)
-                                    } else {
-                                        android.util.Log.d(TAG, "Sending Stop command")
-                                        BleCommand.Stop()
+                            // Container for other controls
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                                    .verticalScroll(rememberScrollState()),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                TargetPressureCard(
+                                    targetPressure = targetPressure,
+                                    minPressure = minPressure,
+                                    maxPressure = maxPressure,
+                                    onTargetPressureChange = { targetPressure = it }
+                                )
+                                
+                                // Preset pressure buttons
+                                PresetPressureCard(viewModel = viewModel, onPresetSelected = { targetPressure = it })
+
+                                InflationControlButton(
+                                    isInflating = isInflating,
+                                    onInflationToggle = {
+                                        if (isInflating) {
+                                            // Stop inflation
+                                            bleManager.sendCommand(BleCommand.Stop())
+                                            android.util.Log.d(TAG, "Sent STOP command")
+                                            isInflating = false // Update UI immediately
+                                        } else {
+                                            // Start inflation
+                                            bleManager.sendCommand(BleCommand.StartTargetPressure(targetPressure))
+                                            android.util.Log.d(TAG, "Sent START command with target: $targetPressure")
+                                            isInflating = true // Update UI immediately
+                                        }
                                     }
-                                    bleManager.sendCommand(command)
-                                }
-                            )
-                            
-                            // Add space between button and indicator
-                            Spacer(modifier = Modifier.height(8.dp))
-                            
-                            // Inflation status indicator
-                            InflationStatusIndicator(isInflating = isInflating, scale = scale, targetPressure = targetPressure, currentPressureAnimated = currentPressureAnimated)
-                            
-                            // Preset pressure buttons
-                            PresetPressureCard(onPresetSelected = { targetPressure = it })
+                                )
+                                
+                                InflationStatusIndicator(
+                                    isInflating = isInflating,
+                                    scale = scale,
+                                    targetPressure = targetPressure,
+                                    currentPressureAnimated = currentPressureAnimated
+                                )
+                            }
                         }
                     }
                 } else {
@@ -342,39 +358,49 @@ fun MainScreen(
                             isLandscape = false
                         )
                         
-                        // Target pressure selector
-                        TargetPressureCard(
-                            targetPressure = targetPressure,
-                            onTargetPressureChange = { targetPressure = it },
-                            minPressure = minPressure,
-                            maxPressure = maxPressure
-                        )
-                        
-                        // Start/Stop button
-                        InflationControlButton(
-                            isInflating = isInflating,
-                            onInflationToggle = {
-                                isInflating = !isInflating
-                                android.util.Log.d(TAG, "Inflation state changed to: $isInflating")
-                                val command = if (isInflating) {
-                                    android.util.Log.d(TAG, "Sending Start command with target pressure: $targetPressure")
-                                    BleCommand.StartTargetPressure(targetPressure = targetPressure)
-                                } else {
-                                    android.util.Log.d(TAG, "Sending Stop command")
-                                    BleCommand.Stop()
+                        // Container for other controls
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                                .verticalScroll(rememberScrollState()),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            TargetPressureCard(
+                                targetPressure = targetPressure,
+                                minPressure = minPressure,
+                                maxPressure = maxPressure,
+                                onTargetPressureChange = { targetPressure = it }
+                            )
+                            
+                            // Preset pressure buttons
+                            PresetPressureCard(viewModel = viewModel, onPresetSelected = { targetPressure = it })
+
+                            InflationControlButton(
+                                isInflating = isInflating,
+                                onInflationToggle = {
+                                    if (isInflating) {
+                                        // Stop inflation
+                                        bleManager.sendCommand(BleCommand.Stop())
+                                        android.util.Log.d(TAG, "Sent STOP command")
+                                        isInflating = false // Update UI immediately
+                                    } else {
+                                        // Start inflation
+                                        bleManager.sendCommand(BleCommand.StartTargetPressure(targetPressure))
+                                        android.util.Log.d(TAG, "Sent START command with target: $targetPressure")
+                                        isInflating = true // Update UI immediately
+                                    }
                                 }
-                                bleManager.sendCommand(command)
-                            }
-                        )
-                        
-                        // Add space between button and indicator
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // Inflation status indicator
-                        InflationStatusIndicator(isInflating = isInflating, scale = scale, targetPressure = targetPressure, currentPressureAnimated = currentPressureAnimated)
-                        
-                        // Preset pressure buttons
-                        PresetPressureCard(onPresetSelected = { targetPressure = it })
+                            )
+                            
+                            InflationStatusIndicator(
+                                isInflating = isInflating,
+                                scale = scale,
+                                targetPressure = targetPressure,
+                                currentPressureAnimated = currentPressureAnimated
+                            )
+                        }
                     }
                 }
             }
@@ -802,8 +828,14 @@ private fun InflationStatusIndicator(
 
 @Composable
 private fun PresetPressureCard(
+    viewModel: MainViewModel,
     onPresetSelected: (Float) -> Unit
 ) {
+    val predefinedPressures by viewModel.predefinedPressures.collectAsState()
+    
+    // Log the collected pressures
+    Log.d("PresetPressureCard", "Collected predefinedPressures: $predefinedPressures")
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -827,28 +859,37 @@ private fun PresetPressureCard(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             
-            // First row of preset buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                PresetPressureButton(pressure = 8f, onSelect = onPresetSelected)
-                PresetPressureButton(pressure = 10f, onSelect = onPresetSelected)
-                PresetPressureButton(pressure = 12f, onSelect = onPresetSelected)
-                PresetPressureButton(pressure = 16f, onSelect = onPresetSelected)
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // Second row of preset buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                PresetPressureButton(pressure = 20f, onSelect = onPresetSelected)
-                PresetPressureButton(pressure = 30f, onSelect = onPresetSelected)
-                PresetPressureButton(pressure = 38f, onSelect = onPresetSelected)
-                PresetPressureButton(pressure = 40f, onSelect = onPresetSelected)
+            // Check if pressures are loaded
+            if (predefinedPressures.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.loading_preset_pressures),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.7f)
+                )
+            } else {
+                // First row of preset buttons (up to 4)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    predefinedPressures.take(4).forEach {
+                        PresetPressureButton(pressure = it, onSelect = onPresetSelected)
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Second row of preset buttons (remaining)
+                if (predefinedPressures.size > 4) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        predefinedPressures.drop(4).forEach {
+                            PresetPressureButton(pressure = it, onSelect = onPresetSelected)
+                        }
+                    }
+                }
             }
         }
     }

@@ -35,8 +35,12 @@ import kotlinx.coroutines.flow.SharedFlow
 import androidx.core.app.NotificationCompat
 import android.app.PendingIntent
 import android.content.Intent
+import com.nazulay.tiresairpressuremanagement.data.repository.BleRepository
 
-class BleManager(private val context: Context) {
+class BleManager(
+    private val context: Context,
+    private val bleRepository: BleRepository? = null
+) {
     private val TAG = "BleManager"
     private var bluetoothGatt: BluetoothGatt? = null
     private var notifyCharacteristic: BluetoothGattCharacteristic? = null
@@ -105,6 +109,10 @@ class BleManager(private val context: Context) {
 
     private val _isInflating = MutableStateFlow(false)
     val isInflating: StateFlow<Boolean> = _isInflating
+    
+    private var connectedDevice: BluetoothDevice? = null
+    private var gatt: BluetoothGatt? = null
+    private var isGattOperationsStarted = false
     
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
@@ -1447,6 +1455,38 @@ class BleManager(private val context: Context) {
     
     companion object {
         const val REQUEST_BLUETOOTH_PERMISSIONS = 1001
+    }
+
+    private fun onDeviceConnected(device: BluetoothDevice) {
+        Log.d(TAG, "Device connected: ${device.name} (${device.address})")
+        _connectionState.value = ConnectionState.Connected
+        connectedDevice = device
+        
+        // Save the device when successfully connected
+        bleRepository?.onDeviceConnected(device)
+        
+        // Start GATT operations
+        startGattOperations()
+    }
+
+    private fun startGattOperations() {
+        if (isGattOperationsStarted) return
+        
+        gatt?.let { gatt ->
+            isGattOperationsStarted = true
+            
+            // Discover services
+            if (!gatt.discoverServices()) {
+                Log.e(TAG, "Failed to start service discovery")
+                disconnect()
+                return
+            }
+            
+            Log.d(TAG, "Started service discovery")
+        } ?: run {
+            Log.e(TAG, "Cannot start GATT operations - no GATT connection")
+            disconnect()
+        }
     }
 }
 

@@ -2,7 +2,9 @@ package com.nazulay.tiresairpressuremanagement.ui.screens.settings
 
 import android.app.Application
 import android.content.Context
+import android.content.res.Configuration
 import android.net.wifi.WifiManager
+import android.net.wifi.ScanResult
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -20,23 +22,42 @@ import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState
 import com.nazulay.tiresairpressuremanagement.data.ble.BleManager
+import com.nazulay.tiresairpressuremanagement.R
+import java.util.Locale
+import kotlinx.coroutines.flow.SharingStarted
+import com.nazulay.tiresairpressuremanagement.data.local.AppSettingsManager
+import kotlinx.coroutines.delay
+import com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState
+import com.nazulay.tiresairpressuremanagement.domain.models.DeviceStatus
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
 class SettingsViewModel(
-    private val bleRepository: BleRepository,
+    private val bleManager: BleManager,
     private val application: Application
 ) : ViewModel() {
     
     companion object {
         private const val TAG = "SettingsViewModel"
         
-        // הגדרות עבור מצב תצוגה
-        private const val THEME_MODE_PREF = "theme_mode_preference"
-        private const val THEME_MODE_KEY = "theme_mode"
-        private const val THEME_MODE_SYSTEM = 0  // ברירת מחדל - לפי הגדרות המערכת
-        private const val THEME_MODE_LIGHT = 1   // מצב יום
-        private const val THEME_MODE_DARK = 2    // מצב לילה
+        // Theme mode constants
+        const val THEME_MODE_SYSTEM = 0
+        const val THEME_MODE_LIGHT = 1
+        const val THEME_MODE_DARK = 2
+        
+        // Language constants
+        const val LANGUAGE_HEBREW = "he"
+        const val LANGUAGE_ENGLISH = "en"
+        
+        // Preference constants
+        const val THEME_MODE_PREF = "theme_mode_preferences"
+        const val THEME_MODE_KEY = "theme_mode"
+        const val LANGUAGE_PREF = "language_preferences"
+        const val LANGUAGE_KEY = "selected_language"
         
         fun provideFactory(
             application: Application,
@@ -45,7 +66,7 @@ class SettingsViewModel(
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return SettingsViewModel(
-                    bleRepository = BleRepository(application, bleManager),
+                    bleManager = bleManager,
                     application = application
                 ) as T
             }
@@ -54,376 +75,271 @@ class SettingsViewModel(
     
     private val wifiManager = application.getSystemService(Context.WIFI_SERVICE) as WifiManager
     
-    private val _settings = MutableStateFlow(
-        DeviceSettings(
-            deviceName = "",
-            wifiSsid = "",
-            wifiPassword = "",
-            relayCompressorPin = 0,
-            relayFreePin = 0,
-            sensorPin = 0,
-            autoStart = false,
-            maxSecForStatus = 30,
-            sensorValueAt0PSI = 0,
-            sensorValueAt50PSI = 1023,
-            measureWait = 2f,
-            precision = 1f,
-            btPinCode = "1234",
-            currentPressure = 0f,
-            softwareVersion = "",
-            ipAddress = "",
-            simulationMode = false
-        )
-    )
-    val settings: StateFlow<DeviceSettings> = _settings.asStateFlow()
+    private val appSettingsManager = AppSettingsManager.getInstance(application)
     
-    private val _availableNetworks = MutableStateFlow<List<String>>(emptyList())
-    val availableNetworks: StateFlow<List<String>> = _availableNetworks
+    // App Settings
+    val appSettings = appSettingsManager.settings
+    
+    // Available WiFi networks - Store ScanResult to get signal strength
+    private val _availableNetworks = MutableStateFlow<List<ScanResult>>(emptyList())
+    val availableNetworks: StateFlow<List<ScanResult>> = _availableNetworks.asStateFlow()
+    
+    // BLE Device Settings
+    val deviceSettings: StateFlow<DeviceSettings?> = bleManager.deviceSettings
+    
+    // BLE Device Status
+    val deviceStatus: StateFlow<DeviceStatus?> = bleManager.deviceStatus
+    
+    // Connection state
+    val connectionState = bleManager.connectionState
     
     // Boolean connection state (true/false)
-    val isConnected = bleRepository.connectionState
+    val isConnected = bleManager.connectionState.map { state ->
+        state == ConnectionState.Connected
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), bleManager.connectionState.value == ConnectionState.Connected)
     
-    // Raw connection state (Connected, Connecting, Disconnected)
-    val connectionState = bleRepository.rawConnectionState
-    
-    // Create a derived state flow that provides more detailed connection information
-    val connectionStatus = connectionState.map { state ->
+    // Detailed connection status
+    val connectionStatus = connectionState.map { state: ConnectionState ->
         when (state) {
-            com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState.Connected -> "מחובר"
-            com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState.Connecting -> "מתחבר..."
-            com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState.Disconnected -> "מנותק"
-            com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState.PermissionDenied -> "הרשאה דרושה"
-            com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState.Scanning -> "סורק..."
-            com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState.BluetoothDisabled -> "Bluetooth מושבת"
-            com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState.Error -> "שגיאת חיבור"
+            ConnectionState.Connected -> 
+                application.getString(R.string.connected)
+            ConnectionState.Connecting -> 
+                application.getString(R.string.connecting)
+            ConnectionState.Disconnected -> 
+                application.getString(R.string.disconnected)
+            ConnectionState.PermissionDenied -> 
+                application.getString(R.string.permission_denied)
+            ConnectionState.Scanning -> 
+                application.getString(R.string.scanning)
+            ConnectionState.BluetoothDisabled -> 
+                application.getString(R.string.bluetooth_disabled)
+            ConnectionState.Error -> 
+                application.getString(R.string.connection_error)
         }
-    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Lazily, "מנותק")
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), mapConnectionStateToString(bleManager.connectionState.value))
     
     // מצב תצוגה נוכחי
     private val _themeMode = MutableStateFlow(THEME_MODE_SYSTEM)
     val themeMode: StateFlow<Int> = _themeMode.asStateFlow()
     
+    // Language selection state
+    private val _selectedLanguage = MutableStateFlow(loadSelectedLanguage())
+    val selectedLanguage: StateFlow<String> = _selectedLanguage.asStateFlow()
+    
+    // Predefined pressure states
+    private val _predefinedPressure1 = MutableStateFlow(8f)
+    private val _predefinedPressure2 = MutableStateFlow(10f)
+    private val _predefinedPressure3 = MutableStateFlow(12f)
+    private val _predefinedPressure4 = MutableStateFlow(16f)
+    private val _predefinedPressure5 = MutableStateFlow(20f)
+    private val _predefinedPressure6 = MutableStateFlow(30f)
+    private val _predefinedPressure7 = MutableStateFlow(38f)
+    private val _predefinedPressure8 = MutableStateFlow(40f)
+    
     init {
         Log.d(TAG, "Initializing SettingsViewModel")
+        Log.d(TAG, "Initial Connection State from BleManager: ${bleManager.connectionState.value}")
         
-        // טעינת מצב התצוגה מההגדרות
+        // Load theme and language
         loadThemeMode()
-        
-        // Monitor connection state
-        viewModelScope.launch {
-            connectionState.collect { state ->
-                Log.d(TAG, "Connection state changed: $state")
-                if (state == com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState.Connected) {
-                    // When connected, load settings from shared preferences
-                    loadSettingsFromSharedPreferences()
-                    // Request current settings from device
-                    requestDeviceSettings()
-                }
-            }
-        }
-        
-        // Monitor device status updates
-        viewModelScope.launch {
-            bleRepository.deviceStatus.collect { status ->
-                Log.d(TAG, "Device status update received: $status")
-                if (status != null) {
-                    // Update current pressure in settings
-                    _settings.update { currentSettings ->
-                        currentSettings.copy(
-                            currentPressure = status.pressure
-                        )
-                    }
-                }
-            }
-        }
-        
-        // Monitor device settings updates
-        viewModelScope.launch {
-            bleRepository.deviceSettings.collect { deviceSettings ->
-                Log.d(TAG, "Device settings update received: $deviceSettings")
-                if (deviceSettings != null) {
-                    // Update all settings
-                    _settings.value = deviceSettings
-                    Log.d(TAG, "Updated settings with device settings: $deviceSettings")
-                }
-            }
-        }
-        
-        // Load initial settings from shared preferences
-        loadSettingsFromSharedPreferences()
-        
-        // Removed: Don't try to connect to saved device in init
-        // This will prevent reconnection when navigating to settings
+        // selectedLanguage is already initialized with loadSelectedLanguage()
+
+        // Predefined pressures are handled by AppSettingsManager
+
+        // The ViewModel now automatically reflects the state from the single BleManager instance.
+        // No need for explicit collection here for connection/device states.
     }
     
     // Public method to reconnect to saved device if needed
     fun connectToSavedDeviceIfNeeded() {
         viewModelScope.launch {
-            if (connectionState.value != com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState.Connected) {
-                Log.d(TAG, "Manually trying to connect to saved device")
-                bleRepository.connectToSavedDevice()
+            Log.d(TAG, "Attempting to check connection status: current state = ${connectionState.value}")
+            if (connectionState.value != ConnectionState.Connected) {
+                Log.d(TAG, "Manually trying to connect to saved device via BleManager")
+                try {
+                    bleManager.connectToSavedDevice()
+                    delay(1000)
+                    Log.d(TAG, "After connection attempt, state is now: ${connectionState.value}")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error connecting to saved device: ${e.message}", e)
+                }
             } else {
-                Log.d(TAG, "Already connected, no need to reconnect")
+                Log.d(TAG, "Already connected, requesting settings refresh via BleManager")
+                requestDeviceSettings()
             }
         }
     }
     
     // Request current settings from the device
     private fun requestDeviceSettings() {
-        Log.d(TAG, "Requesting device settings")
-        // Send a command to request settings from the device
+        Log.d(TAG, "Requesting device settings via BleManager")
         try {
-            // First try the direct method
-            bleRepository.requestDeviceSettings()
-            
-            // As a fallback, also try sending the command directly
-            bleRepository.sendCommand(BleCommand.RequestSettings())
+            bleManager.requestDeviceSettings()
+            bleManager.sendCommand(BleCommand.RequestSettings())
         } catch (e: Exception) {
             Log.e(TAG, "Error requesting device settings: ${e.message}")
         }
     }
     
-    // Load settings from shared preferences
-    private fun loadSettingsFromSharedPreferences() {
-        Log.d(TAG, "Loading settings from shared preferences")
-        val sharedPreferences = application.getSharedPreferences("DeviceSettings", Context.MODE_PRIVATE)
-        
-        // Load all settings from shared preferences
-        val deviceName = sharedPreferences.getString("deviceName", "") ?: ""
-        val wifiSsid = sharedPreferences.getString("wifiSsid", "") ?: ""
-        val wifiPassword = sharedPreferences.getString("wifiPassword", "") ?: ""
-        val relayCompressorPin = sharedPreferences.getInt("relayCompressorPin", 0)
-        val relayFreePin = sharedPreferences.getInt("relayFreePin", 0)
-        val sensorPin = sharedPreferences.getInt("sensorPin", 0)
-        val autoStart = sharedPreferences.getBoolean("autoStart", false)
-        val maxSecForStatus = sharedPreferences.getInt("maxSecForStatus", 30)
-        val sensorValueAt0PSI = sharedPreferences.getInt("sensorValueAt0PSI", 0)
-        val sensorValueAt50PSI = sharedPreferences.getInt("sensorValueAt50PSI", 1023)
-        val measureWait = sharedPreferences.getFloat("measureWait", 2f)
-        val precision = sharedPreferences.getFloat("precision", 1f)
-        val btPinCode = sharedPreferences.getString("btPinCode", "1234") ?: "1234"
-        val currentPressure = sharedPreferences.getFloat("pressure", 0f)
-        val softwareVersion = sharedPreferences.getString("softwareVersion", "") ?: ""
-        val ipAddress = sharedPreferences.getString("ipAddress", "") ?: ""
-        val simulationMode = sharedPreferences.getBoolean("simulationMode", false)
-        
-        // Update settings state
-        _settings.value = DeviceSettings(
-            deviceName = deviceName,
-            wifiSsid = wifiSsid,
-            wifiPassword = wifiPassword,
-            relayCompressorPin = relayCompressorPin,
-            relayFreePin = relayFreePin,
-            sensorPin = sensorPin,
-            autoStart = autoStart,
-            maxSecForStatus = maxSecForStatus,
-            sensorValueAt0PSI = sensorValueAt0PSI,
-            sensorValueAt50PSI = sensorValueAt50PSI,
-            measureWait = measureWait,
-            precision = precision,
-            btPinCode = btPinCode,
-            currentPressure = currentPressure,
-            softwareVersion = softwareVersion,
-            ipAddress = ipAddress,
-            simulationMode = simulationMode
-        )
-        
-        Log.d(TAG, "Loaded settings from SharedPreferences: ${_settings.value}")
-    }
-    
-    // Save current pressure to shared preferences
-    private fun saveCurrentPressureToSharedPreferences(pressure: Float) {
-        val sharedPreferences = application.getSharedPreferences("DeviceSettings", Context.MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
-        editor.putFloat("pressure", pressure)
-        editor.apply()
-    }
-    
-    // Save all settings to shared preferences
-    private fun saveSettingsToSharedPreferences() {
-        Log.d(TAG, "Saving settings to shared preferences")
-        val sharedPreferences = application.getSharedPreferences("DeviceSettings", Context.MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
-        
-        val currentSettings = _settings.value
-        editor.putString("deviceName", currentSettings.deviceName)
-        editor.putString("wifiSsid", currentSettings.wifiSsid)
-        editor.putString("wifiPassword", currentSettings.wifiPassword)
-        editor.putInt("relayCompressorPin", currentSettings.relayCompressorPin)
-        editor.putInt("relayFreePin", currentSettings.relayFreePin)
-        editor.putInt("sensorPin", currentSettings.sensorPin)
-        editor.putBoolean("autoStart", currentSettings.autoStart)
-        editor.putInt("maxSecForStatus", currentSettings.maxSecForStatus)
-        editor.putInt("sensorValueAt0PSI", currentSettings.sensorValueAt0PSI)
-        editor.putInt("sensorValueAt50PSI", currentSettings.sensorValueAt50PSI)
-        editor.putFloat("measureWait", currentSettings.measureWait)
-        editor.putFloat("precision", currentSettings.precision)
-        editor.putString("btPinCode", currentSettings.btPinCode)
-        editor.putBoolean("simulationMode", currentSettings.simulationMode)
-        
-        editor.apply()
-    }
-    
     fun scanWifiNetworks() {
         try {
             Log.d(TAG, "Starting WiFi scan")
-            
-            // Get the current activity context
             val context = application.applicationContext
             
-            // Check if we have the necessary permissions
-            val permissionCheck = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                val locationPermission = context.checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)
-                val wifiStatePermission = context.checkSelfPermission(android.Manifest.permission.ACCESS_WIFI_STATE)
-                val wifiChangePermission = context.checkSelfPermission(android.Manifest.permission.CHANGE_WIFI_STATE)
-                
-                locationPermission == android.content.pm.PackageManager.PERMISSION_GRANTED &&
-                wifiStatePermission == android.content.pm.PackageManager.PERMISSION_GRANTED &&
-                wifiChangePermission == android.content.pm.PackageManager.PERMISSION_GRANTED
-            } else {
-                true // On older Android versions, permissions are granted at install time
-            }
-            
-            if (!permissionCheck) {
-                Log.w(TAG, "Required permissions not granted, cannot scan WiFi networks")
-                _availableNetworks.value = listOf("Location and WiFi permissions required for scanning")
+            // Permissions check (simplified, assumes MainActivity handles requests)
+            if (!hasWifiScanningPermissions(context)) {
+                Log.w(TAG, "Required permissions not granted for WiFi scan")
+                // Consider emitting a specific state or error message here
+                _availableNetworks.value = emptyList() // Clear previous results
+                // Maybe set a separate error state flow?
                 return
             }
             
-            // Check if WiFi is enabled
             if (!wifiManager.isWifiEnabled) {
                 Log.w(TAG, "WiFi is disabled, cannot scan networks")
-                _availableNetworks.value = listOf("WiFi is disabled")
+                _availableNetworks.value = emptyList()
                 return
             }
             
-            // Start scan safely
+            // API >= 30 requires location services to be enabled for WiFi scanning
+            // Add check if needed based on target SDK and testing
+            
             val success = wifiManager.startScan()
             if (!success) {
-                Log.w(TAG, "Failed to start WiFi scan")
-                _availableNetworks.value = listOf("Failed to start WiFi scan")
-                return
+                Log.w(TAG, "wifiManager.startScan() returned false")
+                // May happen if scans are too frequent
+                // Get previous results if available
+                 val results = try { wifiManager.scanResults ?: emptyList() } catch (e: SecurityException) { emptyList() }
+                 _availableNetworks.value = results.filter { !it.SSID.isNullOrEmpty() }.distinctBy { it.SSID }
+                 Log.d(TAG, "Failed to start new scan, using previous results: ${results.size}")
+                 return
             }
             
-            // Get scan results safely
-            val results = try {
-                wifiManager.scanResults ?: emptyList()
-            } catch (e: Exception) {
-                Log.e(TAG, "Error getting WiFi scan results: ${e.message}")
-                emptyList()
+            // It takes some time for scan results to be available. 
+            // A BroadcastReceiver for SCAN_RESULTS_AVAILABLE_ACTION is the proper way,
+            // but for simplicity here, we'll query after a short delay.
+            viewModelScope.launch {
+                delay(2000) // Wait 2 seconds for scan results
+                val results = try {
+                     wifiManager.scanResults ?: emptyList()
+                } catch (e: SecurityException) {
+                    Log.e(TAG, "SecurityException getting scan results: ${e.message}")
+                    emptyList()
+                }
+                
+                // Filter out empty SSIDs and duplicates, sort by signal strength
+                val networks = results
+                    .filter { !it.SSID.isNullOrEmpty() }
+                    .distinctBy { it.SSID } // Keep only one entry per SSID
+                    .sortedByDescending { it.level } // Strongest signal first
+                    
+                Log.d(TAG, "Found ${networks.size} unique WiFi networks: ${networks.map { it.SSID + " (" + it.level + ")" }}")
+                _availableNetworks.value = networks
             }
-            
-            // Filter out empty SSIDs and duplicates
-            val networks = results
-                .filter { !it.SSID.isNullOrEmpty() }
-                .map { it.SSID }
-                .distinct()
-            
-            Log.d(TAG, "Found ${networks.size} WiFi networks: $networks")
-            _availableNetworks.value = if (networks.isEmpty()) {
-                listOf("No networks found")
-            } else {
-                networks
-            }
+
         } catch (e: Exception) {
             Log.e(TAG, "Error scanning WiFi networks: ${e.message}", e)
-            _availableNetworks.value = listOf("Error scanning: ${e.message}")
+            // Update UI to show error?
+            _availableNetworks.value = emptyList()
         }
     }
     
-    fun updateSettings(
-        deviceName: String = _settings.value.deviceName,
-        wifiSsid: String = _settings.value.wifiSsid,
-        wifiPassword: String = _settings.value.wifiPassword,
-        relayCompressorPin: Int = _settings.value.relayCompressorPin,
-        relayFreePin: Int = _settings.value.relayFreePin,
-        sensorPin: Int = _settings.value.sensorPin,
-        autoStart: Boolean = _settings.value.autoStart,
-        maxSecForStatus: Int = _settings.value.maxSecForStatus,
-        sensorValueAt0PSI: Int = _settings.value.sensorValueAt0PSI,
-        sensorValueAt50PSI: Int = _settings.value.sensorValueAt50PSI,
-        measureWait: Float = _settings.value.measureWait,
-        precision: Float = _settings.value.precision,
-        btPinCode: String = _settings.value.btPinCode,
-        simulationMode: Boolean = _settings.value.simulationMode
+    // Helper for permission check
+    private fun hasWifiScanningPermissions(context: Context): Boolean {
+         val neededPermissions = mutableListOf(
+            Manifest.permission.ACCESS_WIFI_STATE,
+            Manifest.permission.CHANGE_WIFI_STATE
+         )
+         // Location is required for scanning on newer Android versions
+         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+             neededPermissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
+         }
+        
+        return neededPermissions.all { permission ->
+            ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+    
+    fun updateDeviceSettings(
+        deviceName: String? = null,
+        wifiSsid: String? = null,
+        wifiPassword: String? = null,
+        relayCompressorPin: Int? = null,
+        relayFreePin: Int? = null,
+        sensorPin: Int? = null,
+        autoStart: Boolean? = null,
+        maxSecForStatus: Int? = null,
+        sensorValueAt0PSI: Int? = null,
+        sensorValueAt50PSI: Int? = null,
+        measureWait: Float? = null,
+        precision: Float? = null,
+        btPinCode: String? = null
     ) {
-        val newSettings = _settings.value.copy(
-            deviceName = deviceName,
-            wifiSsid = wifiSsid,
-            wifiPassword = wifiPassword,
-            relayCompressorPin = relayCompressorPin,
-            relayFreePin = relayFreePin,
-            sensorPin = sensorPin,
-            autoStart = autoStart,
-            maxSecForStatus = maxSecForStatus,
-            sensorValueAt0PSI = sensorValueAt0PSI,
-            sensorValueAt50PSI = sensorValueAt50PSI,
-            measureWait = measureWait,
-            precision = precision,
-            btPinCode = btPinCode,
-            simulationMode = simulationMode
-        )
-        _settings.value = newSettings
-        
-        // Save settings to shared preferences
-        saveSettingsToSharedPreferences()
-    }
-    
-    fun setSimulationMode(enabled: Boolean) {
-        _settings.value = _settings.value.copy(simulationMode = enabled)
-        bleRepository.sendCommand(BleCommand.SimulationMode(enabled = enabled))
-        
-        // Save simulation mode to shared preferences
-        val sharedPreferences = application.getSharedPreferences("DeviceSettings", Context.MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
-        editor.putBoolean("simulationMode", enabled)
-        editor.apply()
-    }
-    
-    fun saveSettings(onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            Log.d(TAG, "Saving settings to device: ${_settings.value}")
-            
-            // Save settings to shared preferences first
-            saveSettingsToSharedPreferences()
-            
-            // Send settings to device
-            bleRepository.sendCommand(
-                BleCommand.UpdateSettings(
-                    deviceName = _settings.value.deviceName,
-                    wifiSsid = _settings.value.wifiSsid,
-                    wifiPassword = _settings.value.wifiPassword,
-                    relayCompressorPin = _settings.value.relayCompressorPin,
-                    relayFreePin = _settings.value.relayFreePin,
-                    sensorPin = _settings.value.sensorPin,
-                    autoStart = _settings.value.autoStart,
-                    maxSecForStatus = _settings.value.maxSecForStatus,
-                    sensorValueAt0PSI = _settings.value.sensorValueAt0PSI,
-                    sensorValueAt50PSI = _settings.value.sensorValueAt50PSI,
-                    measureWait = _settings.value.measureWait,
-                    precision = _settings.value.precision,
-                    btPinCode = _settings.value.btPinCode,
-                    simulationMode = _settings.value.simulationMode
-                )
+        val currentSettings = deviceSettings.value
+        if (currentSettings != null) {
+             // Create the settings object with potentially updated values
+            val settingsToSend = currentSettings.copy(
+                deviceName = deviceName ?: currentSettings.deviceName,
+                wifiSsid = wifiSsid ?: currentSettings.wifiSsid,
+                wifiPassword = wifiPassword ?: currentSettings.wifiPassword,
+                relayCompressorPin = relayCompressorPin ?: currentSettings.relayCompressorPin,
+                relayFreePin = relayFreePin ?: currentSettings.relayFreePin,
+                sensorPin = sensorPin ?: currentSettings.sensorPin,
+                autoStart = autoStart ?: currentSettings.autoStart,
+                maxSecForStatus = maxSecForStatus ?: currentSettings.maxSecForStatus,
+                sensorValueAt0PSI = sensorValueAt0PSI ?: currentSettings.sensorValueAt0PSI,
+                sensorValueAt50PSI = sensorValueAt50PSI ?: currentSettings.sensorValueAt50PSI,
+                measureWait = measureWait ?: currentSettings.measureWait,
+                precision = precision ?: currentSettings.precision,
+                btPinCode = btPinCode ?: currentSettings.btPinCode
             )
+            Log.d(TAG, "updateDeviceSettings triggering save with: $settingsToSend")
             
-            // Wait a bit before disconnecting to give the device time to receive the settings
-            kotlinx.coroutines.delay(1000)
-            
-            // Disconnect from the device
-            Log.d(TAG, "Disconnecting from device after sending settings")
-            bleRepository.disconnect()
-            
-            // Wait for 3 seconds to allow the device to restart
-            Log.d(TAG, "Waiting 3 seconds for device to restart...")
-            kotlinx.coroutines.delay(3000)
-            
-            // Try to reconnect to the device
-            Log.d(TAG, "Attempting to reconnect to device after restart")
-            bleRepository.connectToSavedDevice()
-            
-            // Call the success callback
-            onSuccess()
+            // Call the actual save function, passing the constructed settings
+            // The save function will use the _predefinedPressure values from the ViewModel's state
+             saveDeviceSettingsInternal(settingsToSend) { /* Optional callback */ }
+
+        } else {
+             Log.w(TAG, "Cannot update/save null device settings from updateDeviceSettings")
+        }
+    }
+    
+    // Renamed the original save function to be called internally
+    private fun saveDeviceSettingsInternal(settingsToSave: DeviceSettings, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            Log.d(TAG, "Saving device settings via BleManager: $settingsToSave")
+            bleManager.sendCommand(BleCommand.UpdateSettings( // Use UpdateSettings
+                wifiSsid = settingsToSave.wifiSsid,
+                wifiPassword = settingsToSave.wifiPassword,
+                deviceName = settingsToSave.deviceName,
+                relayCompressorPin = settingsToSave.relayCompressorPin,
+                relayFreePin = settingsToSave.relayFreePin,
+                sensorPin = settingsToSave.sensorPin,
+                sensorValueAt0PSI = settingsToSave.sensorValueAt0PSI,
+                sensorValueAt50PSI = settingsToSave.sensorValueAt50PSI,
+                precision = settingsToSave.precision,
+                maxSecForStatus = settingsToSave.maxSecForStatus,
+                measureWait = settingsToSave.measureWait,
+                autoStart = settingsToSave.autoStart,
+                btPinCode = settingsToSave.btPinCode,
+                // Note: Predefined pressures are NOT part of UpdateSettings command
+                // They are managed locally by AppSettingsManager
+                // Note: operationMode, currentPressure, softwareVersion, ipAddress 
+                //       are status/read-only, not part of settings update command
+                simulationMode = settingsToSave.simulationMode // Simulation mode IS part of update
+            ))
+            delay(1500) 
+            onComplete()
+        }
+    }
+    
+    // Public save function called by the UI (doesn't need settings param)
+    fun saveDeviceSettings(onComplete: () -> Unit) {
+        val currentSettings = deviceSettings.value
+        if (currentSettings != null) {
+             saveDeviceSettingsInternal(currentSettings, onComplete)
+        } else {
+             Log.w(TAG, "Cannot save null device settings")
         }
     }
     
@@ -457,5 +373,127 @@ class SettingsViewModel(
         val savedMode = sharedPreferences.getInt(THEME_MODE_KEY, THEME_MODE_SYSTEM)
         _themeMode.value = savedMode
         Log.d(TAG, "Theme mode loaded: $savedMode")
+    }
+
+    // Function to get available languages
+    fun getAvailableLanguages(): List<Pair<String, String>> {
+        return listOf(
+            LANGUAGE_ENGLISH to application.getString(R.string.language_english),
+            LANGUAGE_HEBREW to application.getString(R.string.language_hebrew)
+        )
+    }
+
+    // Function to set the app language
+    fun setLanguage(languageCode: String) {
+        if (languageCode != _selectedLanguage.value) {
+            _selectedLanguage.value = languageCode
+            saveSelectedLanguage(languageCode)
+            updateLocale(languageCode)
+        }
+    }
+
+    // Load saved language preference
+    private fun loadSelectedLanguage(): String {
+        val sharedPreferences = application.getSharedPreferences(LANGUAGE_PREF, Context.MODE_PRIVATE)
+        return sharedPreferences.getString(LANGUAGE_KEY, getSystemLanguage()) ?: getSystemLanguage()
+    }
+
+    // Save language preference
+    private fun saveSelectedLanguage(languageCode: String) {
+        val sharedPreferences = application.getSharedPreferences(LANGUAGE_PREF, Context.MODE_PRIVATE)
+        sharedPreferences.edit().putString(LANGUAGE_KEY, languageCode).apply()
+    }
+
+    // Get system language
+    private fun getSystemLanguage(): String {
+        return Locale.getDefault().language.let { lang ->
+            when (lang) {
+                LANGUAGE_HEBREW, LANGUAGE_ENGLISH -> lang
+                else -> LANGUAGE_ENGLISH // Default to English for unsupported languages
+            }
+        }
+    }
+
+    // Update app locale
+    private fun updateLocale(languageCode: String) {
+        val locale = Locale(languageCode)
+        Locale.setDefault(locale)
+        
+        val config = Configuration(application.resources.configuration)
+        config.setLocale(locale)
+        
+        @Suppress("DEPRECATION")
+        application.resources.updateConfiguration(config, application.resources.displayMetrics)
+    }
+
+    fun updatePredefinedPressure(index: Int, value: Float) {
+        val validValue = value.coerceIn(0f, 150f) // Limit pressure between 0 and 150 PSI
+        when (index) {
+            1 -> _predefinedPressure1.value = validValue
+            2 -> _predefinedPressure2.value = validValue
+            3 -> _predefinedPressure3.value = validValue
+            4 -> _predefinedPressure4.value = validValue
+            5 -> _predefinedPressure5.value = validValue
+            6 -> _predefinedPressure6.value = validValue
+            7 -> _predefinedPressure7.value = validValue
+            8 -> _predefinedPressure8.value = validValue
+        }
+    }
+
+    // App Settings Functions
+    fun updateThemeMode(mode: Int) {
+        if (mode in THEME_MODE_SYSTEM..THEME_MODE_DARK) {
+            appSettingsManager.updateThemeMode(mode)
+        }
+    }
+    
+    fun updateLanguage(languageCode: String) {
+        appSettingsManager.updateLanguage(languageCode)
+        updateLocale(languageCode)
+    }
+    
+    fun updateSimulationMode(enabled: Boolean) {
+        appSettingsManager.updateSimulationMode(enabled)
+    }
+    
+    fun updatePredefinedPressures(pressures: List<Float>) {
+        appSettingsManager.updatePredefinedPressures(pressures)
+    }
+
+    // Public method to force refresh the connection state
+    fun forceRefreshConnectionState() {
+        viewModelScope.launch {
+            Log.d(TAG, "Forcing refresh of connection state")
+            try {
+                // Check if the current state matches reality
+                val currentState = connectionState.value
+                Log.d(TAG, "Current connection state is: $currentState")
+                
+                if (currentState != ConnectionState.Connected) {
+                    // If we're not connected according to the state, try to trigger an update
+                    Log.d(TAG, "Not connected according to state, requesting device settings to update state")
+                    requestDeviceSettings()
+                } else {
+                    // We're connected according to the state, verify by requesting settings
+                    Log.d(TAG, "Connected according to state, verifying by requesting settings")
+                    requestDeviceSettings()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error checking connection state: ${e.message}", e)
+            }
+        }
+    }
+
+    // Helper function for initial value of connectionStatus
+    private fun mapConnectionStateToString(state: ConnectionState): String {
+         return when (state) {
+            ConnectionState.Connected -> application.getString(R.string.connected)
+            ConnectionState.Connecting -> application.getString(R.string.connecting)
+            ConnectionState.Disconnected -> application.getString(R.string.disconnected)
+            ConnectionState.PermissionDenied -> application.getString(R.string.permission_denied)
+            ConnectionState.Scanning -> application.getString(R.string.scanning)
+            ConnectionState.BluetoothDisabled -> application.getString(R.string.bluetooth_disabled)
+            ConnectionState.Error -> application.getString(R.string.connection_error)
+        }
     }
 } 

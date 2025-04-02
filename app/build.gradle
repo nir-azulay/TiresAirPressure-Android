@@ -44,6 +44,8 @@ android {
         
         buildConfigField "String", "BUILD_TIME", "\"${new Date().format('yyyy-MM-dd HH:mm:ss')}\""
         buildConfigField "String", "VERSION_NAME", "\"${fullVersionName}\""
+        buildConfigField "int", "MIN_SDK_VERSION", "29"
+        buildConfigField "int", "TARGET_SDK_VERSION", "34"
         
         manifestPlaceholders = [
             permissionBluetooth: true,

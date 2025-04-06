@@ -16,7 +16,7 @@ if (versionPropsFile.canRead()) {
 
 def versionMajor = 1
 def versionMinor = 1
-def versionPatch = 2
+def versionPatch = 6
 
 // Increment build number
 versionBuild++
@@ -48,13 +48,35 @@ android {
         buildConfigField "int", "TARGET_SDK_VERSION", "34"
         
         manifestPlaceholders = [
+            // BLE permissions
             permissionBluetooth: true,
             permissionBluetoothAdmin: true,
             permissionBluetoothScan: true,
             permissionBluetoothConnect: true,
             permissionBluetoothAdvertise: true,
+            
+            // Location permissions
             permissionLocation: true,
-            permissionNotifications: true
+            permissionFineLocation: true,
+            permissionCoarseLocation: true,
+            permissionBackgroundLocation: true,
+            
+            // Notification permissions
+            permissionNotifications: true,
+            permissionVibrate: true,
+            
+            // Foreground service permissions
+            permissionForegroundService: true,
+            permissionForegroundServiceConnectedDevice: true,
+            permissionWakeLock: true,
+            
+            // Internet permissions
+            permissionInternet: true,
+            permissionNetworkState: true,
+            
+            // WiFi permissions
+            permissionWifiState: true,
+            permissionWifiStateChange: true
         ]
     }
 
@@ -65,8 +87,8 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled true
-            shrinkResources true
+            minifyEnabled false
+            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             buildConfigField "boolean", "DEBUG_MODE", "false"
             buildConfigField "String", "BUILD_TYPE", "\"RELEASE\""

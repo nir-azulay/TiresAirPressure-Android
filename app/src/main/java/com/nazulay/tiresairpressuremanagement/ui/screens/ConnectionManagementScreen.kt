@@ -4,10 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bluetooth
-import androidx.compose.material.icons.filled.BluetoothSearching
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,11 +12,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.nazulay.tiresairpressuremanagement.data.ble.BleManager
-import com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState
-import com.nazulay.tiresairpressuremanagement.domain.models.BleDevice
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.res.stringResource
 import com.nazulay.tiresairpressuremanagement.R
+import androidx.compose.ui.platform.LocalContext
+import android.content.Context
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bluetooth
+import androidx.compose.material.icons.filled.BluetoothDisabled
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.nazulay.tiresairpressuremanagement.domain.models.BleDevice
+import com.nazulay.tiresairpressuremanagement.data.ble.BleManager
+import com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState
 
 private const val TAG = "ConnectionScreen"
 
@@ -109,11 +114,11 @@ fun ConnectionManagementScreen(
                     Icon(
                         imageVector = when (connectionState) {
                             ConnectionState.Connected -> Icons.Default.Bluetooth
-                            ConnectionState.Connecting -> Icons.Default.BluetoothSearching
+                            ConnectionState.Connecting -> Icons.Default.Search
                             ConnectionState.Disconnected -> Icons.Default.Bluetooth
                             ConnectionState.PermissionDenied -> Icons.Default.Bluetooth
                             ConnectionState.Scanning -> Icons.Default.Search
-                            ConnectionState.BluetoothDisabled -> Icons.Default.Bluetooth
+                            ConnectionState.BluetoothDisabled -> Icons.Default.BluetoothDisabled
                             ConnectionState.Error -> Icons.Default.Bluetooth
                         },
                         contentDescription = null,
@@ -222,7 +227,7 @@ fun ConnectionManagementScreen(
                                 text = stringResource(R.string.scan_devices_hint),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = Color.White.copy(alpha = 0.7f),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                textAlign = TextAlign.Center
                             )
                         }
                     } else {
@@ -248,17 +253,17 @@ fun ConnectionManagementScreen(
 }
 
 @Composable
-private fun DeviceItem(
+fun DeviceItem(
     device: BleDevice,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF2C3440) // Slightly lighter than the main card
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(
             modifier = Modifier
@@ -266,35 +271,94 @@ private fun DeviceItem(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Bluetooth icon with signal strength indication
             Icon(
-                imageVector = Icons.Default.Bluetooth,
+                imageVector = getBluetoothIconForSignal(device.rssi),
                 contentDescription = null,
-                tint = Color(0xFFBBDEFB), // Light blue color from MainScreen
-                modifier = Modifier
-                    .size(32.dp)
-                    .padding(end = 16.dp)
+                modifier = Modifier.size(32.dp),
+                tint = MaterialTheme.colorScheme.primary
             )
             
-            Column {
-                Text(
-                    text = device.name ?: stringResource(R.string.unknown_device),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                // Display device name or a friendly alternative if not available
+                if (device.name.isNotBlank() && device.name != "Unknown Device") {
+                    Text(
+                        text = device.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                } else {
+                    // For Chinese head units that may not show device names
+                    Text(
+                        text = stringResource(R.string.unknown_device_with_id, device.address.takeLast(6)),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                
                 Spacer(modifier = Modifier.height(4.dp))
+                
+                // Always show the device address
                 Text(
                     text = device.address,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                
                 Spacer(modifier = Modifier.height(4.dp))
+                
+                // Signal strength text
                 Text(
-                    text = stringResource(R.string.signal_strength_format, device.rssi),
+                    text = getSignalStrengthText(device.rssi),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFFBBDEFB) // Light blue color from MainScreen
+                    color = getSignalStrengthColor(device.rssi, LocalContext.current)
                 )
             }
+            
+            // Connect button/icon
+            Icon(
+                imageVector = Icons.Rounded.ChevronRight,
+                contentDescription = stringResource(id = R.string.tap_to_connect),
+                tint = MaterialTheme.colorScheme.primary
+            )
         }
+    }
+}
+
+// Add helper functions for signal strength display
+
+// Get appropriate Bluetooth icon based on signal strength
+@Composable
+fun getBluetoothIconForSignal(rssi: Int): ImageVector {
+    return when {
+        rssi > -60 -> Icons.Default.Bluetooth
+        rssi > -80 -> Icons.Default.Bluetooth
+        else -> Icons.Default.BluetoothDisabled
+    }
+}
+
+// Get readable signal strength text
+fun getSignalStrengthText(rssi: Int): String {
+    return when {
+        rssi > -60 -> "Excellent signal ($rssi dBm)"
+        rssi > -70 -> "Good signal ($rssi dBm)"
+        rssi > -80 -> "Fair signal ($rssi dBm)"
+        rssi > -90 -> "Weak signal ($rssi dBm)"
+        else -> "Very weak signal ($rssi dBm)"
+    }
+}
+
+// Get color based on signal strength
+fun getSignalStrengthColor(rssi: Int, context: Context): Color {
+    return when {
+        rssi > -60 -> Color(0xFF4CAF50) // Green
+        rssi > -70 -> Color(0xFF8BC34A) // Light Green
+        rssi > -80 -> Color(0xFFFFC107) // Amber
+        rssi > -90 -> Color(0xFFFF9800) // Orange
+        else -> Color(0xFFF44336) // Red
     }
 } 

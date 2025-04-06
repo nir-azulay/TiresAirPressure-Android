@@ -51,11 +51,14 @@ import androidx.lifecycle.Lifecycle
 import java.util.*
 import com.nazulay.tiresairpressuremanagement.utils.LocaleHelper
 import com.nazulay.tiresairpressuremanagement.utils.ActivityProvider
+import android.provider.Settings
+import android.app.Activity
 
 class MainActivity : ComponentActivity() {
     private val TAG = "MainActivity"
     private var showPermissionDialog by mutableStateOf(false)
     private var showPermissionSettingsDialog by mutableStateOf(false)
+    private var showBluetoothRequiredDialog by mutableStateOf(false)
     private lateinit var bleManager: BleManager
     private var isConnectingToSavedDevice = false
     private lateinit var bleRepository: BleRepository
@@ -132,6 +135,12 @@ class MainActivity : ComponentActivity() {
         
         // Initialize BLE Manager with repository
         bleManager = BleManager(applicationContext, bleRepository)
+        
+        // Check Bluetooth enabled
+        if (!PermissionManager.isBluetoothEnabled(this)) {
+            Log.d(TAG, "Bluetooth is disabled, requesting enable")
+            PermissionManager.requestEnableBluetooth(this)
+        }
         
         // Try to connect to saved devices when app starts
         lifecycleScope.launch {
@@ -353,47 +362,26 @@ class MainActivity : ComponentActivity() {
                     }
                 )
             }
+            
+            if (showBluetoothRequiredDialog) {
+                BluetoothRequiredDialog(
+                    onDismiss = { showBluetoothRequiredDialog = false },
+                    onOpenSettings = {
+                        showBluetoothRequiredDialog = false
+                        openBluetoothSettings()
+                    }
+                )
+            }
         }
     }
 
     private fun checkAndRequestPermissions() {
-        val missingPermissions = mutableListOf<String>()
+        // Use the enhanced PermissionManager to get missing permissions
+        val missingPermissions = PermissionManager.getMissingPermissions(this).toTypedArray()
         
-        // Always check location permissions as they're needed for BLE scanning
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            missingPermissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            missingPermissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
-        }
-        
-        // Add Bluetooth permissions based on Android version
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // Android 12 and above
-            arrayOf(
-                Manifest.permission.BLUETOOTH_SCAN,
-                Manifest.permission.BLUETOOTH_CONNECT,
-                Manifest.permission.BLUETOOTH_ADVERTISE
-            ).forEach { permission ->
-                if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
-                    missingPermissions.add(permission)
-                }
-            }
-        } else {
-            // Android 11 and below
-            arrayOf(
-                Manifest.permission.BLUETOOTH,
-                Manifest.permission.BLUETOOTH_ADMIN
-            ).forEach { permission ->
-                if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
-                    missingPermissions.add(permission)
-                }
-            }
-        }
-        
-        // Request permissions if any are missing
         if (missingPermissions.isNotEmpty()) {
-            Log.d(TAG, "Requesting missing permissions: $missingPermissions")
+            Log.d(TAG, "Missing permissions: ${missingPermissions.joinToString()}")
+            
             // Show rationale before requesting permissions
             val shouldShowRationale = missingPermissions.any { permission ->
                 shouldShowRequestPermissionRationale(permission)
@@ -402,7 +390,8 @@ class MainActivity : ComponentActivity() {
             if (shouldShowRationale) {
                 showPermissionDialog = true
             } else {
-                requestPermissionLauncher.launch(missingPermissions.toTypedArray())
+                // Use the enhanced permission requesting
+                PermissionManager.requestRequiredPermissions(this)
             }
         } else {
             Log.d(TAG, "All required permissions are granted")
@@ -478,6 +467,61 @@ class MainActivity : ComponentActivity() {
         val uri = Uri.fromParts("package", packageName, null)
         intent.data = uri
         startActivity(intent)
+    }
+
+    // Handle Bluetooth enable result
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        
+        if (requestCode == PermissionManager.REQUEST_ENABLE_BLUETOOTH) {
+            if (resultCode == Activity.RESULT_OK) {
+                Log.d(TAG, "Bluetooth enabled successfully")
+                // Proceed with connection
+                tryConnectToSavedDevice()
+            } else {
+                Log.d(TAG, "Bluetooth enable request denied")
+                // Show dialog explaining Bluetooth is required
+                showBluetoothRequiredDialog()
+            }
+        }
+    }
+    
+    // Add new dialog for Bluetooth required
+    @Composable
+    private fun BluetoothRequiredDialog(
+        onDismiss: () -> Unit,
+        onOpenSettings: () -> Unit
+    ) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(stringResource(R.string.bluetooth_required)) },
+            text = { Text(stringResource(R.string.bluetooth_required_explanation)) },
+            confirmButton = {
+                TextButton(onClick = onOpenSettings) {
+                    Text(stringResource(R.string.open_settings))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.close))
+                }
+            }
+        )
+    }
+    
+    // Show dialog explaining Bluetooth is required
+    private fun showBluetoothRequiredDialog() {
+        showBluetoothRequiredDialog = true
+    }
+    
+    // Open Bluetooth settings
+    private fun openBluetoothSettings() {
+        try {
+            val intent = Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
+            startActivity(intent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error opening Bluetooth settings: ${e.message}")
+        }
     }
 }
 

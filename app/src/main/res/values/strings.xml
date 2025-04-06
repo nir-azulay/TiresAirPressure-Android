@@ -33,10 +33,12 @@
     
     <!-- Permissions -->
     <string name="permissions_required">Permissions Required</string>
-    <string name="permissions_explanation">The app needs permissions to scan and connect to Bluetooth devices.</string>
+    <string name="permissions_explanation">The app needs Bluetooth and Location permissions to scan for and connect to devices. Please allow all requested permissions.</string>
     <string name="grant_permissions">Grant Permissions</string>
     <string name="open_settings">Open Settings</string>
-    <string name="open_settings_permission_explanation">The app needs Bluetooth and Location permissions to function properly. Please open app settings and enable required permissions.</string>
+    <string name="open_settings_permission_explanation">The app needs Bluetooth and Location permissions to scan for and connect to devices. Please enable all requested permissions in Settings.</string>
+    <string name="bluetooth_required">Bluetooth Required</string>
+    <string name="bluetooth_required_explanation">This app requires Bluetooth to be enabled. Please enable Bluetooth to continue.</string>
     
     <!-- Operation Modes -->
     <string name="mode_inflating">Inflating...</string>
@@ -84,6 +86,7 @@
     <string name="no_devices_found_message">No devices found.\nTap the scan button to search for devices.</string>
     <string name="scan_devices_hint">Press \'Scan Devices\' to search.</string>
     <string name="unknown_device">Unknown Device</string>
+    <string name="unknown_device_with_id">Unknown Device (%1$s)</string>
     <string name="signal_strength_format">Signal Strength: %1$d dBm</string>
     <string name="current_pressure">Current Pressure</string>
     <string name="decrease">Decrease</string>

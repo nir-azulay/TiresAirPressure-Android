@@ -36,6 +36,9 @@ import androidx.core.app.NotificationCompat
 import android.app.PendingIntent
 import android.content.Intent
 import com.nazulay.tiresairpressuremanagement.data.repository.BleRepository
+import android.os.Handler
+import android.os.Looper
+import kotlinx.coroutines.delay
 
 class BleManager(
     private val context: Context,
@@ -120,46 +123,156 @@ class BleManager(
             val deviceName = device.name ?: "Unknown Device"
             val deviceAddress = device.address
             val rssi = result.rssi
-
-            // Log all found devices
-            Log.d("BleManager", "Device found: $deviceName - $deviceAddress, RSSI: $rssi")
             
-            // Filter for devices that are likely to be our target BLE devices
-            // You can adjust these criteria based on your specific device characteristics
-            if (isLikelyTargetDevice(device, deviceName, rssi)) {
-                // Add to the list
-                val bleDevice = BleDevice(deviceName, deviceAddress, rssi)
+            Log.d(TAG, "Found device - Name: '$deviceName', Address: $deviceAddress, RSSI: $rssi")
+            
+            // Only add the device if it's not already in the list
+            if (!_scanResults.value.any { it.address == deviceAddress }) {
+                val bleDevice = BleDevice(
+                    name = deviceName, 
+                    address = deviceAddress,
+                    rssi = rssi
+                )
                 
-                // Check if device with same address already exists in the list
-                val existingDeviceIndex = unsortedScanResults.indexOfFirst { it.address == deviceAddress }
-                if (existingDeviceIndex >= 0) {
-                    // Update the existing device with new RSSI
-                    unsortedScanResults[existingDeviceIndex] = bleDevice
-                } else {
-                    // Add new device to the list
-                    unsortedScanResults.add(bleDevice)
-                    
-                    // מיד מוסיף את המכשיר החדש לרשימה המוצגת (ללא מיון)
-                    val currentList = _scanResults.value.toMutableList()
-                    currentList.add(bleDevice)
-                    _scanResults.value = currentList
-                    
-                    Log.d("BleManager", "Added new device to displayed list: $deviceName")
+                _scanResults.value = _scanResults.value + bleDevice
+                Log.d(TAG, "Added device to list: $deviceName")
+            } else {
+                // Update the existing device's RSSI value
+                val updatedDevices = _scanResults.value.map { existing ->
+                    if (existing.address == deviceAddress) {
+                        existing.copy(rssi = rssi)
+                    } else {
+                        existing
+                    }
                 }
-                
-                // Check if it's time to sort and update the list
-                val currentTime = System.currentTimeMillis()
-                if (sortCount < MAX_SORT_COUNT && currentTime - lastSortTime >= SORT_INTERVAL) {
-                    // Sort the list by RSSI (higher values = closer devices)
-                    val sortedList = unsortedScanResults.sortedByDescending { it.rssi }
-                    
-                    _scanResults.value = sortedList
-                    lastSortTime = currentTime
-                    sortCount++
-                    
-                    Log.d("BleManager", "Sorted scan results (sort #$sortCount): ${sortedList.size} devices")
+                _scanResults.value = updatedDevices
+            }
+        }
+        
+        override fun onBatchScanResults(results: List<ScanResult>) {
+            Log.d(TAG, "Batch scan results received: ${results.size} results")
+            results.forEach { result ->
+                onScanResult(0, result)
+            }
+        }
+        
+        override fun onScanFailed(errorCode: Int) {
+            Log.e(TAG, "Scan failed with error code: $errorCode")
+            _connectionState.value = ConnectionState.Error
+        }
+    }
+    
+    fun startScan() {
+        Log.d(TAG, "Starting BLE scan")
+        
+        // First check if Bluetooth is enabled
+        if (bluetoothAdapter?.isEnabled != true) {
+            Log.e(TAG, "Bluetooth not enabled")
+            _connectionState.value = ConnectionState.BluetoothDisabled
+            return
+        }
+
+        // Then check permissions
+        if (!hasRequiredPermissions()) {
+            Log.e(TAG, "Missing required permissions")
+            _connectionState.value = ConnectionState.PermissionDenied
+            return
+        }
+        
+        try {
+            _connectionState.value = ConnectionState.Scanning
+            
+            // Clear previous results first
+            _scanResults.value = emptyList()
+            
+            // Simple scan settings
+            val settings = ScanSettings.Builder()
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                .build()
+            
+            // Check for necessary permissions
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+                    Log.e(TAG, "BLUETOOTH_SCAN permission not granted")
+                    _connectionState.value = ConnectionState.PermissionDenied
+                    return
                 }
             }
+            
+            // Start scan with no filters for maximum device discovery
+            bleScanner?.startScan(null, settings, scanCallback)
+                ?: run {
+                    Log.e(TAG, "BLE Scanner is null")
+                    _connectionState.value = ConnectionState.Error
+                }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Security exception while starting scan: ${e.message}")
+            _connectionState.value = ConnectionState.PermissionDenied
+        } catch (e: Exception) {
+            Log.e(TAG, "Error starting scan: ${e.message}")
+            _connectionState.value = ConnectionState.Error
+        }
+    }
+    
+    // Enhanced method to get device name with fallback for Chinese head units
+    private fun getDeviceNameWithFallback(device: BluetoothDevice): String {
+        try {
+            // Try multiple methods to get the name with detailed logging
+            var name: String? = null
+            
+            // Method 1: Direct name property
+            name = device.name
+            if (!name.isNullOrBlank()) {
+                Log.d(TAG, "Got name via device.name: $name")
+                return name
+            }
+            
+            // Method 2: Use reflection to access getName method (works on some Chinese devices)
+            try {
+                val method = device.javaClass.getMethod("getName")
+                name = method.invoke(device) as? String
+                if (!name.isNullOrBlank()) {
+                    Log.d(TAG, "Got name via reflection: $name")
+                    return name
+                }
+            } catch (e: Exception) {
+                Log.d(TAG, "Reflection getName failed: ${e.message}")
+            }
+            
+            // Method 3: Try alias for Android R and above
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                name = device.alias
+                if (!name.isNullOrBlank()) {
+                    Log.d(TAG, "Got name via device.alias: $name")
+                    return name
+                }
+            }
+            
+            // Method 4: Try to get from scan record if available
+            try {
+                val scanRecord = device.javaClass.getMethod("getScanRecord").invoke(device)
+                if (scanRecord != null) {
+                    val deviceName = scanRecord.javaClass.getMethod("getDeviceName").invoke(scanRecord) as? String
+                    if (!deviceName.isNullOrBlank()) {
+                        Log.d(TAG, "Got name via scan record: $deviceName")
+                        return deviceName
+                    }
+                }
+            } catch (e: Exception) {
+                Log.d(TAG, "Getting name from scan record failed: ${e.message}")
+            }
+            
+            // If all methods fail, return Unknown Device with address
+            val fallbackName = "Unknown Device (${device.address})"
+            Log.d(TAG, "Using fallback name: $fallbackName")
+            return fallbackName
+            
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Security exception while getting device name: ${e.message}")
+            return "Unknown Device"
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting device name: ${e.message}")
+            return "Unknown Device"
         }
     }
     
@@ -504,56 +617,33 @@ class BleManager(
         }
     }
     
-    fun startScan() {
-        // First check if Bluetooth is enabled
-        if (bluetoothAdapter?.isEnabled != true) {
-            Log.e(TAG, "Bluetooth is not enabled")
-            _connectionState.value = ConnectionState.BluetoothDisabled
-            return
-        }
-
-        // Then check permissions
-        if (!hasRequiredPermissions()) {
-            Log.e(TAG, "Missing required permissions")
-            _connectionState.value = ConnectionState.PermissionDenied
-            return
-        }
+    fun stopScan() {
+        Log.d(TAG, "Stopping BLE scan")
         
         try {
-            _connectionState.value = ConnectionState.Scanning
-            bleScanner?.startScan(
-                emptyList(),
-                ScanSettings.Builder()
-                    .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-                    .build(),
-                scanCallback
-            ) ?: run {
-                Log.e(TAG, "BLE Scanner is null")
-                _connectionState.value = ConnectionState.Error
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+                    Log.e(TAG, "BLUETOOTH_SCAN permission not granted for stopping scan")
+                    return
+                }
+            } else {
+                if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED) {
+                    Log.e(TAG, "BLUETOOTH_ADMIN permission not granted for stopping scan")
+                    return
+                }
             }
-        } catch (e: SecurityException) {
-            Log.e(TAG, "Security exception while starting scan: ${e.message}")
-            _connectionState.value = ConnectionState.PermissionDenied
+            
+            try {
+                bleScanner?.stopScan(scanCallback)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error stopping scan: ${e.message}")
+            }
+            
+            if (_connectionState.value == ConnectionState.Scanning) {
+                _connectionState.value = ConnectionState.Disconnected
+            }
         } catch (e: Exception) {
-            Log.e(TAG, "Error starting scan: ${e.message}")
-            _connectionState.value = ConnectionState.Error
-        }
-    }
-    
-    fun stopScan() {
-        if (!hasRequiredPermissions()) {
-            Log.e(TAG, "Cannot stop scan: missing required permissions")
-            return
-        }
-        
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
-            Log.e(TAG, "BLUETOOTH_SCAN permission not granted")
-            return
-        }
-        
-        bleScanner?.stopScan(scanCallback)
-        if (_connectionState.value == ConnectionState.Scanning) {
-            _connectionState.value = ConnectionState.Disconnected
+            Log.e(TAG, "Exception in stopScan: ${e.message}")
         }
     }
     
@@ -561,97 +651,92 @@ class BleManager(
         android.util.Log.d(TAG, "Attempting to connect to device: $deviceAddress")
         val adapter = bluetoothAdapter
         if (adapter?.isEnabled != true) {
-            android.util.Log.e(TAG, "Cannot connect: Bluetooth is disabled")
+            Log.e(TAG, "Bluetooth not enabled")
+            _connectionState.value = ConnectionState.BluetoothDisabled
+            return
+        }
+        
+        if (!hasRequiredPermissions()) {
+            Log.e(TAG, "Missing required permissions")
+            _connectionState.value = ConnectionState.PermissionDenied
             return
         }
         
         try {
-            // No need to clear buffer anymore
+            _connectionState.value = ConnectionState.Connecting
+            stopScan()
             
-            val device = adapter.getRemoteDevice(deviceAddress)
-            if (device != null) {
-                android.util.Log.d(TAG, "Got remote device, connecting...")
-                
-                // Close any existing connection
-                bluetoothGatt?.disconnect()
-                bluetoothGatt?.close()
-                bluetoothGatt = null
-                
-                // Clear characteristics
-                notifyCharacteristic = null
-                commandCharacteristic = null
-                
-                // Small delay before connecting
-                try {
-                    Thread.sleep(500) // Increased delay for better stability
-                } catch (e: InterruptedException) {
-                    android.util.Log.e(TAG, "Sleep interrupted", e)
-                }
-                
-                // Set connection state to connecting
-                _connectionState.value = ConnectionState.Connecting
-                android.util.Log.d(TAG, "Connection state set to CONNECTING")
-                
-                // Connect with autoConnect = true for automatic reconnection
-                bluetoothGatt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    android.util.Log.d(TAG, "Using Android M+ connection API with LE transport")
-                    device.connectGatt(
-                        context,
-                        true, // Use true for automatic reconnection
-                        gattCallback,
-                        BluetoothDevice.TRANSPORT_LE
-                    )
-                } else {
-                    android.util.Log.d(TAG, "Using legacy connection API")
-                    device.connectGatt(context, true, gattCallback)
-                }
-                
-                if (bluetoothGatt == null) {
-                    android.util.Log.e(TAG, "Failed to create GATT connection")
-                    _connectionState.value = ConnectionState.Disconnected
-                    scheduleReconnect(deviceAddress)
-                    return
-                }
-                
-                android.util.Log.d(TAG, "Connection request sent to device")
-                stopScan() // Stop scanning after connection attempt
-                
-                // Schedule a connection timeout
-                scheduleConnectionTimeout(deviceAddress)
-            } else {
-                android.util.Log.e(TAG, "Failed to get remote device")
-                _connectionState.value = ConnectionState.Disconnected
-            }
+            // Set a connection retry counter to handle Chinese head unit connectivity issues
+            connectionRetryCount = 0
+            attemptConnection(deviceAddress)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Security exception while connecting: ${e.message}")
+            _connectionState.value = ConnectionState.PermissionDenied
         } catch (e: Exception) {
-            android.util.Log.e(TAG, "Error connecting to device", e)
-            _connectionState.value = ConnectionState.Disconnected
-            scheduleReconnect(deviceAddress)
+            Log.e(TAG, "Error connecting: ${e.message}")
+            _connectionState.value = ConnectionState.Error
         }
     }
     
-    // Schedule a connection timeout to prevent hanging in connecting state
-    private fun scheduleConnectionTimeout(deviceAddress: String) {
-        android.util.Log.d(TAG, "Scheduling connection timeout")
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-            if (_connectionState.value == ConnectionState.Connecting) {
-                android.util.Log.e(TAG, "Connection timeout occurred")
-                disconnect()
-                
-                // Try to reconnect
-                scheduleReconnect(deviceAddress)
-            }
-        }, 10000) // 10 second timeout
+    private var connectionRetryCount = 0
+    private val MAX_CONNECTION_RETRIES = 3
+    
+    private fun attemptConnection(deviceAddress: String) {
+        if (connectionRetryCount >= MAX_CONNECTION_RETRIES) {
+            Log.e(TAG, "Max connection retries reached")
+            _connectionState.value = ConnectionState.Error
+            return
+        }
+        
+        connectionRetryCount++
+        Log.d(TAG, "Connection attempt #$connectionRetryCount for $deviceAddress")
+        
+        try {
+            // Use a safer connection approach for Chinese head units
+            safeConnectToDevice(deviceAddress)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in connection attempt #$connectionRetryCount: ${e.message}")
+            
+            // Add delay before retry to handle some Chinese head unit timing issues
+            Handler(Looper.getMainLooper()).postDelayed({
+                attemptConnection(deviceAddress)
+            }, 1000) // 1 second delay
+        }
     }
     
-    // Schedule a reconnection attempt
-    private fun scheduleReconnect(deviceAddress: String) {
-        android.util.Log.d(TAG, "Scheduling reconnection attempt")
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-            if (_connectionState.value != ConnectionState.Connected) {
-                android.util.Log.d(TAG, "Attempting to reconnect to device: $deviceAddress")
-                connect(deviceAddress)
+    private fun safeConnectToDevice(deviceAddress: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                Log.e(TAG, "BLUETOOTH_CONNECT permission not granted")
+                _connectionState.value = ConnectionState.PermissionDenied
+                return
             }
-        }, 3000) // Wait 3 seconds before reconnecting
+        }
+        
+        val device = bluetoothAdapter?.getRemoteDevice(deviceAddress)
+        
+        if (device == null) {
+            Log.e(TAG, "Could not find device with address $deviceAddress")
+            _connectionState.value = ConnectionState.Error
+            return
+        }
+        
+        // Ensure we're disconnected before attempting a new connection
+        if (bluetoothGatt != null) {
+            try {
+                bluetoothGatt?.close()
+                bluetoothGatt = null
+            } catch (e: Exception) {
+                Log.e(TAG, "Error closing existing GATT: ${e.message}")
+            }
+        }
+        
+        // Connect with TRANSPORT_LE flag for better compatibility
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            bluetoothGatt = device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
+        } else {
+            bluetoothGatt = device.connectGatt(context, false, gattCallback)
+        }
     }
     
     fun disconnect() {
@@ -687,7 +772,7 @@ class BleManager(
                 ignoreNextStatusUpdate = true
                 
                 // הגדרת טיימר שיאפס את הדגל אוטומטית אחרי 2 שניות למקרה שלא קיבלנו הודעת סטטוס
-                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                Handler(Looper.getMainLooper()).postDelayed({
                     if (ignoreNextStatusUpdate) {
                         Log.d(TAG, "Resetting ignore flag automatically after timeout")
                         ignoreNextStatusUpdate = false
@@ -893,20 +978,38 @@ class BleManager(
     }
     
     private fun hasRequiredPermissions(): Boolean {
-        // Always check location permissions regardless of Android version
-        val hasLocationPermissions = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) &&
-                                   hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+        // Check location permissions
+        val hasLocationPermissions = ActivityCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
         
-        // Check Bluetooth permissions based on Android version
+        // Check Bluetooth permissions based on Android version with fallbacks
         val hasBluetoothPermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            hasPermission(Manifest.permission.BLUETOOTH_SCAN) &&
-            hasPermission(Manifest.permission.BLUETOOTH_CONNECT)
+            // For Android 12+, check the specific BLUETOOTH_SCAN and BLUETOOTH_CONNECT
+            val hasScan = hasPermission(Manifest.permission.BLUETOOTH_SCAN)
+            val hasConnect = hasPermission(Manifest.permission.BLUETOOTH_CONNECT)
+            
+            // Log each permission status
+            Log.d(TAG, "Android 12+ BT permissions: SCAN=$hasScan, CONNECT=$hasConnect")
+            
+            hasScan && hasConnect
         } else {
-            hasPermission(Manifest.permission.BLUETOOTH) &&
-            hasPermission(Manifest.permission.BLUETOOTH_ADMIN)
+            // For older Android versions
+            val hasBt = hasPermission(Manifest.permission.BLUETOOTH)
+            val hasBtAdmin = hasPermission(Manifest.permission.BLUETOOTH_ADMIN)
+            
+            // Log each permission status
+            Log.d(TAG, "Pre-Android 12 BT permissions: BT=$hasBt, BT_ADMIN=$hasBtAdmin")
+            
+            hasBt && hasBtAdmin
         }
         
-        return hasLocationPermissions && hasBluetoothPermissions
+        // Log overall permission status
+        val hasAllPermissions = hasLocationPermissions && hasBluetoothPermissions
+        Log.d(TAG, "Required permissions: LOCATION=$hasLocationPermissions, BLUETOOTH=$hasBluetoothPermissions, ALL=$hasAllPermissions")
+        
+        return hasAllPermissions
     }
     
     private fun hasPermission(permission: String): Boolean {
@@ -1224,7 +1327,7 @@ class BleManager(
         Log.d(TAG, "Scheduling delayed settings request")
         
         // Use a handler to delay the request
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+        Handler(Looper.getMainLooper()).postDelayed({
             // Check if we've already received settings
             if (_deviceSettings.value == null && settingsRequestAttempts < MAX_SETTINGS_REQUEST_ATTEMPTS) {
                 Log.d(TAG, "No settings received yet, sending request (attempt ${settingsRequestAttempts + 1})")

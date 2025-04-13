@@ -34,7 +34,10 @@
     <!-- Permissions -->
     <string name="permissions_required">Permissions Required</string>
     <string name="permissions_explanation">The app needs Bluetooth and Location permissions to scan for and connect to devices. Please allow all requested permissions.</string>
+    <string name="bluetooth_permissions_explanation">This app needs Bluetooth and location permissions to find and connect to your TPMS device.</string>
+    <string name="permissions_required_for_scanning">Without these permissions, the app cannot discover or communicate with Bluetooth devices.</string>
     <string name="grant_permissions">Grant Permissions</string>
+    <string name="not_now">Not Now</string>
     <string name="open_settings">Open Settings</string>
     <string name="open_settings_permission_explanation">The app needs Bluetooth and Location permissions to scan for and connect to devices. Please enable all requested permissions in Settings.</string>
     <string name="bluetooth_required">Bluetooth Required</string>
@@ -99,7 +102,7 @@
     <string name="developed_by">Developed by</string>
     <string name="developer_name">Nir Azulay</string>
     <string name="developer_email">nir.azulay@gmail.com</string>
-    <string name="version_format">Version 1.0</string>
+    <string name="version_format">Version 1.2.0</string>
     <string name="target_reached_title">Target Pressure Reached</string>
     <string name="target_reached_message">Target pressure successfully reached!</string>
     <string name="target_value">Target: %1$.1f PSI</string>

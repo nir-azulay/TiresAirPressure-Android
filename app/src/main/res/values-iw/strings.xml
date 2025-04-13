@@ -96,7 +96,7 @@
     <string name="developed_by">פותח על ידי</string>
     <string name="developer_name">ניר אזולאי</string>
     <string name="developer_email">nir.azulay@gmail.com</string>
-    <string name="version_format">גרסה 1.0</string>
+    <string name="version_format">גרסה 1.2.0</string>
     <string name="target_reached_title">לחץ היעד הושג</string>
     <string name="target_reached_message">לחץ היעד הושג בהצלחה!</string>
     <string name="target_value">יעד: %1$.1f PSI</string>

@@ -15,8 +15,8 @@ if (versionPropsFile.canRead()) {
 }
 
 def versionMajor = 1
-def versionMinor = 1
-def versionPatch = 6
+def versionMinor = 2
+def versionPatch = 0
 
 // Increment build number
 versionBuild++

@@ -175,7 +175,7 @@
     <string name="connected_duration_seconds">מחובר למשך %1$d שניות</string>
     <string name="connected_duration_minutes">מחובר למשך %1$d דקות ו-%2$d שניות</string>
     <string name="connected_duration_hours">מחובר למשך %1$d שעות ו-%2$d דקות</string>
-    <string name="predefined_pressure_format">%1$d PSI</string>
+    <string name="preset_pressure_format">%1$d PSI</string>
     
     <!-- Connection states -->
     <string name="bluetooth_disabled">Bluetooth מושבת</string>
@@ -184,16 +184,13 @@
     <!-- Predefined Pressures -->
     <string name="loading_preset_pressures">טוען לחצים מוגדרים מראש...</string>
     <string name="predefined_pressures">לחצים מוגדרים מראש</string>
-    <string name="predefined_pressure_1">לחץ 1 (8 PSI)</string>
-    <string name="predefined_pressure_2">לחץ 2 (10 PSI)</string>
-    <string name="predefined_pressure_3">לחץ 3 (12 PSI)</string>
-    <string name="predefined_pressure_4">לחץ 4 (16 PSI)</string>
-    <string name="predefined_pressure_5">לחץ 5 (20 PSI)</string>
-    <string name="predefined_pressure_6">לחץ 6 (30 PSI)</string>
-    <string name="predefined_pressure_7">לחץ 7 (38 PSI)</string>
-    <string name="predefined_pressure_8">לחץ 8 (40 PSI)</string>
     <string name="predefined_pressures_description">הגדר ערכי לחץ עבור כפתורי בחירה מהירה</string>
     <string name="pressure_value_hint">הזן ערך לחץ</string>
+    <string name="add_pressure">הוסף לחץ</string>
+    <string name="remove_pressure">הסר</string>
+    <string name="pressure_count_settings">הגדרות מספר לחצים</string>
+    <string name="min_pressure_count">מספר לחצים מינימלי: %d</string>
+    <string name="max_pressure_count">מספר לחצים מקסימלי: %d</string>
 
     <!-- Version Info -->
     <string name="version_info_format">גרסה: %1$s\nקוד גרסה: %2$d\nסוג בנייה: %3$s\nזמן בנייה: %4$s\nגרסת SDK מינימלית: %5$d\nגרסת SDK מטרה: %6$d\nמפתח: %7$s</string>
@@ -218,4 +215,12 @@
     <string name="good_signal">אות טוב</string>
     <string name="excellent_signal">אות מצוין</string>
     <string name="no_signal">אין אות</string>
+
+    <!-- Predefined pressure settings -->
+    <string name="preset_pressures_title">לחצים מוגדרים מראש</string>
+    <string name="add_pressure_button">הוסף לחץ</string>
+    <string name="remove_pressure_button">הסר לחץ</string>
+    <string name="min_pressure_count_value">מינימום לחצים: %d</string>
+    <string name="max_pressure_count_value">מקסימום לחצים: %d</string>
+    <string name="pressure_count_controls">בקרות מספר לחצים</string>
 </resources> 

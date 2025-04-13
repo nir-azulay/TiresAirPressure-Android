@@ -511,55 +511,181 @@ private fun PredefinedPressuresSettings(
     pressures: List<Float>,
     onPressuresUpdated: (List<Float>) -> Unit
 ) {
+    val viewModel: SettingsViewModel = viewModel()
+    val appSettings by viewModel.appSettings.collectAsState()
+    
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
+        // Header with controls
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.predefined_pressures),
+                style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                color = Color.White,
+                modifier = Modifier.weight(1f)
+            )
+            
+            // Add pressure button
+            if (pressures.size < appSettings.maxPressureCount) {
+                IconButton(
+                    onClick = { viewModel.addPressure() }
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = stringResource(R.string.add_pressure),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+        
+        Text(
+            text = stringResource(R.string.predefined_pressures_description),
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.White.copy(alpha = 0.7f),
+            modifier = Modifier.padding(vertical = 4.dp)
+        )
+        
+        // Min and Max pressure count controls
+        PressureCountControls(
+            minCount = 4, // Fixed minimum count
+            maxCount = appSettings.maxPressureCount,
+            onCountUpdated = { min, max -> viewModel.updatePressureCount(min, max) }
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        // Display pressures in a column for better layout
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            pressures.forEachIndexed { index, pressure ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        PressureSpinner(
+                            label = stringResource(R.string.preset_pressure_format, index + 1),
+                            value = pressure,
+                            onValueChange = { newValue ->
+                                val newPressures = pressures.toMutableList()
+                                newPressures[index] = newValue
+                                onPressuresUpdated(newPressures)
+                            }
+                        )
+                    }
+                    
+                    // Only show remove button if above minimum count
+                    if (pressures.size > appSettings.minPressureCount) {
+                        IconButton(
+                            onClick = { viewModel.removePressure(index) }
+                        ) {
+                            Icon(
+                                Icons.Default.Remove,
+                                contentDescription = stringResource(R.string.remove_pressure),
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PressureCountControls(
+    minCount: Int,
+    maxCount: Int,
+    onCountUpdated: (min: Int, max: Int) -> Unit
+) {
+    var maxCountState by remember { mutableStateOf(maxCount) }
+    
+    // Fixed minimum count
+    val fixedMinCount = 4
+    
+    // Maximum allowed number of presets
+    val maxAllowed = 16
+    
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
     ) {
         Text(
-            text = stringResource(R.string.predefined_pressures),
-            style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp), // Smaller title
-            color = Color.White // Match MainScreen text color
+            text = stringResource(R.string.pressure_count_settings),
+            style = MaterialTheme.typography.titleSmall,
+            color = Color.White,
+            modifier = Modifier.padding(bottom = 8.dp)
         )
         
-        Text(
-            text = stringResource(R.string.predefined_pressures_description),
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.White.copy(alpha = 0.7f), // Match MainScreen text color with reduced opacity
-            modifier = Modifier.padding(vertical = 4.dp)
-        )
-        
-        // Display pressures in two columns for better layout
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            pressures.chunked(2).forEach { rowPressures ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    rowPressures.forEachIndexed { pressureIndexInRow, pressure ->
-                        // Calculate the actual index in the original list
-                        val originalIndex = pressures.indexOf(pressure) // Find index (assumes unique values for now)
-                        if (originalIndex != -1) {
-                             Box(modifier = Modifier.weight(1f)) { // Make columns equal width
-                                 PressureSpinner( // Use the new spinner composable
-                                     label = stringResource(R.string.predefined_pressure_format, originalIndex + 1),
-                                     value = pressure,
-                                     onValueChange = { newValue ->
-                                         val newPressures = pressures.toMutableList()
-                                         newPressures[originalIndex] = newValue
-                                         onPressuresUpdated(newPressures)
-                                     }
-                                 )
-                             }
-                        } else {
-                            // Handle cases where pressure might not be unique (though unlikely here)
-                            Spacer(modifier = Modifier.weight(1f))
+        // Max Count Spinner
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = stringResource(R.string.max_pressure_count, maxCountState),
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White,
+                modifier = Modifier.weight(1f)
+            )
+            
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = { 
+                        if (maxCountState > fixedMinCount + 2) {
+                            maxCountState -= 2  // Decrease by 2 to keep it even
+                            onCountUpdated(fixedMinCount, maxCountState)
+                        } else if (maxCountState > fixedMinCount) {
+                            // If we can't decrease by 2, just go to min
+                            maxCountState = fixedMinCount
+                            onCountUpdated(fixedMinCount, maxCountState)
                         }
-                    }
-                    // Add Spacer if only one item in the last row
-                    if (rowPressures.size == 1) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
+                    },
+                    enabled = maxCountState > fixedMinCount
+                ) {
+                    Icon(
+                        Icons.Default.Remove,
+                        contentDescription = null,
+                        tint = if (maxCountState > fixedMinCount) MaterialTheme.colorScheme.primary else Color.Gray
+                    )
+                }
+                
+                Text(
+                    text = maxCountState.toString(),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White
+                )
+                
+                IconButton(
+                    onClick = { 
+                        if (maxCountState < maxAllowed - 2) {
+                            maxCountState += 2  // Increase by 2 to keep it even
+                            onCountUpdated(fixedMinCount, maxCountState)
+                        } else if (maxCountState < maxAllowed) {
+                            // If we can't increase by 2, just go to max
+                            maxCountState = maxAllowed
+                            onCountUpdated(fixedMinCount, maxCountState)
+                        }
+                    },
+                    enabled = maxCountState < maxAllowed
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = null,
+                        tint = if (maxCountState < maxAllowed) MaterialTheme.colorScheme.primary else Color.Gray
+                    )
                 }
             }
         }

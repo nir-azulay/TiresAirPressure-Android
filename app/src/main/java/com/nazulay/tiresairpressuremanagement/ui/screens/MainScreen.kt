@@ -316,7 +316,7 @@ fun MainScreen(
                                 )
                                 
                                 // Preset pressure buttons
-                                PresetPressureCard(viewModel = viewModel, onPresetSelected = { targetPressure = it })
+                                PresetButtons(viewModel.predefinedPressures.collectAsState().value, { targetPressure = it })
 
                                 InflationControlButton(
                                     isInflating = isInflating,
@@ -382,7 +382,7 @@ fun MainScreen(
                             )
                             
                             // Preset pressure buttons
-                            PresetPressureCard(viewModel = viewModel, onPresetSelected = { targetPressure = it })
+                            PresetButtons(viewModel.predefinedPressures.collectAsState().value, { targetPressure = it })
 
                             InflationControlButton(
                                 isInflating = isInflating,
@@ -603,7 +603,7 @@ private fun PressureGaugeCard(
                 Text(
                     text = String.format("%.1f", currentPressureAnimated.value),
                     style = MaterialTheme.typography.displayMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.ExtraBold,
                     color = Color.White
                 )
                 Text(
@@ -630,7 +630,7 @@ private fun PressureGaugeCard(
                 CircularProgressIndicator(
                     progress = progress,
                     modifier = Modifier.fillMaxSize(),
-                    strokeWidth = 10.dp,
+                    strokeWidth = 16.dp,
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = Color.DarkGray
                 )
@@ -640,8 +640,8 @@ private fun PressureGaugeCard(
                     progress = targetProgress,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(6.dp),
-                    strokeWidth = 4.dp,
+                        .padding(8.dp),
+                    strokeWidth = 8.dp,
                     color = Color(0xFFBBDEFB), // Light blue color from screenshot
                     trackColor = Color.Transparent
                 )
@@ -650,7 +650,7 @@ private fun PressureGaugeCard(
                 Text(
                     text = String.format("%.1f", targetPressure),
                     style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.ExtraBold,
                     textAlign = TextAlign.Center,
                     color = Color.White
                 )
@@ -729,7 +729,7 @@ private fun TargetPressureCard(
                 Text(
                     text = stringResource(R.string.pressure_format, targetPressure),
                     style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.ExtraBold,
                     color = Color.White
                 )
                 
@@ -834,64 +834,45 @@ private fun InflationStatusIndicator(
 }
 
 @Composable
-private fun PresetPressureCard(
-    viewModel: MainViewModel,
+fun PresetButtons(
+    predefinedPressures: List<Float>,
     onPresetSelected: (Float) -> Unit
 ) {
-    val predefinedPressures by viewModel.predefinedPressures.collectAsState()
+    if (predefinedPressures.isEmpty()) {
+        // If no preset pressures, show nothing
+        return
+    }
     
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF2C3440) // Slightly lighter than the main cards
-        )
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = stringResource(R.string.preset_pressures),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            
-            // Check if pressures are loaded
-            if (predefinedPressures.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.loading_preset_pressures),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.7f)
-                )
-            } else {
-                // First row of preset buttons (up to 4)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally)
-                ) {
-                    predefinedPressures.take(4).forEach {
-                        PresetPressureButton(pressure = it, onSelect = onPresetSelected)
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                // Second row of preset buttons (remaining)
-                if (predefinedPressures.size > 4) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally)
-                    ) {
-                        predefinedPressures.drop(4).forEach {
-                            PresetPressureButton(pressure = it, onSelect = onPresetSelected)
-                        }
+        // Always split the predefined pressures into rows with exactly 4 buttons per row
+        val chunkedPressures = predefinedPressures.chunked(4)
+        
+        // Create rows for each chunk
+        chunkedPressures.forEach { rowPressures ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+            ) {
+                // Always create a row with 4 buttons, even if some are empty
+                repeat(4) { index ->
+                    if (index < rowPressures.size) {
+                        // Real button with pressure value
+                        PresetPressureButton(
+                            pressure = rowPressures[index], 
+                            onSelect = onPresetSelected
+                        )
+                    } else {
+                        // Empty space with the same size as a button for alignment
+                        Spacer(
+                            modifier = Modifier
+                                .height(36.dp)
+                                .width(66.dp)
+                        )
                     }
                 }
             }
@@ -904,23 +885,21 @@ fun PresetPressureButton(
     pressure: Float,
     onSelect: (Float) -> Unit
 ) {
-    Button(
-        onClick = { onSelect(pressure) },
+    Box(
         modifier = Modifier
-            .width(55.dp)  // Slightly narrower
-            .height(36.dp), // Slightly shorter
-        shape = RoundedCornerShape(6.dp), // Smaller corner radius
-        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 2.dp), // Smaller padding
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFFBBDEFB) // Light blue color from screenshot
-        )
+            .height(36.dp) // Reduced height
+            .width(66.dp)  // Reduced width
+            .clip(RoundedCornerShape(4.dp))
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .clickable { onSelect(pressure) }
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        contentAlignment = Alignment.Center
     ) {
         Text(
-            text = pressure.toInt().toString(), // Format as integer
-            textAlign = TextAlign.Center,
-            fontSize = 13.sp, // Smaller font size
-            fontWeight = FontWeight.Bold,
-            color = Color.Black
+            text = stringResource(R.string.preset_pressure_format, pressure.toInt()),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            textAlign = TextAlign.Center
         )
     }
 } 

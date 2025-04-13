@@ -441,6 +441,32 @@ class SettingsViewModel(
     fun updatePredefinedPressures(pressures: List<Float>) {
         appSettingsManager.updatePredefinedPressures(pressures)
     }
+    
+    fun updatePressureCount(minCount: Int, maxCount: Int) {
+        appSettingsManager.updatePressureCount(minCount, maxCount)
+    }
+    
+    fun addPressure(value: Float = 0f) {
+        val currentSettings = appSettingsManager.settings.value
+        val currentPressures = currentSettings.predefinedPressures
+        
+        // Only add if we're below the max count
+        if (currentPressures.size < currentSettings.maxPressureCount) {
+            val newPressures = currentPressures + value
+            appSettingsManager.updatePredefinedPressures(newPressures)
+        }
+    }
+    
+    fun removePressure(index: Int) {
+        val currentSettings = appSettingsManager.settings.value
+        val currentPressures = currentSettings.predefinedPressures.toMutableList()
+        
+        // Only remove if we're above min count
+        if (currentPressures.size > currentSettings.minPressureCount && index >= 0 && index < currentPressures.size) {
+            currentPressures.removeAt(index)
+            appSettingsManager.updatePredefinedPressures(currentPressures)
+        }
+    }
 
     // Public method to force refresh the connection state
     fun forceRefreshConnectionState() {

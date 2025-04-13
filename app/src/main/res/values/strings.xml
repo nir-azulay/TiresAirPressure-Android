@@ -181,7 +181,7 @@
     <string name="connected_duration_seconds">Connected for %1$d seconds</string>
     <string name="connected_duration_minutes">Connected for %1$d minutes and %2$d seconds</string>
     <string name="connected_duration_hours">Connected for %1$d hours and %2$d minutes</string>
-    <string name="predefined_pressure_format">%1$d PSI</string>
+    <string name="simple_pressure_format">%1$d PSI</string>
     
     <!-- Connection states -->
     <string name="bluetooth_disabled">Bluetooth Disabled</string>
@@ -190,16 +190,14 @@
     <!-- Predefined Pressures -->
     <string name="loading_preset_pressures">Loading preset pressures...</string>
     <string name="predefined_pressures">Predefined Pressures</string>
-    <string name="predefined_pressure_1">Pressure 1 (8 PSI)</string>
-    <string name="predefined_pressure_2">Pressure 2 (10 PSI)</string>
-    <string name="predefined_pressure_3">Pressure 3 (12 PSI)</string>
-    <string name="predefined_pressure_4">Pressure 4 (16 PSI)</string>
-    <string name="predefined_pressure_5">Pressure 5 (20 PSI)</string>
-    <string name="predefined_pressure_6">Pressure 6 (30 PSI)</string>
-    <string name="predefined_pressure_7">Pressure 7 (38 PSI)</string>
-    <string name="predefined_pressure_8">Pressure 8 (40 PSI)</string>
+    <string name="predefined_pressure_format">Pressure %1$d</string>
     <string name="predefined_pressures_description">Set pressure values for quick selection buttons</string>
     <string name="pressure_value_hint">Enter pressure value</string>
+    <string name="add_pressure">Add Pressure</string>
+    <string name="remove_pressure">Remove</string>
+    <string name="pressure_count_settings">Pressure Count Settings</string>
+    <string name="min_pressure_count">Minimum Pressure Count: %d</string>
+    <string name="max_pressure_count">Maximum Pressure Count: %d</string>
 
     <!-- Version Info -->
     <string name="version_info_format">Version: %1$s\nVersion Code: %2$d\nBuild Type: %3$s\nBuild Time: %4$s\nMin SDK Version: %5$d\nTarget SDK Version: %6$d\nDeveloper: %7$s</string>
@@ -225,4 +223,13 @@
     <string name="excellent_signal">Excellent signal</string>
     <string name="no_signal">No signal</string>
     <string name="networks_found">networks found</string>
+
+    <!-- Predefined pressure settings -->
+    <string name="preset_pressures_title">Predefined Pressures</string>
+    <string name="add_pressure_button">Add Pressure</string>
+    <string name="remove_pressure_button">Remove Pressure</string>
+    <string name="min_pressure_count_value">Min Pressures: %d</string>
+    <string name="max_pressure_count_value">Max Pressures: %d</string>
+    <string name="preset_pressure_format">%d PSI</string>
+    <string name="pressure_count_controls">Pressure Count Controls</string>
 </resources>

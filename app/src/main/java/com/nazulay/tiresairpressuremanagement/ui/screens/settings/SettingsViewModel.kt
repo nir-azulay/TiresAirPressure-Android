@@ -406,7 +406,36 @@ class SettingsViewModel(
     
     // App Settings Functions
     fun updateSimulationMode(enabled: Boolean) {
+        // Update app settings
         appSettingsManager.updateSimulationMode(enabled)
+        
+        // Update device settings
+        val currentSettings = _localDeviceSettings.value
+        if (currentSettings != null) {
+            // Create updated settings with new simulation mode
+            val updatedSettings = currentSettings.copy(simulationMode = enabled)
+            
+            // Update local settings
+            _localDeviceSettings.value = updatedSettings
+            
+            // Mark that we have unsaved changes
+            _hasUnsavedChanges.value = true
+            
+            // Log the change
+            Log.d(TAG, "Updated device simulation mode to: $enabled")
+            
+            // Immediately send the command to update simulation mode on the device
+            viewModelScope.launch {
+                try {
+                    Log.d(TAG, "Sending SimulationMode command to device: $enabled")
+                    bleManager.sendCommand(BleCommand.SimulationMode(enabled = enabled))
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error sending simulation mode command: ${e.message}")
+                }
+            }
+        } else {
+            Log.w(TAG, "Cannot update simulation mode: device settings are null")
+        }
     }
     
     fun updatePredefinedPressures(pressures: List<Float>) {

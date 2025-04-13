@@ -231,7 +231,7 @@ fun SettingsScreen(
                         item {
                             SettingsCard {
                                 SimulationModeSettings(
-                                    isEnabled = appSettings.simulationMode,
+                                    isEnabled = currentSettings.simulationMode, // Use device setting
                                     onToggle = { viewModel.updateSimulationMode(it) }
                                 )
                             }

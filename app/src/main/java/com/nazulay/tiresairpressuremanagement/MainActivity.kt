@@ -53,6 +53,7 @@ import com.nazulay.tiresairpressuremanagement.utils.LocaleHelper
 import com.nazulay.tiresairpressuremanagement.utils.ActivityProvider
 import android.provider.Settings
 import android.app.Activity
+import androidx.compose.ui.text.font.FontWeight
 
 class MainActivity : ComponentActivity() {
     private val TAG = "MainActivity"
@@ -376,33 +377,47 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkAndRequestPermissions() {
-        // Use the enhanced PermissionManager to get missing permissions
+        Log.d(TAG, "Checking and requesting necessary permissions")
+        
+        // Check if Bluetooth is enabled first
+        if (!PermissionManager.isBluetoothEnabled(this)) {
+            Log.d(TAG, "Bluetooth is not enabled, requesting to enable")
+            PermissionManager.requestEnableBluetooth(this)
+            return
+        }
+        
+        // Get all missing permissions
         val missingPermissions = PermissionManager.getMissingPermissions(this).toTypedArray()
         
         if (missingPermissions.isNotEmpty()) {
             Log.d(TAG, "Missing permissions: ${missingPermissions.joinToString()}")
             
-            // Show rationale before requesting permissions
+            // Pre-process Android 12+ special permissions
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val containsScanPermission = missingPermissions.contains(Manifest.permission.BLUETOOTH_SCAN)
+                val containsConnectPermission = missingPermissions.contains(Manifest.permission.BLUETOOTH_CONNECT)
+                
+                if (containsScanPermission || containsConnectPermission) {
+                    Log.d(TAG, "Contains Android 12+ Bluetooth permissions")
+                }
+            }
+            
+            // Show rationale if needed before requesting permissions
             val shouldShowRationale = missingPermissions.any { permission ->
                 shouldShowRequestPermissionRationale(permission)
             }
             
             if (shouldShowRationale) {
+                Log.d(TAG, "Should show permission rationale")
                 showPermissionDialog = true
             } else {
-                // Use the enhanced permission requesting
-                PermissionManager.requestRequiredPermissions(this)
+                Log.d(TAG, "Requesting permissions directly")
+                // Use the activity result launcher to request permissions
+                requestPermissionLauncher.launch(missingPermissions)
             }
         } else {
             Log.d(TAG, "All required permissions are granted")
             tryConnectToSavedDevice()
-        }
-        
-        // Check notification permission separately (Android 13+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (!hasNotificationPermission()) {
-                requestNotificationPermission()
-            }
         }
     }
 
@@ -541,15 +556,24 @@ private fun PermissionDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.permissions_required)) },
-        text = { Text(stringResource(R.string.permissions_explanation)) },
+        text = { 
+            Column {
+                Text(stringResource(R.string.bluetooth_permissions_explanation))
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.permissions_required_for_scanning),
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
+            Button(onClick = onConfirm) {
                 Text(stringResource(R.string.grant_permissions))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.close))
+                Text(stringResource(R.string.not_now))
             }
         }
     )

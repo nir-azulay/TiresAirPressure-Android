@@ -120,7 +120,9 @@ class BleManager(
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             val device = result.device
-            val deviceName = device.name ?: "Unknown Device"
+            
+            // Get name with enhanced fallback methods
+            val deviceName = getDeviceNameWithFallbacks(device, result)
             val deviceAddress = device.address
             val rssi = result.rssi
             
@@ -140,7 +142,13 @@ class BleManager(
                 // Update the existing device's RSSI value
                 val updatedDevices = _scanResults.value.map { existing ->
                     if (existing.address == deviceAddress) {
-                        existing.copy(rssi = rssi)
+                        // Update name only if we have a better name now
+                        val updatedName = if (existing.name == "Unknown Device" && deviceName != "Unknown Device") {
+                            deviceName
+                        } else {
+                            existing.name
+                        }
+                        existing.copy(name = updatedName, rssi = rssi)
                     } else {
                         existing
                     }
@@ -214,65 +222,88 @@ class BleManager(
         }
     }
     
-    // Enhanced method to get device name with fallback for Chinese head units
-    private fun getDeviceNameWithFallback(device: BluetoothDevice): String {
+    // Enhanced method to get device name with multiple fallbacks
+    private fun getDeviceNameWithFallbacks(device: BluetoothDevice, scanResult: ScanResult?): String {
         try {
-            // Try multiple methods to get the name with detailed logging
-            var name: String? = null
-            
-            // Method 1: Direct name property
-            name = device.name
-            if (!name.isNullOrBlank()) {
-                Log.d(TAG, "Got name via device.name: $name")
-                return name
+            // Method 1: Direct name property - works in most standard cases
+            val directName = device.name
+            if (!directName.isNullOrBlank()) {
+                Log.d(TAG, "Got device name via direct property: $directName")
+                return directName
             }
             
-            // Method 2: Use reflection to access getName method (works on some Chinese devices)
-            try {
-                val method = device.javaClass.getMethod("getName")
-                name = method.invoke(device) as? String
-                if (!name.isNullOrBlank()) {
-                    Log.d(TAG, "Got name via reflection: $name")
-                    return name
-                }
-            } catch (e: Exception) {
-                Log.d(TAG, "Reflection getName failed: ${e.message}")
-            }
-            
-            // Method 3: Try alias for Android R and above
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                name = device.alias
-                if (!name.isNullOrBlank()) {
-                    Log.d(TAG, "Got name via device.alias: $name")
-                    return name
-                }
-            }
-            
-            // Method 4: Try to get from scan record if available
-            try {
-                val scanRecord = device.javaClass.getMethod("getScanRecord").invoke(device)
+            // Method 2: Try to get scan record with device name - works on some devices that don't expose name property
+            scanResult?.let { result ->
+                val scanRecord = result.scanRecord
                 if (scanRecord != null) {
-                    val deviceName = scanRecord.javaClass.getMethod("getDeviceName").invoke(scanRecord) as? String
-                    if (!deviceName.isNullOrBlank()) {
-                        Log.d(TAG, "Got name via scan record: $deviceName")
-                        return deviceName
+                    val scanRecordName = scanRecord.deviceName
+                    if (!scanRecordName.isNullOrBlank()) {
+                        Log.d(TAG, "Got device name from scan record: $scanRecordName")
+                        return scanRecordName
                     }
                 }
-            } catch (e: Exception) {
-                Log.d(TAG, "Getting name from scan record failed: ${e.message}")
             }
             
-            // If all methods fail, return Unknown Device with address
+            // Method 3: Try reflection to access getName method (works on some Android variants)
+            try {
+                val method = device.javaClass.getMethod("getName")
+                val reflectionName = method.invoke(device) as? String
+                if (!reflectionName.isNullOrBlank()) {
+                    Log.d(TAG, "Got device name via reflection: $reflectionName")
+                    return reflectionName
+                }
+            } catch (e: Exception) {
+                Log.d(TAG, "Reflection getName attempt failed: ${e.message}")
+            }
+            
+            // Method 4: Try alias for Android R (API 30) and above
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val alias = device.alias
+                if (!alias.isNullOrBlank()) {
+                    Log.d(TAG, "Got device name via alias property: $alias")
+                    return alias
+                }
+            }
+            
+            // Method 5: Cached/remembered names for known MAC addresses
+            val cachedName = getCachedDeviceName(device.address)
+            if (cachedName != null) {
+                Log.d(TAG, "Using cached name for device: $cachedName")
+                return cachedName
+            }
+            
+            // If all methods fail, return descriptive name with address
             val fallbackName = "Unknown Device (${device.address})"
-            Log.d(TAG, "Using fallback name: $fallbackName")
+            Log.d(TAG, "Using fallback name with address: $fallbackName")
             return fallbackName
             
-        } catch (e: SecurityException) {
-            Log.e(TAG, "Security exception while getting device name: ${e.message}")
-            return "Unknown Device"
         } catch (e: Exception) {
             Log.e(TAG, "Error getting device name: ${e.message}")
-            return "Unknown Device"
+            return "Unknown Device (${device.address})"
+        }
+    }
+    
+    // Helper method to get cached device name from SharedPreferences
+    private fun getCachedDeviceName(address: String): String? {
+        try {
+            val sharedPreferences = context.getSharedPreferences("BleDeviceNames", Context.MODE_PRIVATE)
+            return sharedPreferences.getString(address, null)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading cached device name: ${e.message}")
+            return null
+        }
+    }
+    
+    // Save device name to cache when successfully connected
+    private fun saveCachedDeviceName(address: String, name: String) {
+        if (name != "Unknown Device" && !name.startsWith("Unknown Device (")) {
+            try {
+                val sharedPreferences = context.getSharedPreferences("BleDeviceNames", Context.MODE_PRIVATE)
+                sharedPreferences.edit().putString(address, name).apply()
+                Log.d(TAG, "Saved device name to cache: $address -> $name")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error saving device name to cache: ${e.message}")
+            }
         }
     }
     
@@ -334,16 +365,22 @@ class BleManager(
                     android.util.Log.d(TAG, "Connected to GATT server")
                     connectionStartTime = System.currentTimeMillis()
                     
-                    // שמירת המכשיר כנבחר
+                    // Store the connected device
                     val deviceAddress = gatt.device?.address
-                    val deviceName = gatt.device?.name
+                    val deviceName = getDeviceNameWithFallbacks(gatt.device, null)
+                    
                     if (deviceAddress != null) {
                         android.util.Log.d(TAG, "Saving connected device address: $deviceAddress")
                         saveSelectedDevice(deviceAddress)
                         _connectedDeviceName.value = deviceName
+                        
+                        // Cache the name if it's valid
+                        if (deviceName != "Unknown Device" && !deviceName.startsWith("Unknown Device (")) {
+                            saveCachedDeviceName(deviceAddress, deviceName)
+                        }
                     }
                     
-                    // השמעת צליל
+                    // Play connection sound
                     mediaPlayer.start()
                     
                     // Request larger MTU size before discovering services
@@ -666,7 +703,27 @@ class BleManager(
             _connectionState.value = ConnectionState.Connecting
             stopScan()
             
-            // Set a connection retry counter to handle Chinese head unit connectivity issues
+            // Get the device by address
+            val device = adapter.getRemoteDevice(deviceAddress)
+            if (device == null) {
+                Log.e(TAG, "Unable to find device with address: $deviceAddress")
+                _connectionState.value = ConnectionState.Error
+                return
+            }
+            
+            // Try to get the device name and update the UI
+            val deviceName = getDeviceNameWithFallbacks(device, null)
+            Log.d(TAG, "Connecting to: $deviceName ($deviceAddress)")
+            
+            // Update the device name in our cache if it's a valid name
+            if (deviceName != "Unknown Device" && !deviceName.startsWith("Unknown Device (")) {
+                saveCachedDeviceName(deviceAddress, deviceName)
+            }
+            
+            // Update the connected device name immediately
+            _connectedDeviceName.value = deviceName
+            
+            // Set a connection retry counter to handle connectivity issues
             connectionRetryCount = 0
             attemptConnection(deviceAddress)
         } catch (e: SecurityException) {
@@ -1561,6 +1618,12 @@ class BleManager(
         
         // Save the device when successfully connected
         bleRepository?.onDeviceConnected(device)
+        
+        // Cache the device name if available
+        val deviceName = device.name
+        if (!deviceName.isNullOrBlank()) {
+            saveCachedDeviceName(device.address, deviceName)
+        }
         
         // Start GATT operations
         startGattOperations()

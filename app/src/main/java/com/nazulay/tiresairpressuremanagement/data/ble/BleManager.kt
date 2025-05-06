@@ -1138,8 +1138,8 @@ class BleManager(
         editor.putInt("sensorPin", settings.sensorPin.toIntOrNull() ?: 0)
         editor.putBoolean("autoStart", settings.autoStart == "1" || settings.autoStart.lowercase() == "true")
         editor.putInt("maxSecForStatus", settings.maxSecForStatus.toIntOrNull() ?: 30)
-        editor.putInt("sensorValueAt0PSI", settings.sensorValueAt0PSI.toIntOrNull() ?: 0)
-        editor.putInt("sensorValueAt50PSI", settings.sensorValueAt50PSI.toIntOrNull() ?: 1023)
+        editor.putFloat("sensorValueAt0PSI", settings.sensorValueAt0PSI.toFloatOrNull() ?: 0.228f)
+        editor.putFloat("sensorValueAt50PSI", settings.sensorValueAt50PSI.toFloatOrNull() ?: 2.853f)
         editor.putFloat("measureWait", settings.measureWait.toFloatOrNull() ?: 2f)
         editor.putFloat("precision", settings.precision.toFloatOrNull() ?: 1f)
         editor.putString("btPinCode", settings.btPinCode)
@@ -1190,6 +1190,14 @@ class BleManager(
     // Call this function when full device settings are received
     private fun onDeviceFullSettingsReceived(settingsResponse: DeviceSettingsResponse) {
         android.util.Log.d(TAG, "Received full device settings: $settingsResponse")
+        
+        // Add extra debug logging for calibration values
+        android.util.Log.d(TAG, "RAW SENSOR VALUES FROM BLE DEVICE:")
+        android.util.Log.d(TAG, "SensorValueAt0PSI (raw string): '${settingsResponse.sensorValueAt0PSI}'")
+        android.util.Log.d(TAG, "SensorValueAt50PSI (raw string): '${settingsResponse.sensorValueAt50PSI}'")
+        android.util.Log.d(TAG, "Parsed as float - 0PSI: ${settingsResponse.sensorValueAt0PSI.toFloatOrNull()}")
+        android.util.Log.d(TAG, "Parsed as float - 50PSI: ${settingsResponse.sensorValueAt50PSI.toFloatOrNull()}")
+        
         saveFullDeviceSettings(settingsResponse)
         
         // Parse the pressure from the response
@@ -1282,6 +1290,14 @@ class BleManager(
             // Try direct JSONObject parsing first which is more forgiving with malformed JSON
             try {
                 val jsonObject = JSONObject(jsonString)
+                
+                // Log raw calibration values from JSON
+                if (jsonObject.has("SensorValueAt0PSI")) {
+                    Log.d(TAG, "RAW JSON - SensorValueAt0PSI: '${jsonObject.getString("SensorValueAt0PSI")}'")
+                }
+                if (jsonObject.has("SensorValueAt50PSI")) {
+                    Log.d(TAG, "RAW JSON - SensorValueAt50PSI: '${jsonObject.getString("SensorValueAt50PSI")}'")
+                }
                 
                 // Check if it's a target reached notification
                 if (jsonObject.has("type") && jsonObject.getString("type") == "target_reached") {

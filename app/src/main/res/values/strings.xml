@@ -190,7 +190,7 @@
     <!-- Predefined Pressures -->
     <string name="loading_preset_pressures">Loading preset pressures...</string>
     <string name="predefined_pressures">Predefined Pressures</string>
-    <string name="predefined_pressure_format">Pressure %1$d</string>
+    <string name="predefined_pressure_format">Pressure %1$s</string>
     <string name="predefined_pressures_description">Set pressure values for quick selection buttons</string>
     <string name="pressure_value_hint">Enter pressure value</string>
     <string name="add_pressure">Add Pressure</string>
@@ -230,6 +230,8 @@
     <string name="remove_pressure_button">Remove Pressure</string>
     <string name="min_pressure_count_value">Min Pressures: %d</string>
     <string name="max_pressure_count_value">Max Pressures: %d</string>
-    <string name="preset_pressure_format">%d PSI</string>
-    <string name="pressure_count_controls">Pressure Count Controls</string>
+    <string name="preset_pressure_format">%.1f PSI</string>
+    <string name="request_settings">Request Settings</string>
+    <string name="collapse">Collapse</string>
+    <string name="expand">Expand</string>
 </resources>

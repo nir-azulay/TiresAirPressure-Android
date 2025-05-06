@@ -136,6 +136,13 @@ class SettingsViewModel(
         // Observe device settings from BleManager
         viewModelScope.launch {
             bleManager.deviceSettings.collect { settings ->
+                if (settings != null) {
+                    // Add detailed debug logging of raw values from BLE device
+                    Log.d(TAG, "Received device settings from BLE device: $settings")
+                    Log.d(TAG, "Raw sensor values - At 0 PSI: ${settings.sensorValueAt0PSI} (${settings.sensorValueAt0PSI.javaClass.simpleName})")
+                    Log.d(TAG, "Raw sensor values - At 50 PSI: ${settings.sensorValueAt50PSI} (${settings.sensorValueAt50PSI.javaClass.simpleName})")
+                }
+                
                 if (_localDeviceSettings.value == null) {
                     // Initialize local settings on first load
                     _localDeviceSettings.value = settings
@@ -168,7 +175,7 @@ class SettingsViewModel(
     }
     
     // Request current settings from the device
-    private fun requestDeviceSettings() {
+    fun requestDeviceSettings() {
         Log.d(TAG, "Requesting device settings via BleManager")
         try {
             bleManager.requestDeviceSettings()
@@ -274,8 +281,8 @@ class SettingsViewModel(
         sensorPin: Int? = null,
         autoStart: Boolean? = null,
         maxSecForStatus: Int? = null,
-        sensorValueAt0PSI: Int? = null,
-        sensorValueAt50PSI: Int? = null,
+        sensorValueAt0PSI: Float? = null,
+        sensorValueAt50PSI: Float? = null,
         measureWait: Float? = null,
         precision: Float? = null,
         btPinCode: String? = null
@@ -485,12 +492,22 @@ class SettingsViewModel(
                 } else {
                     // We're connected according to the state, verify by requesting settings
                     Log.d(TAG, "Connected according to state, verifying by requesting settings")
+                    // Request device settings regardless of unsaved changes
+                    // This ensures we at least get initial settings from the device
+                    bleManager.requestDeviceSettings()
+                    bleManager.sendCommand(BleCommand.RequestSettings())
+                    
                     // If we don't have unsaved changes, update our local copy with the device settings
                     if (!_hasUnsavedChanges.value) {
-                        requestDeviceSettings()
-                    } else {
-                        // Just ping the device without overwriting our unsaved changes
-                        bleManager.requestDeviceSettings()
+                        viewModelScope.launch {
+                            // Give device time to respond
+                            delay(1000)
+                            // Update local settings if we received them and still have no local settings
+                            if (_localDeviceSettings.value == null && bleManager.deviceSettings.value != null) {
+                                Log.d(TAG, "Updating local settings from BleManager after request")
+                                _localDeviceSettings.value = bleManager.deviceSettings.value
+                            }
+                        }
                     }
                 }
             } catch (e: Exception) {

@@ -896,7 +896,7 @@ fun PresetPressureButton(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = stringResource(R.string.preset_pressure_format, pressure.toInt()),
+            text = stringResource(R.string.preset_pressure_format, pressure),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onPrimaryContainer,
             textAlign = TextAlign.Center

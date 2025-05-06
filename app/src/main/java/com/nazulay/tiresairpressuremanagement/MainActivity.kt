@@ -63,6 +63,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var bleManager: BleManager
     private var isConnectingToSavedDevice = false
     private lateinit var bleRepository: BleRepository
+    // Flag to track if we've already attempted to connect to saved devices
+    private var hasAttemptedSavedDeviceConnection = false
     
     // Constants for display mode
     companion object {
@@ -152,6 +154,8 @@ class MainActivity : ComponentActivity() {
             if (savedDevices.isNotEmpty()) {
                 isConnectingToSavedDevice = true
                 bleRepository.connectToSavedDevices()
+                // Set flag to indicate we've already attempted to connect
+                hasAttemptedSavedDeviceConnection = true
             }
         }
 
@@ -169,6 +173,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun tryConnectToSavedDevice() {
+        // Check if we've already attempted to connect
+        if (hasAttemptedSavedDeviceConnection) {
+            Log.d(TAG, "Already attempted to connect to saved devices, skipping reconnection")
+            return
+        }
+        
         // Use BleRepository to get saved devices
         val savedDevices = bleRepository.getSavedDevices()
         
@@ -177,10 +187,24 @@ class MainActivity : ComponentActivity() {
             isConnectingToSavedDevice = true
             // Use BleManager to connect to saved device
             bleManager.connectToSavedDevice()
+            // Set flag to indicate we've already attempted to connect
+            hasAttemptedSavedDeviceConnection = true
         } else {
             Log.d(TAG, getString(R.string.no_saved_device))
             isConnectingToSavedDevice = false
         }
+    }
+
+    // Reset the connection attempt flag when explicitly requested by user
+    fun resetConnectionAttemptFlag() {
+        Log.d(TAG, "Resetting connection attempt flag")
+        hasAttemptedSavedDeviceConnection = false
+    }
+
+    // Method to be called from ConnectionManagementScreen when manually connecting
+    fun onManualDeviceConnection() {
+        Log.d(TAG, "Manual device connection initiated")
+        resetConnectionAttemptFlag()
     }
 
     @Composable
@@ -215,13 +239,21 @@ class MainActivity : ComponentActivity() {
                         // If connection failed and we were trying to connect, go to connection screen
                         if (currentScreen == Screen.SPLASH) {
                             // Only change if we're still on splash screen
-                            delay(3000) // Wait for splash screen animation
+                            delay(2000) // Wait for splash screen animation
                             currentScreen = Screen.CONNECTION
                             isConnectingToSavedDevice = false
+                            Log.d(TAG, "Connection attempt failed, moving to CONNECTION screen")
                         }
                     }
                     else -> {} // Do nothing for other states
                 }
+            } else if (connectionState == ConnectionState.Disconnected && 
+                       hasAttemptedSavedDeviceConnection && 
+                       currentScreen == Screen.SPLASH) {
+                // We already attempted to connect once and it's still disconnected
+                delay(2000) // Wait for splash screen animation
+                currentScreen = Screen.CONNECTION
+                Log.d(TAG, "Already attempted connection with no success, moving to CONNECTION screen")
             }
         }
         
@@ -301,6 +333,8 @@ class MainActivity : ComponentActivity() {
                             // After returning to main screen, implement a delayed reconnection attempt
                             // if the device isn't connected yet
                             lifecycleScope.launch {
+                                // Reset connection attempt flag for user-initiated reconnection
+                                resetConnectionAttemptFlag()
                                 // First try to reconnect immediately
                                 tryConnectToSavedDevice()
                                 
@@ -308,6 +342,7 @@ class MainActivity : ComponentActivity() {
                                 delay(10000)
                                 if (bleManager.connectionState.value != ConnectionState.Connected) {
                                     android.util.Log.d(TAG, "Device still not connected after 10 seconds, trying reconnection again")
+                                    resetConnectionAttemptFlag()
                                     tryConnectToSavedDevice()
                                 }
                             }
@@ -316,6 +351,8 @@ class MainActivity : ComponentActivity() {
                             android.util.Log.d(TAG, "Force reconnect callback triggered from SettingsScreen")
                             if (bleManager.connectionState.value == ConnectionState.Disconnected) {
                                 android.util.Log.d(TAG, "Device is disconnected, calling tryConnectToSavedDevice")
+                                // Reset connection attempt flag for user-initiated reconnection
+                                resetConnectionAttemptFlag()
                                 tryConnectToSavedDevice()
                                 
                                 // Add a second reconnection attempt after 10 seconds if the first attempt fails
@@ -323,6 +360,7 @@ class MainActivity : ComponentActivity() {
                                     delay(10000)
                                     if (bleManager.connectionState.value != ConnectionState.Connected) {
                                         android.util.Log.d(TAG, "Device still not connected after 10 seconds, trying reconnection again")
+                                        resetConnectionAttemptFlag()
                                         tryConnectToSavedDevice()
                                     }
                                 }
@@ -441,14 +479,22 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         Log.d(TAG, "onResume called")
-        // Try to reconnect if we're disconnected and have saved devices
+        
+        // Only try to reconnect if we haven't attempted a connection yet
+        // or if the user explicitly initiated a new connection (flag was reset)
         lifecycleScope.launch {
-            if (bleManager.connectionState.value == ConnectionState.Disconnected) {
+            if (!hasAttemptedSavedDeviceConnection && 
+                bleManager.connectionState.value == ConnectionState.Disconnected) {
                 val savedDevices = bleRepository.getSavedDevices()
                 if (savedDevices.isNotEmpty()) {
                     Log.d(TAG, "Found saved devices in onResume, attempting to connect")
                     bleRepository.connectToSavedDevices()
+                    // Set the flag after attempting connection
+                    hasAttemptedSavedDeviceConnection = true
                 }
+            } else {
+                Log.d(TAG, "Skipping auto-reconnect: already attempted connection: $hasAttemptedSavedDeviceConnection, " +
+                           "connection state: ${bleManager.connectionState.value}")
             }
         }
     }

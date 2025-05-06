@@ -37,6 +37,7 @@ fun ConnectionManagementScreen(
 ) {
     val devices by bleManager.scanResults.collectAsState()
     val connectionState by bleManager.connectionState.collectAsState()
+    val context = LocalContext.current
     
     // Log initial state
     DisposableEffect(Unit) {
@@ -163,6 +164,8 @@ fun ConnectionManagementScreen(
             Button(
                 onClick = {
                     android.util.Log.d(TAG, "Starting scan")
+                    // Reset the connection attempt flag since user is manually scanning
+                    (context as? com.nazulay.tiresairpressuremanagement.MainActivity)?.onManualDeviceConnection()
                     bleManager.startScan()
                 },
                 modifier = Modifier
@@ -240,6 +243,8 @@ fun ConnectionManagementScreen(
                                     device = device,
                                     onClick = {
                                         android.util.Log.d(TAG, "Attempting to connect to device: ${device.address}")
+                                        // Reset the connection attempt flag since user is manually connecting
+                                        (context as? com.nazulay.tiresairpressuremanagement.MainActivity)?.onManualDeviceConnection()
                                         bleManager.connect(device.address)
                                     }
                                 )

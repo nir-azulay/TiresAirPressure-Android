@@ -175,7 +175,7 @@
     <string name="connected_duration_seconds">מחובר למשך %1$d שניות</string>
     <string name="connected_duration_minutes">מחובר למשך %1$d דקות ו-%2$d שניות</string>
     <string name="connected_duration_hours">מחובר למשך %1$d שעות ו-%2$d דקות</string>
-    <string name="preset_pressure_format">%1$d PSI</string>
+    <string name="preset_pressure_format">%.1f PSI</string>
     
     <!-- Connection states -->
     <string name="bluetooth_disabled">Bluetooth מושבת</string>
@@ -184,6 +184,7 @@
     <!-- Predefined Pressures -->
     <string name="loading_preset_pressures">טוען לחצים מוגדרים מראש...</string>
     <string name="predefined_pressures">לחצים מוגדרים מראש</string>
+    <string name="predefined_pressure_format">לחץ %1$s</string>
     <string name="predefined_pressures_description">הגדר ערכי לחץ עבור כפתורי בחירה מהירה</string>
     <string name="pressure_value_hint">הזן ערך לחץ</string>
     <string name="add_pressure">הוסף לחץ</string>
@@ -191,6 +192,9 @@
     <string name="pressure_count_settings">הגדרות מספר לחצים</string>
     <string name="min_pressure_count">מספר לחצים מינימלי: %d</string>
     <string name="max_pressure_count">מספר לחצים מקסימלי: %d</string>
+    <string name="request_settings">בקש הגדרות</string>
+    <string name="collapse">צמצם</string>
+    <string name="expand">הרחב</string>
 
     <!-- Version Info -->
     <string name="version_info_format">גרסה: %1$s\nקוד גרסה: %2$d\nסוג בנייה: %3$s\nזמן בנייה: %4$s\nגרסת SDK מינימלית: %5$d\nגרסת SDK מטרה: %6$d\nמפתח: %7$s</string>

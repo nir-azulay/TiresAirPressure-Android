@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.SignalWifiStatusbar4Bar
 import androidx.compose.material.icons.filled.SignalWifi4Bar
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
@@ -79,6 +81,14 @@ fun SettingsScreen(
             Log.d("SettingsScreen", "Settings saved, returning to main screen for reconnection")
             // Return to main screen to let regular app flow handle reconnection
             onBackClick() 
+        }
+    }
+    
+    // Add a LaunchedEffect to request device settings when connected but no settings loaded
+    LaunchedEffect(connectionState, deviceSettings) {
+        if (connectionState == ConnectionState.Connected && deviceSettings == null) {
+            Log.d("SettingsScreen", "Connected but no settings loaded, requesting settings from BLE device")
+            viewModel.forceRefreshConnectionState()
         }
     }
 
@@ -307,7 +317,26 @@ fun SettingsScreen(
                             SettingsCard {
                                 Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
                                     CircularProgressIndicator()
-                                    Text("Loading device settings...", modifier = Modifier.padding(top = 60.dp))
+                                    Text(
+                                        text = stringResource(R.string.loading_preset_pressures),
+                                        modifier = Modifier.padding(top = 60.dp)
+                                    )
+                                    
+                                    // Add a button to manually request settings
+                                    Button(
+                                        onClick = { viewModel.requestDeviceSettings() },
+                                        modifier = Modifier.padding(top = 100.dp)
+                                    ) {
+                                        Text(stringResource(R.string.request_settings))
+                                    }
+                                    
+                                    // Auto-request settings every 3 seconds while in loading state
+                                    LaunchedEffect(Unit) {
+                                        while (true) {
+                                            viewModel.requestDeviceSettings()
+                                            delay(3000) // Wait 3 seconds between requests
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -572,7 +601,7 @@ private fun PredefinedPressuresSettings(
                 ) {
                     Box(modifier = Modifier.weight(1f)) {
                         PressureSpinner(
-                            label = stringResource(R.string.preset_pressure_format, index + 1),
+                            label = stringResource(R.string.predefined_pressure_format, (index + 1).toString()),
                             value = pressure,
                             onValueChange = { newValue ->
                                 val newPressures = pressures.toMutableList()
@@ -747,163 +776,218 @@ private fun HardwareSettings(
     settings: DeviceSettings,
     onSettingsChanged: (DeviceSettings) -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
-        Text(
-            text = stringResource(R.string.hardware_settings),
-            style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp), // Smaller title
-            color = Color.White, // Match MainScreen text color
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        
-        // Define a common text field configuration
-        val textFieldColors = OutlinedTextFieldDefaults.colors(
-            unfocusedTextColor = Color.White,
-            focusedTextColor = Color.White,
-            unfocusedBorderColor = Color.Gray,
-            focusedBorderColor = MaterialTheme.colorScheme.primary,
-            cursorColor = Color.White
-        )
-        
-        OutlinedTextField(
-            value = settings.relayCompressorPin.toString(),
-            onValueChange = { value -> 
-                onSettingsChanged(settings.copy(relayCompressorPin = value.toIntOrNull() ?: 0))
-            },
-            label = { Text(stringResource(R.string.relay_compressor_pin), color = Color.White.copy(alpha = 0.8f)) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            colors = textFieldColors
-        )
-        
-        OutlinedTextField(
-            value = settings.relayFreePin.toString(),
-            onValueChange = { value -> 
-                onSettingsChanged(settings.copy(relayFreePin = value.toIntOrNull() ?: 0))
-            },
-            label = { Text(stringResource(R.string.relay_free_pin), color = Color.White.copy(alpha = 0.8f)) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            colors = textFieldColors
-        )
-        
-        OutlinedTextField(
-            value = settings.sensorPin.toString(),
-            onValueChange = { value -> 
-                onSettingsChanged(settings.copy(sensorPin = value.toIntOrNull() ?: 0))
-            },
-            label = { Text(stringResource(R.string.sensor_pin), color = Color.White.copy(alpha = 0.8f)) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            colors = textFieldColors
-        )
-        
-        OutlinedTextField(
-            value = settings.maxSecForStatus.toString(),
-            onValueChange = { value -> 
-                onSettingsChanged(settings.copy(maxSecForStatus = value.toIntOrNull() ?: 30))
-            },
-            label = { Text(stringResource(R.string.max_sec_for_status), color = Color.White.copy(alpha = 0.8f)) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            colors = textFieldColors
-        )
-        
-        OutlinedTextField(
-            value = settings.measureWait.toString(),
-            onValueChange = { value -> 
-                onSettingsChanged(settings.copy(measureWait = value.toFloatOrNull() ?: 2f))
-            },
-            label = { Text(stringResource(R.string.measure_wait), color = Color.White.copy(alpha = 0.8f)) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            colors = textFieldColors
-        )
-        
+    var expanded by remember { mutableStateOf(false) }
+    var relayCompressorPin by remember { mutableStateOf(settings.relayCompressorPin.toString()) }
+    var relayFreePin by remember { mutableStateOf(settings.relayFreePin.toString()) }
+    var sensorPin by remember { mutableStateOf(settings.sensorPin.toString()) }
+    var autoStart by remember { mutableStateOf(settings.autoStart) }
+    var maxSecForStatus by remember { mutableStateOf(settings.maxSecForStatus.toString()) }
+    var sensorValueAt0PSI by remember { mutableStateOf(settings.sensorValueAt0PSI.toString()) }
+    var sensorValueAt50PSI by remember { mutableStateOf(settings.sensorValueAt50PSI.toString()) }
+    var measureWait by remember { mutableStateOf(settings.measureWait.toString()) }
+    var precision by remember { mutableStateOf(settings.precision.toString()) }
+    var btPinCode by remember { mutableStateOf(settings.btPinCode) }
+    
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // Title section
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+                .clickable { expanded = !expanded },
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = stringResource(R.string.auto_start),
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color.White
+                text = stringResource(R.string.hardware_settings),
+                style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp), // Smaller title
+                color = Color.White, // Match MainScreen text color
+                modifier = Modifier.weight(1f)
             )
-            
-            Switch(
-                checked = settings.autoStart,
-                onCheckedChange = { value -> 
-                    onSettingsChanged(settings.copy(autoStart = value))
-                }
+            Icon(
+                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = if (expanded) stringResource(R.string.collapse) else stringResource(R.string.expand),
+                tint = Color.White
             )
         }
         
-        OutlinedTextField(
-            value = settings.sensorValueAt0PSI.toString(),
-            onValueChange = { value -> 
-                onSettingsChanged(settings.copy(sensorValueAt0PSI = value.toIntOrNull() ?: 0))
-            },
-            label = { Text(stringResource(R.string.sensor_value_at_0_psi), color = Color.White.copy(alpha = 0.8f)) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            colors = textFieldColors
+        // Debug information for calibration values
+        Text(
+            text = "Raw values from BLE: 0 PSI = ${settings.sensorValueAt0PSI}, 50 PSI = ${settings.sensorValueAt50PSI}",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Yellow,
+            modifier = Modifier.padding(top = 4.dp)
         )
         
-        OutlinedTextField(
-            value = settings.sensorValueAt50PSI.toString(),
-            onValueChange = { value -> 
-                onSettingsChanged(settings.copy(sensorValueAt50PSI = value.toIntOrNull() ?: 1023))
-            },
-            label = { Text(stringResource(R.string.sensor_value_at_50_psi), color = Color.White.copy(alpha = 0.8f)) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            colors = textFieldColors
+        // Divider for visual separation
+        Divider(
+            color = Color.Gray.copy(alpha = 0.3f),
+            modifier = Modifier.padding(vertical = 8.dp)
         )
         
-        OutlinedTextField(
-            value = settings.precision.toString(),
-            onValueChange = { value -> 
-                onSettingsChanged(settings.copy(precision = value.toFloatOrNull() ?: 1f))
-            },
-            label = { Text(stringResource(R.string.precision_psi), color = Color.White.copy(alpha = 0.8f)) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            colors = textFieldColors
-        )
-        
-        OutlinedTextField(
-            value = settings.btPinCode,
-            onValueChange = { value -> 
-                onSettingsChanged(settings.copy(btPinCode = value))
-            },
-            label = { Text(stringResource(R.string.bt_pin_code), color = Color.White.copy(alpha = 0.8f)) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            colors = textFieldColors
-        )
+        // Expanded content
+        if (expanded) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                // Define a common text field configuration
+                val textFieldColors = OutlinedTextFieldDefaults.colors(
+                    unfocusedTextColor = Color.White,
+                    focusedTextColor = Color.White,
+                    unfocusedBorderColor = Color.Gray,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    cursorColor = Color.White
+                )
+                
+                OutlinedTextField(
+                    value = relayCompressorPin,
+                    onValueChange = { value -> 
+                        onSettingsChanged(settings.copy(relayCompressorPin = value.toIntOrNull() ?: 0))
+                        relayCompressorPin = value
+                    },
+                    label = { Text(stringResource(R.string.relay_compressor_pin), color = Color.White.copy(alpha = 0.8f)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    colors = textFieldColors
+                )
+                
+                OutlinedTextField(
+                    value = relayFreePin,
+                    onValueChange = { value -> 
+                        onSettingsChanged(settings.copy(relayFreePin = value.toIntOrNull() ?: 0))
+                        relayFreePin = value
+                    },
+                    label = { Text(stringResource(R.string.relay_free_pin), color = Color.White.copy(alpha = 0.8f)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    colors = textFieldColors
+                )
+                
+                OutlinedTextField(
+                    value = sensorPin,
+                    onValueChange = { value -> 
+                        onSettingsChanged(settings.copy(sensorPin = value.toIntOrNull() ?: 0))
+                        sensorPin = value
+                    },
+                    label = { Text(stringResource(R.string.sensor_pin), color = Color.White.copy(alpha = 0.8f)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    colors = textFieldColors
+                )
+                
+                OutlinedTextField(
+                    value = maxSecForStatus,
+                    onValueChange = { value -> 
+                        onSettingsChanged(settings.copy(maxSecForStatus = value.toIntOrNull() ?: 30))
+                        maxSecForStatus = value
+                    },
+                    label = { Text(stringResource(R.string.max_sec_for_status), color = Color.White.copy(alpha = 0.8f)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    colors = textFieldColors
+                )
+                
+                OutlinedTextField(
+                    value = measureWait,
+                    onValueChange = { value -> 
+                        onSettingsChanged(settings.copy(measureWait = value.toFloatOrNull() ?: 2f))
+                        measureWait = value
+                    },
+                    label = { Text(stringResource(R.string.measure_wait), color = Color.White.copy(alpha = 0.8f)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    colors = textFieldColors
+                )
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = stringResource(R.string.auto_start),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White
+                    )
+                    
+                    Switch(
+                        checked = autoStart,
+                        onCheckedChange = { value -> 
+                            onSettingsChanged(settings.copy(autoStart = value))
+                            autoStart = value
+                        }
+                    )
+                }
+                
+                OutlinedTextField(
+                    value = sensorValueAt0PSI,
+                    onValueChange = { value -> 
+                        onSettingsChanged(settings.copy(sensorValueAt0PSI = value.toFloatOrNull() ?: 0.228f))
+                        sensorValueAt0PSI = value
+                    },
+                    label = { Text(stringResource(R.string.sensor_value_at_0_psi), color = Color.White.copy(alpha = 0.8f)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    colors = textFieldColors
+                )
+                
+                OutlinedTextField(
+                    value = sensorValueAt50PSI,
+                    onValueChange = { value -> 
+                        onSettingsChanged(settings.copy(sensorValueAt50PSI = value.toFloatOrNull() ?: 2.853f))
+                        sensorValueAt50PSI = value
+                    },
+                    label = { Text(stringResource(R.string.sensor_value_at_50_psi), color = Color.White.copy(alpha = 0.8f)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    colors = textFieldColors
+                )
+                
+                OutlinedTextField(
+                    value = precision,
+                    onValueChange = { value -> 
+                        onSettingsChanged(settings.copy(precision = value.toFloatOrNull() ?: 1f))
+                        precision = value
+                    },
+                    label = { Text(stringResource(R.string.precision_psi), color = Color.White.copy(alpha = 0.8f)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    colors = textFieldColors
+                )
+                
+                OutlinedTextField(
+                    value = btPinCode,
+                    onValueChange = { value -> 
+                        onSettingsChanged(settings.copy(btPinCode = value))
+                        btPinCode = value
+                    },
+                    label = { Text(stringResource(R.string.bt_pin_code), color = Color.White.copy(alpha = 0.8f)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    colors = textFieldColors
+                )
+            }
+        }
     }
 }
 

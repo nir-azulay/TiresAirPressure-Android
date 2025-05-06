@@ -1,0 +1,194 @@
+// Android Jetpack Compose .cursorrules
+
+// Flexibility Notice
+
+// Note: This is a recommended project structure, but be flexible and adapt to existing project structures.
+// Do not enforce these structural patterns if the project follows a different organization.
+// Focus on maintaining consistency with the existing project architecture while applying Jetpack Compose best practices.
+
+// Project Architecture and Best Practices
+
+const androidJetpackComposeBestPractices = [
+    "Adapt to existing project architecture while maintaining clean code principles",
+    "Follow Material Design 3 guidelines and components",
+    "Implement clean architecture with domain, data, and presentation layers",
+    "Use Kotlin coroutines and Flow for asynchronous operations",
+    "Implement dependency injection using Hilt",
+    "Follow unidirectional data flow with ViewModel and UI State",
+    "Use Compose navigation for screen management",
+    "Implement proper state hoisting and composition",
+];
+
+// Folder Structure
+
+// Note: This is a reference structure. Adapt to the project's existing organization
+
+const projectStructure = `
+app/
+  src/
+    main/
+      java/com/package/
+        data/
+          repository/
+          datasource/
+          models/
+        domain/
+          usecases/
+          models/
+          repository/
+        presentation/
+          screens/
+          components/
+          theme/
+          viewmodels/
+        di/
+        utils/
+      res/
+        values/
+        drawable/
+        mipmap/
+    test/
+    androidTest/
+`;
+
+// Compose UI Guidelines
+
+const composeGuidelines = `
+1. Use remember and derivedStateOf appropriately
+2. Implement proper recomposition optimization
+3. Use proper Compose modifiers ordering
+4. Follow composable function naming conventions
+5. Implement proper preview annotations
+6. Use proper state management with MutableState
+7. Implement proper error handling and loading states
+8. Use proper theming with MaterialTheme
+9. Follow accessibility guidelines
+10. Implement proper animation patterns
+`;
+
+// Testing Guidelines
+
+const testingGuidelines = `
+1. Write unit tests for ViewModels and UseCases
+2. Implement UI tests using Compose testing framework
+3. Use fake repositories for testing
+4. Implement proper test coverage
+5. Use proper testing coroutine dispatchers
+`;
+
+// Performance Guidelines
+
+const performanceGuidelines = `
+1. Minimize recomposition using proper keys
+2. Use proper lazy loading with LazyColumn and LazyRow
+3. Implement efficient image loading
+4. Use proper state management to prevent unnecessary updates
+5. Follow proper lifecycle awareness
+6. Implement proper memory management
+7. Use proper background processing
+`;
+
+// Android Expert Rules
+
+// Senior Kotlin Android Developer Guidelines
+
+const kotlinGeneralGuidelines = {
+    basicPrinciples: [
+        "Use English for all code and documentation",
+        "Always declare types explicitly (avoid 'any')",
+        "Create necessary custom types",
+        "Avoid blank lines within functions"
+    ],
+    
+    nomenclature: {
+        classes: "PascalCase",
+        variables: "camelCase",
+        functions: "camelCase",
+        files: "underscores_case",
+        constants: "UPPERCASE",
+        booleans: "isX, hasX, canX",
+        abbreviations: "Only standard (API, URL) or well-known (i, j, err, ctx)"
+    },
+    
+    functions: [
+        "Single purpose, < 20 instructions",
+        "Verb-based naming (isX, hasX, executeX)",
+        "Avoid nesting with early returns",
+        "Use higher-order functions",
+        "Default parameter values",
+        "RO-RO pattern for parameters",
+        "Single abstraction level"
+    ],
+    
+    data: [
+        "Use data classes",
+        "Encapsulate in composite types",
+        "Class-based validation",
+        "Prefer immutability (val, readonly)"
+    ],
+    
+    classes: [
+        "Follow SOLID principles",
+        "Composition over inheritance",
+        "Interface-based contracts",
+        "Small, focused classes (< 200 lines, < 10 methods)"
+    ]
+};
+
+const androidSpecificGuidelines = {
+    architecture: [
+        "Clean Architecture pattern",
+        "Repository pattern for data",
+        "MVI pattern for state/events",
+        "Navigation Component",
+        "ViewBinding",
+        "Flow/LiveData for UI state"
+    ],
+    
+    uiGuidelines: [
+        "XML and Fragments over Compose",
+        "Material 3 design system",
+        "ConstraintLayout for layouts"
+    ],
+    
+    authFlow: [
+        "Splash Screen",
+        "Login",
+        "Register",
+        "Forgot Password",
+        "Verify Email"
+    ],
+    
+    mainNavigation: [
+        "BottomNavigationView",
+        "Home",
+        "Profile",
+        "Settings",
+        "Feature screens"
+    ]
+};
+
+const testingBestPractices = {
+    unitTests: [
+        "Arrange-Act-Assert pattern",
+        "Clear naming (inputX, mockX, expectedX)",
+        "Test doubles for dependencies",
+        "Coverage for public functions"
+    ],
+    
+    acceptanceTests: [
+        "Given-When-Then pattern",
+        "Module-level testing",
+        "Integration tests for API modules"
+    ]
+};
+
+// Exception Handling Guidelines
+
+const exceptionGuidelines = [
+    "Use exceptions for unexpected errors",
+    "Catch only to fix, add context, or global handling",
+    "Implement proper error recovery",
+    "Use custom exceptions for domain-specific errors"
+];
+

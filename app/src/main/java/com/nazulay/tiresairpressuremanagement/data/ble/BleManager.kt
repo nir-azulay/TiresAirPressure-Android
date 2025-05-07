@@ -39,6 +39,7 @@ import com.nazulay.tiresairpressuremanagement.data.repository.BleRepository
 import android.os.Handler
 import android.os.Looper
 import kotlinx.coroutines.delay
+import android.os.ParcelUuid
 
 class BleManager(
     private val context: Context,
@@ -193,10 +194,16 @@ class BleManager(
             // Clear previous results first
             _scanResults.value = emptyList()
             
-            // Simple scan settings
+            // Simple scan settings with BLE service filter
             val settings = ScanSettings.Builder()
                 .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
                 .build()
+            
+            // Add filter for your specific BLE service UUID if applicable
+            val filter = ScanFilter.Builder()
+                .setServiceUuid(ParcelUuid(BleConstants.SERVICE_UUID))
+                .build()
+            val filters = listOf(filter)
             
             // Check for necessary permissions
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -207,8 +214,8 @@ class BleManager(
                 }
             }
             
-            // Start scan with no filters for maximum device discovery
-            bleScanner?.startScan(null, settings, scanCallback)
+            // Start scan with filters for BLE devices
+            bleScanner?.startScan(filters, settings, scanCallback)
                 ?: run {
                     Log.e(TAG, "BLE Scanner is null")
                     _connectionState.value = ConnectionState.Error

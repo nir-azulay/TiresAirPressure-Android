@@ -48,6 +48,7 @@ import android.util.Log
 import android.app.Application
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.ui.text.style.TextOverflow
 
 private const val TAG = "MainScreen"
 
@@ -897,9 +898,11 @@ fun PresetPressureButton(
     ) {
         Text(
             text = stringResource(R.string.preset_pressure_format, pressure),
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
             color = MaterialTheme.colorScheme.onPrimaryContainer,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 } 

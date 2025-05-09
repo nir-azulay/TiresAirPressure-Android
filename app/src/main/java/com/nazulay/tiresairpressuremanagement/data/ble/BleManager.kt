@@ -795,11 +795,13 @@ class BleManager(
             }
         }
         
-        // Connect with TRANSPORT_LE flag for better compatibility
+        // Connect with TRANSPORT_LE flag and autoConnect=true for better compatibility and auto-reconnect
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            bluetoothGatt = device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
+            bluetoothGatt = device.connectGatt(context, true, gattCallback, BluetoothDevice.TRANSPORT_LE)
+            Log.d(TAG, "Connecting with auto-reconnect enabled and TRANSPORT_LE")
         } else {
-            bluetoothGatt = device.connectGatt(context, false, gattCallback)
+            bluetoothGatt = device.connectGatt(context, true, gattCallback)
+            Log.d(TAG, "Connecting with auto-reconnect enabled")
         }
     }
     
@@ -816,6 +818,91 @@ class BleManager(
         bluetoothGatt = null
     }
     
+    // Add at the top of the class with other properties
+    private val writeQueue = mutableListOf<ByteArray>()
+    private var isWriting = false
+    private val writeHandler = Handler(Looper.getMainLooper())
+    private val writeRunnable = object : Runnable {
+        override fun run() {
+            processWriteQueue()
+        }
+    }
+
+    // Add this new function to handle the write queue
+    private fun processWriteQueue() {
+        if (isWriting || writeQueue.isEmpty()) return
+        
+        isWriting = true
+        val data = writeQueue.removeAt(0)
+        
+        try {
+            val currentCommandChar = commandCharacteristic
+            val currentGatt = bluetoothGatt
+            
+            if (currentCommandChar == null || currentGatt == null) {
+                Log.e(TAG, "Cannot write: characteristic or GATT is null")
+                isWriting = false
+                return
+            }
+            
+            // Check characteristic properties
+            val properties = currentCommandChar.properties
+            val writeType = if ((properties and BluetoothGattCharacteristic.PROPERTY_WRITE) != 0) {
+                BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+            } else {
+                BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+            }
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val success = currentGatt.writeCharacteristic(
+                    currentCommandChar,
+                    data,
+                    writeType
+                )
+                if (success != BluetoothStatusCodes.SUCCESS) {
+                    Log.e(TAG, "Failed to write characteristic, status: $success")
+                    // Retry after a delay
+                    writeHandler.postDelayed({
+                        isWriting = false
+                        processWriteQueue()
+                    }, 500)
+                    return
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                currentCommandChar.writeType = writeType
+                @Suppress("DEPRECATION")
+                currentCommandChar.value = data
+                @Suppress("DEPRECATION")
+                val success = currentGatt.writeCharacteristic(currentCommandChar)
+                if (!success) {
+                    Log.e(TAG, "Failed to write characteristic")
+                    // Retry after a delay
+                    writeHandler.postDelayed({
+                        isWriting = false
+                        processWriteQueue()
+                    }, 500)
+                    return
+                }
+            }
+            
+            // Schedule next write after a delay
+            writeHandler.postDelayed({
+                isWriting = false
+                processWriteQueue()
+            }, 100)
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in processWriteQueue: ${e.message}")
+            isWriting = false
+            // Retry after a delay
+            writeHandler.postDelayed({
+                processWriteQueue()
+            }, 500)
+        }
+    }
+
+    // Update the sendCommand function to use the write queue
     fun sendCommand(command: BleCommand) {
         try {
             val currentCommandChar = commandCharacteristic
@@ -830,25 +917,23 @@ class BleManager(
                 return
             }
             
-            // בדיקה אם זו פקודת ניפוח או הוצאת אוויר כדי להתעלם מהודעת הסטטוס הבאה
+            // Check if this is an inflate/deflate command to handle status updates
             if (command is BleCommand.StartTargetPressure) {
                 Log.d(TAG, "Setting flag to ignore next status update after INFLATE/DEFLATE command")
                 ignoreNextStatusUpdate = true
                 
-                // הגדרת טיימר שיאפס את הדגל אוטומטית אחרי 2 שניות למקרה שלא קיבלנו הודעת סטטוס
                 Handler(Looper.getMainLooper()).postDelayed({
                     if (ignoreNextStatusUpdate) {
                         Log.d(TAG, "Resetting ignore flag automatically after timeout")
                         ignoreNextStatusUpdate = false
                     }
-                }, 2000) // 2 שניות
+                }, 2000)
             } else if (command is BleCommand.Stop) {
-                // אם זו פקודת עצירה, נאפס את הדגל כדי לא להתעלם מהודעות סטטוס
                 Log.d(TAG, "Resetting ignore flag for STOP command")
                 ignoreNextStatusUpdate = false
             }
             
-            // Manually serialize the BleCommand object
+            // Serialize the command
             val jsonString = when (command) {
                 is BleCommand.Stop -> {
                     JSONObject().apply {
@@ -904,58 +989,14 @@ class BleManager(
                 }
             }
             
-            Log.d(TAG, "Sending command: $jsonString")
+            Log.d(TAG, "Queueing command: $jsonString")
             
-            // Check characteristic properties
-            val properties = currentCommandChar.properties
-            Log.d(TAG, "Command characteristic properties: $properties")
-            
-            // Verify write property
-            if ((properties and BluetoothGattCharacteristic.PROPERTY_WRITE) == 0 &&
-                (properties and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) == 0) {
-                Log.e(TAG, "Command characteristic does not have write property")
-                return
+            // Add to write queue and start processing if not already writing
+            writeQueue.add(jsonString.toByteArray())
+            if (!isWriting) {
+                processWriteQueue()
             }
             
-            // Set write type based on properties
-            val writeType = if ((properties and BluetoothGattCharacteristic.PROPERTY_WRITE) != 0) {
-                BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-            } else {
-                BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
-            }
-            
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                Log.d(TAG, "Using new API to write characteristic")
-                try {
-                    val success = currentGatt.writeCharacteristic(
-                        currentCommandChar,
-                        jsonString.toByteArray(),
-                        writeType
-                    )
-                    Log.d(TAG, "Write characteristic result: $success")
-                    if (success != BluetoothStatusCodes.SUCCESS) {
-                        Log.e(TAG, "Failed to write characteristic, status: $success")
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error writing characteristic (new API): ${e.message}")
-                }
-            } else {
-                Log.d(TAG, "Using deprecated API to write characteristic")
-                try {
-                    @Suppress("DEPRECATION")
-                    currentCommandChar.writeType = writeType
-                    @Suppress("DEPRECATION")
-                    currentCommandChar.value = jsonString.toByteArray()
-                    @Suppress("DEPRECATION")
-                    val success = currentGatt.writeCharacteristic(currentCommandChar)
-                    Log.d(TAG, "Write characteristic result: $success")
-                    if (success == false) {
-                        Log.e(TAG, "Failed to write characteristic")
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error writing characteristic (old API): ${e.message}")
-                }
-            }
         } catch (e: Exception) {
             Log.e(TAG, "Error in sendCommand: ${e.message}")
             e.printStackTrace()
@@ -986,18 +1027,17 @@ class BleManager(
             // For Android 13+, we need to use the new API
             try {
                 android.util.Log.d(TAG, "Using Android 13+ API to enable notifications")
-                val descriptorUuid = BleConstants.CLIENT_CONFIG_DESCRIPTOR_UUID
-                val status = gatt.writeDescriptor(
-                    BluetoothGattDescriptor(
-                        descriptorUuid,
-                        BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE
-                    ),
-                    BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                )
+                val descriptor = characteristic.getDescriptor(BleConstants.CLIENT_CONFIG_DESCRIPTOR_UUID)
+                if (descriptor == null) {
+                    android.util.Log.e(TAG, "Notification descriptor not found")
+                    android.util.Log.d(TAG, "Continuing anyway, as some devices don't require descriptor write")
+                    return
+                }
+                
+                val status = gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
                 android.util.Log.d(TAG, "Descriptor write status: $status")
                 if (status != BluetoothStatusCodes.SUCCESS) {
                     android.util.Log.e(TAG, "Failed to write to descriptor: $status")
-                    // Don't throw an exception here, some devices don't require descriptor write
                     android.util.Log.d(TAG, "Continuing anyway, as some devices don't require descriptor write")
                 }
             } catch (e: Exception) {
@@ -1011,7 +1051,6 @@ class BleManager(
                 val descriptor = characteristic.getDescriptor(BleConstants.CLIENT_CONFIG_DESCRIPTOR_UUID)
                 if (descriptor == null) {
                     android.util.Log.e(TAG, "Notification descriptor not found")
-                    // Don't throw an exception here, some devices don't require descriptor write
                     android.util.Log.d(TAG, "Continuing anyway, as some devices don't require descriptor write")
                     return
                 }
@@ -1022,7 +1061,6 @@ class BleManager(
                 val writeSuccess = gatt.writeDescriptor(descriptor)
                 if (writeSuccess == false) {
                     android.util.Log.e(TAG, "Failed to write to descriptor")
-                    // Don't throw an exception here, some devices don't require descriptor write
                     android.util.Log.d(TAG, "Continuing anyway, as some devices don't require descriptor write")
                 }
                 android.util.Log.d(TAG, "Descriptor write initiated")
@@ -1238,29 +1276,36 @@ class BleManager(
         // Get devices from SavedDevicesManager instead of private SharedPreferences
         val savedDevices = bleRepository?.getSavedDevices() ?: emptyList()
         
-        if (savedDevices.isNotEmpty()) {
-            val primaryDevice = savedDevices[0]
-            Log.d(TAG, "Attempting to connect to primary saved device: ${primaryDevice.address}")
-            
-            // Check if we're already connected to this device
-            if (_connectionState.value == ConnectionState.Connected && 
-                bluetoothGatt?.device?.address == primaryDevice.address) {
-                Log.d(TAG, "Already connected to primary device, no need to reconnect")
-                return
-            }
-            
-            // Small delay before connecting
-            try {
-                Thread.sleep(500)
-            } catch (e: InterruptedException) {
-                Log.e(TAG, "Sleep interrupted: ${e.message}")
-            }
-            
-            // Connect to the primary device
-            connect(primaryDevice.address)
-        } else if (savedDevices.size > 1) {
+        if (savedDevices.isEmpty()) {
+            Log.d(TAG, "No saved devices to connect to")
+            return
+        }
+        
+        // Try primary device first
+        val primaryDevice = savedDevices[0]
+        Log.d(TAG, "Attempting to connect to primary saved device: ${primaryDevice.address}")
+        
+        // Check if we're already connected to this device
+        if (_connectionState.value == ConnectionState.Connected && 
+            bluetoothGatt?.device?.address == primaryDevice.address) {
+            Log.d(TAG, "Already connected to primary device, no need to reconnect")
+            return
+        }
+        
+        // Small delay before connecting
+        try {
+            Thread.sleep(500)
+        } catch (e: InterruptedException) {
+            Log.e(TAG, "Sleep interrupted: ${e.message}")
+        }
+        
+        // Connect to the primary device
+        connect(primaryDevice.address)
+        
+        // If we have a secondary device and primary connection failed, try secondary
+        if (savedDevices.size > 1) {
             val secondaryDevice = savedDevices[1]
-            Log.d(TAG, "No primary device found, attempting to connect to secondary device: ${secondaryDevice.address}")
+            Log.d(TAG, "Attempting to connect to secondary device: ${secondaryDevice.address}")
             
             // Check if we're already connected to this device
             if (_connectionState.value == ConnectionState.Connected && 
@@ -1278,8 +1323,6 @@ class BleManager(
             
             // Connect to the secondary device
             connect(secondaryDevice.address)
-        } else {
-            Log.d(TAG, "No saved devices to connect to")
         }
     }
     

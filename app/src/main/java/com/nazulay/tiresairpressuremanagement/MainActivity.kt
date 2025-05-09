@@ -485,13 +485,10 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             if (!hasAttemptedSavedDeviceConnection && 
                 bleManager.connectionState.value == ConnectionState.Disconnected) {
-                val savedDevices = bleRepository.getSavedDevices()
-                if (savedDevices.isNotEmpty()) {
-                    Log.d(TAG, "Found saved devices in onResume, attempting to connect")
-                    bleRepository.connectToSavedDevices()
-                    // Set the flag after attempting connection
-                    hasAttemptedSavedDeviceConnection = true
-                }
+                Log.d(TAG, "Attempting to connect to saved device in onResume")
+                bleManager.connectToSavedDevice()
+                // Set the flag after attempting connection
+                hasAttemptedSavedDeviceConnection = true
             } else {
                 Log.d(TAG, "Skipping auto-reconnect: already attempted connection: $hasAttemptedSavedDeviceConnection, " +
                            "connection state: ${bleManager.connectionState.value}")

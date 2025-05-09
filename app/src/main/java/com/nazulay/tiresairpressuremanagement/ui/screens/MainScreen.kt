@@ -49,6 +49,7 @@ import android.app.Application
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.ui.text.style.TextOverflow
+import kotlinx.coroutines.CancellationException
 
 private const val TAG = "MainScreen"
 
@@ -179,6 +180,9 @@ fun MainScreen(
                 showTargetReachedDialog = true
                 android.util.Log.d(TAG, "Set showTargetReachedDialog to true with info: $targetReachedInfo")
             }
+        } catch (e: CancellationException) {
+            // This is expected when the composition is left
+            android.util.Log.d(TAG, "Target reached event collection cancelled due to composition leaving")
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Error collecting target reached events: ${e.message}", e)
         }

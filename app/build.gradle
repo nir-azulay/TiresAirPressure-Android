@@ -6,7 +6,7 @@ plugins {
 
 // Version management
 def versionPropsFile = file('version.properties')
-def versionBuild = 0
+def versionBuild = 441
 
 if (versionPropsFile.canRead()) {
     def versionProps = new Properties()
@@ -31,20 +31,20 @@ def fullVersionName = "${versionMajor}.${versionMinor}.${versionPatch}.${version
 
 android {
     namespace 'com.nazulay.tiresairpressuremanagement'
-    compileSdk 35
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.nazulay.tiresairpressuremanagement"
         minSdk 29
         targetSdk 34
-        versionCode versionBuild
-        versionName fullVersionName
+        versionCode 441
+        versionName "${versionMajor}.${versionMinor}.${versionPatch}"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         
         buildConfigField "String", "BUILD_TIME", "\"${new Date().format('yyyy-MM-dd HH:mm:ss')}\""
         buildConfigField "String", "VERSION_NAME", "\"${fullVersionName}\""
-        buildConfigField "int", "MIN_SDK_VERSION", "29"
+        buildConfigField "int", "MIN_SDK_VERSION", "24"
         buildConfigField "int", "TARGET_SDK_VERSION", "34"
         
         manifestPlaceholders = [

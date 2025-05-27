@@ -6,7 +6,9 @@ import com.squareup.moshi.JsonClass
 @JsonClass(generateAdapter = true)
 data class DeviceStatus(
     @Json(name = "Pressure") val pressure: Float,
-    @Json(name = "operationMode") val operationMode: Int
+    @Json(name = "operationMode") val operationMode: Int,
+    @Json(name = "rawADC") val rawADC: Int? = null,
+    @Json(name = "voltage") val voltage: Float? = null
 ) {
     companion object {
         const val MODE_STOP = 1

@@ -81,6 +81,9 @@ class MainViewModel(
     private val _permissionGranted = MutableStateFlow(false)
     val permissionGranted: StateFlow<Boolean> = _permissionGranted
     
+    // Debug Mode State (from AppSettingsManager)
+    val debugMode: StateFlow<Boolean> = appSettingsManager.settings.map { it.debugMode }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), appSettingsManager.settings.value.debugMode)
+    
     init {
         checkPermissions()
         viewModelScope.launch {

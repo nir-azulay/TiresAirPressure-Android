@@ -127,6 +127,9 @@ class SettingsViewModel(
     private val _currentLanguage = MutableStateFlow(LocaleHelper.getSelectedLanguage(application))
     val currentLanguage: StateFlow<String> = _currentLanguage.asStateFlow()
     
+    // Debug Mode State (from AppSettingsManager)
+    val debugMode: StateFlow<Boolean> = appSettings.map { it.debugMode }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), appSettings.value.debugMode)
+    
     init {
         Log.d(TAG, "Initializing SettingsViewModel")
         Log.d(TAG, "Initial Connection State from BleManager: ${bleManager.connectionState.value}")
@@ -540,5 +543,12 @@ class SettingsViewModel(
                 activity.updateLanguage(languageCode)
             }
         }
+    }
+
+    fun setDebugMode(enabled: Boolean) {
+        appSettingsManager.updateDebugMode(enabled)
+        Log.d(TAG, "setDebugMode: Sending DebugMode command to BLE device. enabled=$enabled")
+        // Send BLE command to activate/deactivate debug mode
+        bleManager.sendCommand(com.nazulay.tiresairpressuremanagement.domain.models.BleCommand.DebugMode(enabled = enabled))
     }
 } 

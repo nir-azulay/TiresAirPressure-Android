@@ -987,6 +987,13 @@ class BleManager(
                         put("type", command.type)
                     }.toString()
                 }
+                is BleCommand.DebugMode -> {
+                    JSONObject().apply {
+                        put("command", command.command)
+                        put("enabled", command.enabled)
+                        put("type", command.type)
+                    }.toString()
+                }
             }
             
             Log.d(TAG, "Queueing command: $jsonString")
@@ -1402,10 +1409,13 @@ class BleManager(
                     }
                     
                     val operationMode = jsonObject.optInt("operationMode", 4)
-                    
+                    val rawADC = jsonObject.optString("rawADC", null)?.toIntOrNull()
+                    val voltage = jsonObject.optString("voltage", null)?.toFloatOrNull()
                     val deviceStatus = DeviceStatus(
                         pressure = pressure,
-                        operationMode = operationMode
+                        operationMode = operationMode,
+                        rawADC = rawADC,
+                        voltage = voltage
                     )
                     Log.d(TAG, "Created DeviceStatus: $deviceStatus")
                     onDeviceStatusReceived(deviceStatus)

@@ -4,6 +4,7 @@ import com.nazulay.tiresairpressuremanagement.utils.BleConstants
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
+// See BLE_Communication_Documentation.md for BLE command protocol details, especially for debug mode (command 7)
 sealed class BleCommand {
     // Command constants
     companion object {
@@ -62,6 +63,12 @@ sealed class BleCommand {
     
     data class RequestStatus(
         override val command: Int = CMD_REQUEST_STATUS,
+        override val type: String = "command"
+    ) : BleCommand()
+    
+    data class DebugMode(
+        override val command: Int = 7,
+        val enabled: Boolean,
         override val type: String = "command"
     ) : BleCommand()
 } 

@@ -76,6 +76,7 @@ fun MainScreen(
     val viewModel: MainViewModel = viewModel(
         factory = MainViewModel.provideFactory(LocalContext.current.applicationContext as Application, bleManager)
     )
+    val debugMode by viewModel.debugMode.collectAsState()
     
     // State for target reached dialog
     var showTargetReachedDialog by remember { mutableStateOf(false) }
@@ -293,7 +294,9 @@ fun MainScreen(
                                 currentPressureAnimated = currentPressureAnimated,
                                 targetPressure = targetPressure,
                                 maxPressure = maxPressure,
-                                isLandscape = true
+                                isLandscape = true,
+                                debugMode = debugMode,
+                                deviceStatus = deviceStatus
                             )
                         }
                         
@@ -368,7 +371,9 @@ fun MainScreen(
                             currentPressureAnimated = currentPressureAnimated,
                             targetPressure = targetPressure,
                             maxPressure = maxPressure,
-                            isLandscape = false
+                            isLandscape = false,
+                            debugMode = debugMode,
+                            deviceStatus = deviceStatus
                         )
                         
                         // Container for other controls
@@ -570,7 +575,9 @@ private fun PressureGaugeCard(
     currentPressureAnimated: Animatable<Float, AnimationVector1D>,
     targetPressure: Float,
     maxPressure: Float,
-    isLandscape: Boolean = false
+    isLandscape: Boolean = false,
+    debugMode: Boolean = false,
+    deviceStatus: DeviceStatus? = null
 ) {
     Card(
         modifier = Modifier
@@ -617,6 +624,20 @@ private fun PressureGaugeCard(
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
+                // Show debug info if debugMode is enabled and values are present
+                if (debugMode && deviceStatus?.rawADC != null && deviceStatus.voltage != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "rawADC: ${deviceStatus.rawADC}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Yellow
+                    )
+                    Text(
+                        text = "voltage: ${String.format("%.3f", deviceStatus.voltage)} V",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Yellow
+                    )
+                }
             }
             
             // Progress indicator

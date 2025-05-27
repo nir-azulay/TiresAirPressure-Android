@@ -246,6 +246,31 @@ fun SettingsScreen(
                                 )
                             }
                         }
+                        // Add Debug Mode Toggle
+                        item {
+                            SettingsCard {
+                                val debugMode by viewModel.debugMode.collectAsState()
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Debug Mode",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = Color.White,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Switch(
+                                        checked = debugMode,
+                                        onCheckedChange = { viewModel.setDebugMode(it) },
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                            uncheckedThumbColor = Color.Gray
+                                        )
+                                    )
+                                }
+                            }
+                        }
                         
                         // Device Name Card
                         item {

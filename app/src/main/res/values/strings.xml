@@ -234,4 +234,13 @@
     <string name="request_settings">Request Settings</string>
     <string name="collapse">Collapse</string>
     <string name="expand">Expand</string>
+
+    <!-- New string resources for PressureCalcMethod UI -->
+    <string name="pressure_calc_method">Pressure Calculation Method</string>
+    <string name="adc_calibration">ADC calibration (default)</string>
+    <string name="voltage_calibration">Voltage calibration</string>
+
+    <!-- New string resources for debug_mode and current_connection_state -->
+    <string name="debug_mode">Debug Mode</string>
+    <string name="current_connection_state">Current connection state: %1$s</string>
 </resources>

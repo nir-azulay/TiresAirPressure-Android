@@ -227,4 +227,13 @@
     <string name="min_pressure_count_value">מינימום לחצים: %d</string>
     <string name="max_pressure_count_value">מקסימום לחצים: %d</string>
     <string name="pressure_count_controls">בקרות מספר לחצים</string>
+
+    <!-- PressureCalcMethod UI -->
+    <string name="pressure_calc_method">שיטת חישוב לחץ</string>
+    <string name="adc_calibration">כיול ADC (ברירת מחדל)</string>
+    <string name="voltage_calibration">כיול מתח</string>
+
+    <!-- Debug Mode -->
+    <string name="debug_mode">מצב דיבוג</string>
+    <string name="current_connection_state">מצב חיבור נוכחי: %1$s</string>
 </resources> 

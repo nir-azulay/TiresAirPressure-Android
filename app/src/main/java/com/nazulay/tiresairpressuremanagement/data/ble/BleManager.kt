@@ -957,7 +957,6 @@ class BleManager(
                         put("RelayCompressorPin", command.relayCompressorPin)
                         put("RelayFreePin", command.relayFreePin)
                         put("SensorPin", command.sensorPin)
-                        put("AutoStart", command.autoStart)
                         put("MaxSecForStatus", command.maxSecForStatus)
                         put("SensorValueAt0PSI", command.sensorValueAt0PSI)
                         put("SensorValueAt50PSI", command.sensorValueAt50PSI)
@@ -1188,7 +1187,6 @@ class BleManager(
         editor.putInt("relayCompressorPin", settings.relayCompressorPin.toIntOrNull() ?: 0)
         editor.putInt("relayFreePin", settings.relayFreePin.toIntOrNull() ?: 0)
         editor.putInt("sensorPin", settings.sensorPin.toIntOrNull() ?: 0)
-        editor.putBoolean("autoStart", settings.autoStart == "1" || settings.autoStart.lowercase() == "true")
         editor.putInt("maxSecForStatus", settings.maxSecForStatus.toIntOrNull() ?: 30)
         editor.putFloat("sensorValueAt0PSI", settings.sensorValueAt0PSI.toFloatOrNull() ?: 0.228f)
         editor.putFloat("sensorValueAt50PSI", settings.sensorValueAt50PSI.toFloatOrNull() ?: 2.853f)
@@ -1745,7 +1743,6 @@ class DeviceSettingsResponseAdapter {
             relayCompressorPin = (jsonObject["RelayCompressorPin"] as? String) ?: "0",
             relayFreePin = (jsonObject["RelayFreePin"] as? String) ?: "0",
             sensorPin = (jsonObject["SensorPin"] as? String) ?: "0",
-            autoStart = (jsonObject["AutoStart"] as? String) ?: "0",
             maxSecForStatus = (jsonObject["MaxSecForStatus"] as? String) ?: "30",
             sensorValueAt0PSI = (jsonObject["SensorValueAt0PSI"] as? String) ?: "0",
             sensorValueAt50PSI = (jsonObject["SensorValueAt50PSI"] as? String) ?: "1023",

@@ -39,7 +39,6 @@ sealed class BleCommand {
         val relayCompressorPin: Int,
         val relayFreePin: Int,
         val sensorPin: Int,
-        val autoStart: Boolean,
         val maxSecForStatus: Int,
         val sensorValueAt0PSI: Float,
         val sensorValueAt50PSI: Float,
@@ -47,6 +46,7 @@ sealed class BleCommand {
         val precision: Float,
         val btPinCode: String,
         val simulationMode: Boolean,
+        val pressureCalcMethod: Int,
         override val type: String = "settings"
     ) : BleCommand()
     

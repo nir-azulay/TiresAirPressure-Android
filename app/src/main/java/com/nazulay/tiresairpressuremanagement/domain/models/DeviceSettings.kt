@@ -12,7 +12,6 @@ data class DeviceSettings(
     @Json(name = "RelayCompressorPin") val relayCompressorPin: Int = 0,
     @Json(name = "RelayFreePin") val relayFreePin: Int = 0,
     @Json(name = "SensorPin") val sensorPin: Int = 0,
-    @Json(name = "AutoStart") val autoStart: Boolean = false,
     @Json(name = "MaxSecForStatus") val maxSecForStatus: Int = 30,
     @Json(name = "SensorValueAt0PSI") val sensorValueAt0PSI: Float = 0.228f,
     @Json(name = "SensorValueAt50PSI") val sensorValueAt50PSI: Float = 2.853f,
@@ -30,7 +29,8 @@ data class DeviceSettings(
     @Json(name = "PredefinedPressure5") val predefinedPressure5: Float = 20f,
     @Json(name = "PredefinedPressure6") val predefinedPressure6: Float = 30f,
     @Json(name = "PredefinedPressure7") val predefinedPressure7: Float = 38f,
-    @Json(name = "PredefinedPressure8") val predefinedPressure8: Float = 40f
+    @Json(name = "PredefinedPressure8") val predefinedPressure8: Float = 40f,
+    @Json(name = "PressureCalcMethod") val pressureCalcMethod: Int = 1
 )
 
 enum class PressureUnit {

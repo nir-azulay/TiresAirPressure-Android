@@ -282,13 +282,13 @@ class SettingsViewModel(
         relayCompressorPin: Int? = null,
         relayFreePin: Int? = null,
         sensorPin: Int? = null,
-        autoStart: Boolean? = null,
         maxSecForStatus: Int? = null,
         sensorValueAt0PSI: Float? = null,
         sensorValueAt50PSI: Float? = null,
         measureWait: Float? = null,
         precision: Float? = null,
-        btPinCode: String? = null
+        btPinCode: String? = null,
+        pressureCalcMethod: Int? = null
     ) {
         val currentSettings = _localDeviceSettings.value
         if (currentSettings != null) {
@@ -300,13 +300,13 @@ class SettingsViewModel(
                 relayCompressorPin = relayCompressorPin ?: currentSettings.relayCompressorPin,
                 relayFreePin = relayFreePin ?: currentSettings.relayFreePin,
                 sensorPin = sensorPin ?: currentSettings.sensorPin,
-                autoStart = autoStart ?: currentSettings.autoStart,
                 maxSecForStatus = maxSecForStatus ?: currentSettings.maxSecForStatus,
                 sensorValueAt0PSI = sensorValueAt0PSI ?: currentSettings.sensorValueAt0PSI,
                 sensorValueAt50PSI = sensorValueAt50PSI ?: currentSettings.sensorValueAt50PSI,
                 measureWait = measureWait ?: currentSettings.measureWait,
                 precision = precision ?: currentSettings.precision,
-                btPinCode = btPinCode ?: currentSettings.btPinCode
+                btPinCode = btPinCode ?: currentSettings.btPinCode,
+                pressureCalcMethod = pressureCalcMethod ?: currentSettings.pressureCalcMethod
             )
             
             Log.d(TAG, "Updating local device settings: $updatedSettings")
@@ -335,13 +335,9 @@ class SettingsViewModel(
                 precision = settingsToSave.precision,
                 maxSecForStatus = settingsToSave.maxSecForStatus,
                 measureWait = settingsToSave.measureWait,
-                autoStart = settingsToSave.autoStart,
                 btPinCode = settingsToSave.btPinCode,
-                // Note: Predefined pressures are NOT part of UpdateSettings command
-                // They are managed locally by AppSettingsManager
-                // Note: operationMode, currentPressure, softwareVersion, ipAddress 
-                //       are status/read-only, not part of settings update command
-                simulationMode = settingsToSave.simulationMode // Simulation mode IS part of update
+                simulationMode = settingsToSave.simulationMode,
+                pressureCalcMethod = settingsToSave.pressureCalcMethod
             ))
             _hasUnsavedChanges.value = false
             delay(1500) 
@@ -371,9 +367,9 @@ class SettingsViewModel(
                 precision = settingsToSave.precision,
                 maxSecForStatus = settingsToSave.maxSecForStatus,
                 measureWait = settingsToSave.measureWait,
-                autoStart = settingsToSave.autoStart,
                 btPinCode = settingsToSave.btPinCode,
-                simulationMode = settingsToSave.simulationMode
+                simulationMode = settingsToSave.simulationMode,
+                pressureCalcMethod = settingsToSave.pressureCalcMethod
             ))
             
             _hasUnsavedChanges.value = false

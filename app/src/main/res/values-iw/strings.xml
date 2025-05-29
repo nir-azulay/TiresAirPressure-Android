@@ -175,7 +175,7 @@
     <string name="connected_duration_seconds">מחובר למשך %1$d שניות</string>
     <string name="connected_duration_minutes">מחובר למשך %1$d דקות ו-%2$d שניות</string>
     <string name="connected_duration_hours">מחובר למשך %1$d שעות ו-%2$d דקות</string>
-    <string name="preset_pressure_format">%.1f PSI</string>
+    <string name="preset_pressure_format">%d PSI</string>
     
     <!-- Connection states -->
     <string name="bluetooth_disabled">Bluetooth מושבת</string>

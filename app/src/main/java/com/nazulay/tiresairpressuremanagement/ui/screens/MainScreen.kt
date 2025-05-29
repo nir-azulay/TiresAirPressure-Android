@@ -890,14 +890,16 @@ fun PresetButtons(
                         // Real button with pressure value
                         PresetPressureButton(
                             pressure = rowPressures[index], 
-                            onSelect = onPresetSelected
+                            onSelect = onPresetSelected,
+                            modifier = Modifier.weight(1f).padding(horizontal = 2.dp).defaultMinSize(minHeight = 48.dp)
                         )
                     } else {
                         // Empty space with the same size as a button for alignment
                         Spacer(
                             modifier = Modifier
-                                .height(36.dp)
-                                .width(66.dp)
+                                .weight(1f)
+                                .padding(horizontal = 2.dp)
+                                .defaultMinSize(minHeight = 48.dp)
                         )
                     }
                 }
@@ -909,12 +911,11 @@ fun PresetButtons(
 @Composable
 fun PresetPressureButton(
     pressure: Float,
-    onSelect: (Float) -> Unit
+    onSelect: (Float) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = Modifier
-            .height(36.dp) // Reduced height
-            .width(66.dp)  // Reduced width
+        modifier = modifier
             .clip(RoundedCornerShape(4.dp))
             .background(MaterialTheme.colorScheme.primaryContainer)
             .clickable { onSelect(pressure) }
@@ -922,8 +923,8 @@ fun PresetPressureButton(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = stringResource(R.string.preset_pressure_format, pressure),
-            style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+            text = stringResource(R.string.preset_pressure_format, pressure.toInt()),
+            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 16.sp),
             color = MaterialTheme.colorScheme.onPrimaryContainer,
             textAlign = TextAlign.Center,
             maxLines = 1,

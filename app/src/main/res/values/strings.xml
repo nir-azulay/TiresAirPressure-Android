@@ -230,7 +230,7 @@
     <string name="remove_pressure_button">Remove Pressure</string>
     <string name="min_pressure_count_value">Min Pressures: %d</string>
     <string name="max_pressure_count_value">Max Pressures: %d</string>
-    <string name="preset_pressure_format">%.1f PSI</string>
+    <string name="preset_pressure_format">%d PSI</string>
     <string name="request_settings">Request Settings</string>
     <string name="collapse">Collapse</string>
     <string name="expand">Expand</string>

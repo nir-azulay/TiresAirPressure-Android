@@ -189,7 +189,8 @@ fun SettingsScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 16.dp), // Further reduced padding for even tighter fit
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // App Settings Section
@@ -408,11 +409,6 @@ fun SettingsScreen(
                             }
                         }
                     }
-                }
-                
-                // Bottom spacing to make sure content is not hidden by bottom app bar
-                item {
-                    Spacer(modifier = Modifier.height(96.dp))
                 }
             }
         }

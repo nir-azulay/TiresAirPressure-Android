@@ -256,6 +256,16 @@ class MainActivity : ComponentActivity() {
                 Log.d(TAG, "Already attempted connection with no success, moving to CONNECTION screen")
             }
         }
+        // Add a strict splash screen timeout: after 10 seconds, if still on splash and not connected, go to connection screen
+        LaunchedEffect(currentScreen, connectionState) {
+            if (currentScreen == Screen.SPLASH && connectionState != ConnectionState.Connected) {
+                delay(10000)
+                if (currentScreen == Screen.SPLASH && connectionState != ConnectionState.Connected) {
+                    currentScreen = Screen.CONNECTION
+                    Log.d(TAG, "Splash timeout reached, moving to CONNECTION screen")
+                }
+            }
+        }
         
         Surface(
             color = MaterialTheme.colorScheme.background

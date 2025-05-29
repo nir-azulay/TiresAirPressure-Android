@@ -958,12 +958,13 @@ class BleManager(
                         put("RelayFreePin", command.relayFreePin)
                         put("SensorPin", command.sensorPin)
                         put("MaxSecForStatus", command.maxSecForStatus)
-                        put("SensorValueAt0PSI", command.sensorValueAt0PSI)
-                        put("SensorValueAt50PSI", command.sensorValueAt50PSI)
+                        put("SensorValueAt0PSI", String.format("%.3f", command.sensorValueAt0PSI))
+                        put("SensorValueAt50PSI", String.format("%.3f", command.sensorValueAt50PSI))
                         put("MessureWait", command.measureWait)
                         put("Precision", command.precision)
                         put("BTPinCode", command.btPinCode)
                         put("SimulationMode", command.simulationMode)
+                        put("PressureCalcMethod", command.pressureCalcMethod)
                         put("type", command.type)
                     }.toString()
                 }
@@ -1188,8 +1189,8 @@ class BleManager(
         editor.putInt("relayFreePin", settings.relayFreePin.toIntOrNull() ?: 0)
         editor.putInt("sensorPin", settings.sensorPin.toIntOrNull() ?: 0)
         editor.putInt("maxSecForStatus", settings.maxSecForStatus.toIntOrNull() ?: 30)
-        editor.putFloat("sensorValueAt0PSI", settings.sensorValueAt0PSI.toFloatOrNull() ?: 0.228f)
-        editor.putFloat("sensorValueAt50PSI", settings.sensorValueAt50PSI.toFloatOrNull() ?: 2.853f)
+        editor.putString("sensorValueAt0PSI", settings.sensorValueAt0PSI) // Store as string to preserve decimals
+        editor.putString("sensorValueAt50PSI", settings.sensorValueAt50PSI) // Store as string to preserve decimals
         editor.putFloat("measureWait", settings.measureWait.toFloatOrNull() ?: 2f)
         editor.putFloat("precision", settings.precision.toFloatOrNull() ?: 1f)
         editor.putString("btPinCode", settings.btPinCode)
@@ -1197,6 +1198,7 @@ class BleManager(
         editor.putString("softwareVersion", settings.softwareVersion)
         editor.putString("ipAddress", settings.ipAddress)
         editor.putBoolean("simulationMode", settings.simulationMode == "1" || settings.simulationMode.lowercase() == "true")
+        editor.putInt("pressureCalcMethod", settings.pressureCalcMethod.toIntOrNull() ?: 1)
         
         editor.apply()
     }
@@ -1735,6 +1737,10 @@ class DeviceSettingsResponseAdapter {
             else -> "0"
         }
         
+        // Get sensor calibration values with proper null handling
+        val sensorValueAt0PSI = (jsonObject["SensorValueAt0PSI"] as? String) ?: "0.228"
+        val sensorValueAt50PSI = (jsonObject["SensorValueAt50PSI"] as? String) ?: "2.853"
+        
         return DeviceSettingsResponse(
             operationMode = (jsonObject["operationMode"] as? Number)?.toInt() ?: 4,
             deviceName = (jsonObject["DeviceName"] as? String) ?: "",
@@ -1744,15 +1750,16 @@ class DeviceSettingsResponseAdapter {
             relayFreePin = (jsonObject["RelayFreePin"] as? String) ?: "0",
             sensorPin = (jsonObject["SensorPin"] as? String) ?: "0",
             maxSecForStatus = (jsonObject["MaxSecForStatus"] as? String) ?: "30",
-            sensorValueAt0PSI = (jsonObject["SensorValueAt0PSI"] as? String) ?: "0",
-            sensorValueAt50PSI = (jsonObject["SensorValueAt50PSI"] as? String) ?: "1023",
+            sensorValueAt0PSI = sensorValueAt0PSI,
+            sensorValueAt50PSI = sensorValueAt50PSI,
             measureWait = (jsonObject["MessureWait"] as? String) ?: "2",
             precision = (jsonObject["Precision"] as? String) ?: "1",
             btPinCode = (jsonObject["BTPinCode"] as? String) ?: "1234",
             pressure = pressure,
             softwareVersion = (jsonObject["Software_VER"] as? String) ?: "",
             ipAddress = (jsonObject["IP"] as? String) ?: "",
-            simulationMode = (jsonObject["SimulationMode"] as? String) ?: "0"
+            simulationMode = (jsonObject["SimulationMode"] as? String) ?: "0",
+            pressureCalcMethod = (jsonObject["PressureCalcMethod"] as? String) ?: "1"
         )
     }
 } 

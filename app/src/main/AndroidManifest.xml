@@ -33,6 +33,10 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     
+    <!-- Car App permissions for Android Auto -->
+    <uses-permission android:name="androidx.car.app.NAVIGATION_TEMPLATES" />
+    <uses-permission android:name="androidx.car.app.ACCESS_SURFACE" />
+    
     <!-- Feature declarations -->
     <uses-feature
         android:name="android.hardware.bluetooth_le"
@@ -50,9 +54,6 @@
     <!-- Android Auto support -->
     <uses-feature
         android:name="android.software.car.templates_host"
-        android:required="false" />
-    <uses-feature
-        android:name="android.hardware.type.automotive"
         android:required="false" />
 
     <application

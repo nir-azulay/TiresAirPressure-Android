@@ -243,4 +243,17 @@
     <!-- New string resources for debug_mode and current_connection_state -->
     <string name="debug_mode">Debug Mode</string>
     <string name="current_connection_state">Current connection state: %1$s</string>
+    
+    <!-- Device Management -->
+    <string name="manage_paired_devices">Manage Paired Devices</string>
+    <string name="manage_paired_devices_description">Manage your saved Bluetooth devices. The app will try to connect to devices in the order shown below.</string>
+    <string name="no_paired_devices">No Paired Devices</string>
+    <string name="no_paired_devices_description">No devices have been saved yet. Connect to a device to add it to this list.</string>
+    <string name="move_up">Move Up</string>
+    <string name="move_down">Move Down</string>
+    <string name="delete_device">Delete Device</string>
+    <string name="delete_device_confirmation">Are you sure you want to delete \"%1$s\" from your paired devices?</string>
+    <string name="device_management">Device Management</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
 </resources>

@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
@@ -63,7 +64,8 @@ import com.nazulay.tiresairpressuremanagement.utils.LocaleHelper
 fun SettingsScreen(
     viewModel: SettingsViewModel,
     onBackClick: () -> Unit,
-    forceReconnect: () -> Unit = {}
+    forceReconnect: () -> Unit = {},
+    onDeviceManagementClick: () -> Unit = {}
 ) {
     var isSaving by remember { mutableStateOf(false) }
     val deviceSettings by viewModel.deviceSettings.collectAsState()
@@ -180,17 +182,17 @@ fun SettingsScreen(
             }
         }
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFF121212)) // Match MainScreen dark background
         ) {
             LazyColumn(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .weight(1f)
                     .padding(paddingValues)
                     .padding(horizontal = 16.dp)
-                    .padding(bottom = 16.dp), // Further reduced padding for even tighter fit
+                    .padding(bottom =20.dp), // Minimal padding for tight layout
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // App Settings Section
@@ -338,6 +340,55 @@ fun SettingsScreen(
                         }
                         
                         // Remove save/cancel buttons from here as they're now in the bottom bar
+                        
+                        // Device Management Section
+                        item {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(R.string.device_management),
+                                style = MaterialTheme.typography.titleLarge,
+                                color = Color.White,
+                                modifier = Modifier.padding(vertical = 16.dp)
+                            )
+                        }
+                        
+                        item {
+                            SettingsCard {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { 
+                                            onDeviceManagementClick()
+                                        }
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Devices,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(end = 16.dp)
+                                    )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = stringResource(R.string.manage_paired_devices),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = Color.White
+                                        )
+                                        Text(
+                                            text = stringResource(R.string.manage_paired_devices_description),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.White.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.ExpandMore,
+                                        contentDescription = stringResource(R.string.expand),
+                                        tint = Color.White.copy(alpha = 0.7f)
+                                    )
+                                }
+                            }
+                        }
                     } else {
                         item {
                             SettingsCard {

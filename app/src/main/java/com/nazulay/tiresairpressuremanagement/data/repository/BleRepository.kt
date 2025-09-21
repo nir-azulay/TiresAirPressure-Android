@@ -118,6 +118,22 @@ class BleRepository(
     fun getSavedDevices(): List<SavedDevicesManager.SavedDevice> {
         return savedDevicesManager.getSavedDevices()
     }
+    
+    fun clearOldDevices() {
+        savedDevicesManager.clearOldDevices()
+    }
+    
+    fun ensureOnlyRecentDevice(address: String, name: String) {
+        savedDevicesManager.ensureOnlyRecentDevice(address, name)
+    }
+    
+    fun deleteDevice(address: String) {
+        savedDevicesManager.deleteDevice(address)
+    }
+    
+    fun reorderDevices(deviceAddresses: List<String>) {
+        savedDevicesManager.reorderDevices(deviceAddresses)
+    }
 
     suspend fun connectToSavedDevices() {
         if (isAutoConnecting) {

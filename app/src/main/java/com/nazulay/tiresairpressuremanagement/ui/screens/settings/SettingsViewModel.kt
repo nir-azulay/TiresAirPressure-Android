@@ -353,35 +353,57 @@ class SettingsViewModel(
         }
 
         viewModelScope.launch {
-            Log.d(TAG, "Saving device settings via BleManager: $settingsToSave")
-            bleManager.sendCommand(BleCommand.UpdateSettings(
-                // ... map settingsToSave fields to command fields ...
-                wifiSsid = settingsToSave.wifiSsid,
-                wifiPassword = settingsToSave.wifiPassword,
-                deviceName = settingsToSave.deviceName,
-                relayCompressorPin = settingsToSave.relayCompressorPin,
-                relayFreePin = settingsToSave.relayFreePin,
-                sensorPin = settingsToSave.sensorPin,
-                sensorValueAt0PSI = settingsToSave.sensorValueAt0PSI,
-                sensorValueAt50PSI = settingsToSave.sensorValueAt50PSI,
-                precision = settingsToSave.precision,
-                maxSecForStatus = settingsToSave.maxSecForStatus,
-                measureWait = settingsToSave.measureWait,
-                btPinCode = settingsToSave.btPinCode,
-                simulationMode = settingsToSave.simulationMode,
-                pressureCalcMethod = settingsToSave.pressureCalcMethod
-            ))
-            
-            _hasUnsavedChanges.value = false
+            // Check if we're actually connected before trying to send commands
+            if (connectionState.value != ConnectionState.Connected) {
+                Log.w(TAG, "Cannot save settings - not connected to device")
+                return@launch
+            }
 
-            // Don't disconnect - let the device handle reconnection automatically
-            // The device will reset itself after receiving the settings
-            Log.d(TAG, "Settings saved. The device will reset and reconnect automatically.")
+            Log.d(TAG, "Saving device settings via BleManager: $settingsToSave")
             
-            // Schedule a delayed call to force reconnection after 5 seconds
-            delay(5000) // Wait 5 seconds
-            Log.d(TAG, "Calling forceReconnect callback to trigger onResume")
-            forceReconnect() // Call the provided callback to force reconnection
+            try {
+                bleManager.sendCommand(BleCommand.UpdateSettings(
+                    // ... map settingsToSave fields to command fields ...
+                    wifiSsid = settingsToSave.wifiSsid,
+                    wifiPassword = settingsToSave.wifiPassword,
+                    deviceName = settingsToSave.deviceName,
+                    relayCompressorPin = settingsToSave.relayCompressorPin,
+                    relayFreePin = settingsToSave.relayFreePin,
+                    sensorPin = settingsToSave.sensorPin,
+                    sensorValueAt0PSI = settingsToSave.sensorValueAt0PSI,
+                    sensorValueAt50PSI = settingsToSave.sensorValueAt50PSI,
+                    precision = settingsToSave.precision,
+                    maxSecForStatus = settingsToSave.maxSecForStatus,
+                    measureWait = settingsToSave.measureWait,
+                    btPinCode = settingsToSave.btPinCode,
+                    simulationMode = settingsToSave.simulationMode,
+                    pressureCalcMethod = settingsToSave.pressureCalcMethod
+                ))
+                
+                _hasUnsavedChanges.value = false
+
+                // The device will reset itself after receiving the settings
+                Log.d(TAG, "Settings saved. The device will reset and reconnect automatically.")
+                
+                // Wait for device to process the settings and reset
+                delay(2000) // Wait 2 seconds for device to process
+                
+                // Force disconnect to ensure clean state
+                Log.d(TAG, "Disconnecting to allow device reset")
+                bleManager.disconnect()
+                
+                // Wait for device to reset
+                delay(3000) // Wait 3 seconds for device reset
+                
+                // Now trigger reconnection
+                Log.d(TAG, "Triggering reconnection after device reset")
+                forceReconnect()
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "Error saving device settings: ${e.message}", e)
+                // Still mark as saved to avoid UI issues
+                _hasUnsavedChanges.value = false
+            }
         }
     }
     

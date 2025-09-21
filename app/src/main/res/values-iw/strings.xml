@@ -236,4 +236,17 @@
     <!-- Debug Mode -->
     <string name="debug_mode">מצב דיבוג</string>
     <string name="current_connection_state">מצב חיבור נוכחי: %1$s</string>
+    
+    <!-- Device Management -->
+    <string name="manage_paired_devices">ניהול מכשירים מזווגים</string>
+    <string name="manage_paired_devices_description">נהל את מכשירי הבלוטות\' שלך השמורים. האפליקציה תנסה להתחבר למכשירים לפי הסדר המוצג למטה.</string>
+    <string name="no_paired_devices">אין מכשירים מזווגים</string>
+    <string name="no_paired_devices_description">עדיין לא נשמרו מכשירים. התחבר למכשיר כדי להוסיף אותו לרשימה זו.</string>
+    <string name="move_up">העלה למעלה</string>
+    <string name="move_down">הורד למטה</string>
+    <string name="delete_device">מחק מכשיר</string>
+    <string name="delete_device_confirmation">האם אתה בטוח שברצונך למחוק את \"%1$s\" מרשימת המכשירים המזווגים שלך?</string>
+    <string name="device_management">ניהול מכשירים</string>
+    <string name="delete">מחק</string>
+    <string name="cancel">בטל</string>
 </resources> 

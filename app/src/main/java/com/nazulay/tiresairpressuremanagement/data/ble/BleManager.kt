@@ -43,7 +43,7 @@ import android.os.ParcelUuid
 
 class BleManager(
     private val context: Context,
-    private val bleRepository: BleRepository? = null
+    val bleRepository: BleRepository? = null
 ) {
     private val TAG = "BleManager"
     private var bluetoothGatt: BluetoothGatt? = null
@@ -646,18 +646,50 @@ class BleManager(
             status: Int
         ) {
             Log.d(TAG, "onCharacteristicWrite callback - status: $status")
+            
+            // Mark write operation as complete
+            isWriting = false
+            
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 Log.d(TAG, "Write successful for characteristic: ${characteristic.uuid}")
             } else {
                 Log.e(TAG, "Write failed for characteristic: ${characteristic.uuid}, status: $status")
                 // If write fails, you might want to retry or notify the user
                 when (status) {
-                    BluetoothGatt.GATT_WRITE_NOT_PERMITTED -> Log.e(TAG, "Write not permitted")
+                    BluetoothGatt.GATT_WRITE_NOT_PERMITTED -> {
+                        Log.e(TAG, "Write not permitted - characteristic may not support write operations")
+                        // Check if we need to disconnect and reconnect
+                        if (_connectionState.value == ConnectionState.Connected) {
+                            Log.w(TAG, "Connection may be in invalid state, considering disconnect")
+                        }
+                    }
                     BluetoothGatt.GATT_INVALID_ATTRIBUTE_LENGTH -> Log.e(TAG, "Invalid attribute length")
                     BluetoothGatt.GATT_FAILURE -> Log.e(TAG, "Write failed with GATT_FAILURE")
+                    133 -> {
+                        Log.e(TAG, "Write failed with status 133 - GATT_WRITE_NOT_PERMITTED or GATT_INSUFFICIENT_AUTHORIZATION")
+                        // This often happens when the device is in an invalid state
+                        // Consider disconnecting to force a clean reconnection
+                        if (_connectionState.value == ConnectionState.Connected) {
+                            Log.w(TAG, "Status 133 detected - connection may be invalid, will disconnect")
+                            disconnect()
+                        }
+                    }
+                    201 -> {
+                        Log.e(TAG, "Write failed with status 201 - prior command is not finished")
+                        // This is the specific error we're seeing - wait a bit longer before retrying
+                        writeHandler.postDelayed({
+                            processWriteQueue()
+                        }, 200) // Wait 200ms before trying next command
+                        return
+                    }
                     else -> Log.e(TAG, "Write failed with status: $status")
                 }
             }
+            
+            // Process next item in queue after a short delay
+            writeHandler.postDelayed({
+                processWriteQueue()
+            }, 50) // Small delay between writes
         }
     }
     
@@ -842,6 +874,7 @@ class BleManager(
             if (currentCommandChar == null || currentGatt == null) {
                 Log.e(TAG, "Cannot write: characteristic or GATT is null")
                 isWriting = false
+                processWriteQueue() // Try next item
                 return
             }
             
@@ -861,11 +894,9 @@ class BleManager(
                 )
                 if (success != BluetoothStatusCodes.SUCCESS) {
                     Log.e(TAG, "Failed to write characteristic, status: $success")
-                    // Retry after a delay
-                    writeHandler.postDelayed({
-                        isWriting = false
-                        processWriteQueue()
-                    }, 500)
+                    // Don't retry immediately, wait for callback
+                    isWriting = false
+                    processWriteQueue() // Try next item
                     return
                 }
             } else {
@@ -877,34 +908,32 @@ class BleManager(
                 val success = currentGatt.writeCharacteristic(currentCommandChar)
                 if (!success) {
                     Log.e(TAG, "Failed to write characteristic")
-                    // Retry after a delay
-                    writeHandler.postDelayed({
-                        isWriting = false
-                        processWriteQueue()
-                    }, 500)
+                    // Don't retry immediately, wait for callback
+                    isWriting = false
+                    processWriteQueue() // Try next item
                     return
                 }
             }
             
-            // Schedule next write after a delay
-            writeHandler.postDelayed({
-                isWriting = false
-                processWriteQueue()
-            }, 100)
+            // Don't schedule next write here - wait for onCharacteristicWrite callback
+            // The callback will call processWriteQueue() when ready
             
         } catch (e: Exception) {
             Log.e(TAG, "Error in processWriteQueue: ${e.message}")
             isWriting = false
-            // Retry after a delay
-            writeHandler.postDelayed({
-                processWriteQueue()
-            }, 500)
+            processWriteQueue() // Try next item
         }
     }
 
     // Update the sendCommand function to use the write queue
     fun sendCommand(command: BleCommand) {
         try {
+            // Check connection state first
+            if (_connectionState.value != ConnectionState.Connected) {
+                Log.w(TAG, "Cannot send command: not connected to device (state: ${_connectionState.value})")
+                return
+            }
+            
             val currentCommandChar = commandCharacteristic
             val currentGatt = bluetoothGatt
             
@@ -1274,14 +1303,35 @@ class BleManager(
         // Get the device name
         val deviceName = bluetoothGatt?.device?.name ?: "Unknown Device"
         
-        // Use the repository to save the device which will use SavedDevicesManager internally
-        bleRepository?.saveConnectedDevice(deviceAddress, deviceName)
-        Log.d(TAG, "Saved device to repository: $deviceName ($deviceAddress)")
+        // Use the new method that ensures only the most recent device is kept
+        bleRepository?.ensureOnlyRecentDevice(deviceAddress, deviceName)
+        Log.d(TAG, "Saved device to repository (ensuring only recent): $deviceName ($deviceAddress)")
+    }
+    
+    fun clearOldDevices() {
+        bleRepository?.clearOldDevices()
+        Log.d(TAG, "Cleared old saved devices")
+    }
+    
+    fun ensureOnlyRecentDevice(address: String, name: String) {
+        bleRepository?.ensureOnlyRecentDevice(address, name)
+        Log.d(TAG, "Ensured only recent device is saved: $name ($address)")
+    }
+    
+    fun deleteDevice(address: String) {
+        bleRepository?.deleteDevice(address)
+        Log.d(TAG, "Deleted device: $address")
+    }
+    
+    fun reorderDevices(deviceAddresses: List<String>) {
+        bleRepository?.reorderDevices(deviceAddresses)
+        Log.d(TAG, "Reordered devices: $deviceAddresses")
     }
 
     fun connectToSavedDevice() {
         // Get devices from SavedDevicesManager instead of private SharedPreferences
         val savedDevices = bleRepository?.getSavedDevices() ?: emptyList()
+        Log.d(TAG, "connectToSavedDevice called with ${savedDevices.size} saved devices")
         
         if (savedDevices.isEmpty()) {
             Log.d(TAG, "No saved devices to connect to")
@@ -1290,7 +1340,7 @@ class BleManager(
         
         // Try primary device first
         val primaryDevice = savedDevices[0]
-        Log.d(TAG, "Attempting to connect to primary saved device: ${primaryDevice.address}")
+        Log.d(TAG, "Attempting to connect to primary saved device: ${primaryDevice.name} (${primaryDevice.address})")
         
         // Check if we're already connected to this device
         if (_connectionState.value == ConnectionState.Connected && 
@@ -1307,6 +1357,7 @@ class BleManager(
         }
         
         // Connect to the primary device
+        Log.d(TAG, "Calling connect() for primary device: ${primaryDevice.address}")
         connect(primaryDevice.address)
         
         // If we have a secondary device and primary connection failed, try secondary

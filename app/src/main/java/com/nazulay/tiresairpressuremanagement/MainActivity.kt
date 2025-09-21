@@ -151,6 +151,11 @@ class MainActivity : ComponentActivity() {
             val savedDevices = bleRepository.getSavedDevices()
             Log.d(TAG, "Found ${savedDevices.size} saved devices")
             
+            // Log all saved devices for debugging
+            for (device in savedDevices) {
+                Log.d(TAG, "Saved device: ${device.name} (${device.address})")
+            }
+            
             if (savedDevices.isNotEmpty()) {
                 isConnectingToSavedDevice = true
                 bleRepository.connectToSavedDevices()
@@ -181,9 +186,13 @@ class MainActivity : ComponentActivity() {
         
         // Use BleRepository to get saved devices
         val savedDevices = bleRepository.getSavedDevices()
+        Log.d(TAG, "Retrieved ${savedDevices.size} saved devices for reconnection")
         
         if (savedDevices.isNotEmpty()) {
             Log.d(TAG, "Found saved devices, attempting to connect")
+            for (device in savedDevices) {
+                Log.d(TAG, "Saved device: ${device.name} (${device.address})")
+            }
             isConnectingToSavedDevice = true
             // Use BleManager to connect to saved device
             bleManager.connectToSavedDevice()
@@ -210,6 +219,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun AppContent() {
         var currentScreen by remember { mutableStateOf(Screen.SPLASH) }
+        var showDeviceManagement by remember { mutableStateOf(false) }
         
         // Check permissions when app starts
         LaunchedEffect(Unit) {
@@ -357,6 +367,10 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         },
+                        onDeviceManagementClick = {
+                            android.util.Log.d(TAG, "User clicked device management")
+                            showDeviceManagement = true
+                        },
                         forceReconnect = {
                             android.util.Log.d(TAG, "Force reconnect callback triggered from SettingsScreen")
                             if (bleManager.connectionState.value == ConnectionState.Disconnected) {
@@ -389,6 +403,17 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 }
+            }
+            
+            // Device Management Screen (overlay)
+            if (showDeviceManagement) {
+                com.nazulay.tiresairpressuremanagement.ui.screens.device_management.DeviceManagementScreen(
+                    onBackClick = {
+                        android.util.Log.d(TAG, "User clicked back from device management")
+                        showDeviceManagement = false
+                    },
+                    viewModel = com.nazulay.tiresairpressuremanagement.ui.screens.device_management.DeviceManagementViewModel(bleManager)
+                )
             }
             
             // Add the permission settings dialog

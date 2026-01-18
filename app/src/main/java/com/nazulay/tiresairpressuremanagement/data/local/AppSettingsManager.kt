@@ -38,13 +38,15 @@ class AppSettingsManager private constructor(private val context: Context) {
     val settings: StateFlow<AppSettings> = _settings.asStateFlow()
 
     private fun loadSettings(): AppSettings {
+        val debugMode = prefs.getBoolean(DEBUG_MODE_KEY, false)
+        Log.d(TAG, "Loading settings - debugMode: $debugMode")
         return AppSettings(
             themeMode = SettingsViewModel.THEME_MODE_DARK,
             simulationMode = prefs.getBoolean(SIMULATION_MODE_KEY, false),
             predefinedPressures = loadPredefinedPressures(),
             minPressureCount = prefs.getInt(MIN_PRESSURE_COUNT_KEY, 1),
             maxPressureCount = prefs.getInt(MAX_PRESSURE_COUNT_KEY, 8),
-            debugMode = prefs.getBoolean(DEBUG_MODE_KEY, false)
+            debugMode = debugMode
         )
     }
 
@@ -125,7 +127,9 @@ class AppSettingsManager private constructor(private val context: Context) {
     }
 
     fun updateDebugMode(enabled: Boolean) {
+        Log.d(TAG, "Updating debug mode to: $enabled")
         val currentSettings = _settings.value
         updateSettings(currentSettings.copy(debugMode = enabled))
+        Log.d(TAG, "Debug mode updated and saved to SharedPreferences")
     }
 } 

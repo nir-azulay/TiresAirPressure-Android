@@ -109,6 +109,26 @@ class MainViewModel(
                 }
             }
         }
+        
+        // Sync debug mode with ESP32 on every connection (including after ESP32 restart)
+        viewModelScope.launch {
+            var wasConnected = false
+            bleRepository.connectionState.collect { connectionState ->
+                if (connectionState == ConnectionState.Connected && !wasConnected) {
+                    // Device just connected (or reconnected)
+                    wasConnected = true
+                    
+                    // Wait a moment for connection to stabilize
+                    kotlinx.coroutines.delay(1500)
+                    val currentDebugMode = appSettingsManager.settings.value.debugMode
+                    Log.d("MainViewModel", "Device connected/reconnected, syncing debug mode with ESP32: $currentDebugMode")
+                    bleRepository.sendCommand(BleCommand.DebugMode(enabled = currentDebugMode))
+                } else if (connectionState != ConnectionState.Connected) {
+                    // Device disconnected
+                    wasConnected = false
+                }
+            }
+        }
     }
     
     private fun checkPermissions() {

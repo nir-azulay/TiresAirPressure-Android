@@ -1285,10 +1285,16 @@ class BleManager(
         val pressureValue = settingsResponse.pressure.toFloatOrNull() ?: 0f
         
         // Update both device status and device settings
+        // Preserve existing rawADC and voltage values if they exist
+        val currentStatus = _deviceStatus.value
+        Log.d(TAG, "Preserving debug values from current status: rawADC=${currentStatus?.rawADC}, voltage=${currentStatus?.voltage}")
         _deviceStatus.value = DeviceStatus(
             pressure = pressureValue,
-            operationMode = settingsResponse.operationMode
+            operationMode = settingsResponse.operationMode,
+            rawADC = currentStatus?.rawADC, // Preserve existing rawADC
+            voltage = currentStatus?.voltage // Preserve existing voltage
         )
+        Log.d(TAG, "Updated DeviceStatus from full settings: ${_deviceStatus.value}")
         
         // Also update the _currentPressure StateFlow
         if (_currentPressure.value != pressureValue) {
@@ -1468,7 +1474,8 @@ class BleManager(
                         rawADC = rawADC,
                         voltage = voltage
                     )
-                    Log.d(TAG, "Created DeviceStatus: $deviceStatus")
+                    Log.d(TAG, "Created DeviceStatus with debug values: rawADC=$rawADC, voltage=$voltage")
+                    Log.d(TAG, "Full DeviceStatus: $deviceStatus")
                     onDeviceStatusReceived(deviceStatus)
                     return
                 }

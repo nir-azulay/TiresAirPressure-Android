@@ -78,6 +78,16 @@ fun MainScreen(
     )
     val debugMode by viewModel.debugMode.collectAsState()
     
+    // Debug logging for debug mode changes
+    LaunchedEffect(debugMode) {
+        Log.d(TAG, "Debug mode changed to: $debugMode")
+    }
+    
+    // Debug logging for device status changes
+    LaunchedEffect(deviceStatus) {
+        Log.d(TAG, "Device status changed: $deviceStatus")
+    }
+    
     // State for target reached dialog
     var showTargetReachedDialog by remember { mutableStateOf(false) }
     var targetReachedInfo by remember { mutableStateOf<Pair<Float, Float>?>(null) }
@@ -625,6 +635,7 @@ private fun PressureGaugeCard(
                     color = Color.White
                 )
                 // Show debug info if debugMode is enabled and values are present
+                Log.d(TAG, "Debug display check: debugMode=$debugMode, deviceStatus=$deviceStatus, rawADC=${deviceStatus?.rawADC}, voltage=${deviceStatus?.voltage}")
                 if (debugMode && deviceStatus?.rawADC != null && deviceStatus.voltage != null) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(

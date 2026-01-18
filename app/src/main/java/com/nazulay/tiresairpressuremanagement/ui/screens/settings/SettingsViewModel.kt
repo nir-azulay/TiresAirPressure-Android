@@ -399,6 +399,15 @@ class SettingsViewModel(
                 Log.d(TAG, "Triggering reconnection after device reset")
                 forceReconnect()
                 
+                // After reconnection, sync debug mode with the restarted ESP32
+                viewModelScope.launch {
+                    // Wait for reconnection to complete
+                    delay(3000)
+                    val currentDebugMode = appSettingsManager.settings.value.debugMode
+                    Log.d(TAG, "Syncing debug mode after ESP32 restart: $currentDebugMode")
+                    bleManager.sendCommand(BleCommand.DebugMode(enabled = currentDebugMode))
+                }
+                
             } catch (e: Exception) {
                 Log.e(TAG, "Error saving device settings: ${e.message}", e)
                 // Still mark as saved to avoid UI issues

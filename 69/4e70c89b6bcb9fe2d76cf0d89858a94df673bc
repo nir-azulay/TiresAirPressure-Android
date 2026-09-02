@@ -1,0 +1,21 @@
+TirePressureManager-iOS/App/Info.plist
+  s_1463e4843b891d::t_5b41861978f7aa 40-41
+TirePressureManager-iOS/TirePressureManager.xcodeproj/project.pbxproj
+  s_1463e4843b891d::t_8af20458482d75 564,604
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "694e70c89b6bcb9fe2d76cf0d89858a94df673bc",
+  "prompts": {},
+  "sessions": {
+    "s_1463e4843b891d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "fa0314ac-9e64-40d9-ae29-fda071eb0b1f",
+        "model": "gemini-3.7-flash"
+      },
+      "human_author": "Nir Azulay <nir.azulay@gmail.com>"
+    }
+  }
+}

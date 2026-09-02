@@ -41,17 +41,27 @@ jobs:
       - name: Compute build number
         run: echo "BUILD_NUMBER=$((BUILD_NUMBER_BASE + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
 
-      - name: Stage signing certificate
+      - name: Stage signing certificate & API key
         env:
           IOS_DIST_CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
         run: |
           set -euo pipefail
           if [ -z "$IOS_DIST_CERT_P12_BASE64" ]; then
             echo "::error::Secret IOS_DIST_CERT_P12_BASE64 is not set. See docs/ios-testflight-ci.md."
             exit 1
           fi
+          if [ -z "$ASC_KEY_P8_BASE64" ]; then
+            echo "::error::Secret ASC_KEY_P8_BASE64 is not set. See docs/ios-testflight-ci.md."
+            exit 1
+          fi
           printf '%s' "$IOS_DIST_CERT_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/distribution.p12"
           echo "IOS_DIST_CERT_P12_PATH=$RUNNER_TEMP/distribution.p12" >> "$GITHUB_ENV"
+
+          mkdir -p "$RUNNER_TEMP/private_keys"
+          printf '%s' "$ASC_KEY_P8_BASE64" | base64 --decode > "$RUNNER_TEMP/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          echo "ASC_KEY_PATH=$RUNNER_TEMP/private_keys/AuthKey_${ASC_KEY_ID}.p8" >> "$GITHUB_ENV"
 
       - name: Build and upload
         working-directory: ${{ env.IOS_DIR }}

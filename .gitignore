@@ -56,3 +56,20 @@ google-services.json
 
 # Version properties
 app/version.properties
+
+# iOS build output
+*.ipa
+*.xcarchive
+*.dSYM.zip
+
+# fastlane
+TirePressureManager-iOS/fastlane/report.xml
+TirePressureManager-iOS/fastlane/Preview.html
+TirePressureManager-iOS/fastlane/test_output/
+TirePressureManager-iOS/vendor/bundle/
+
+# Signing material — never commit these
+*.p12
+*.p8
+*.mobileprovision
+*.cer

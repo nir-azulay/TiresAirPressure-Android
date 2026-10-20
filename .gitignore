@@ -46,6 +46,8 @@ output.json
 # Keystore files
 *.jks
 *.keystore
+*.aab
+play-service-account.json
 
 # Google Services
 google-services.json

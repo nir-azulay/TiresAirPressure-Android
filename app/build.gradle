@@ -8,23 +8,28 @@ plugins {
 def versionPropsFile = file('version.properties')
 def versionBuild = 646
 
-if (versionPropsFile.canRead()) {
+if (project.hasProperty('versionBuildOverride')) {
+    // CI passes an explicit code so Play never sees a repeated versionCode.
+    versionBuild = versionBuildOverride.toInteger()
+} else {
+    if (versionPropsFile.canRead()) {
+        def versionProps = new Properties()
+        versionProps.load(new FileInputStream(versionPropsFile))
+        versionBuild = versionProps['VERSION_BUILD'].toInteger()
+    }
+
+    // Increment build number
+    versionBuild++
+
+    // Save new build number
     def versionProps = new Properties()
-    versionProps.load(new FileInputStream(versionPropsFile))
-    versionBuild = versionProps['VERSION_BUILD'].toInteger()
+    versionProps['VERSION_BUILD'] = versionBuild.toString()
+    versionProps.store(versionPropsFile.newWriter(), null)
 }
 
 def versionMajor = 1
 def versionMinor = 3
 def versionPatch = 9
-
-// Increment build number
-versionBuild++
-
-// Save new build number
-def versionProps = new Properties()
-versionProps['VERSION_BUILD'] = versionBuild.toString()
-versionProps.store(versionPropsFile.newWriter(), null)
 
 // Create full version string
 def fullVersionName = "${versionMajor}.${versionMinor}.${versionPatch}.${versionBuild}"
@@ -85,6 +90,19 @@ android {
         buildConfig true
     }
 
+    def keystorePath = System.getenv('ANDROID_KEYSTORE_PATH')
+
+    signingConfigs {
+        release {
+            if (keystorePath) {
+                storeFile file(keystorePath)
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD') ?: System.getenv('ANDROID_KEYSTORE_PASSWORD')
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -92,6 +110,9 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             buildConfigField "boolean", "DEBUG_MODE", "false"
             buildConfigField "String", "BUILD_TYPE", "\"RELEASE\""
+            if (keystorePath) {
+                signingConfig signingConfigs.release
+            }
         }
         debug {
             buildConfigField "boolean", "DEBUG_MODE", "true"

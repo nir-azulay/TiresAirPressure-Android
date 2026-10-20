@@ -64,10 +64,10 @@ Keychain Access and on the Apple Developer certificates page.
 `App/Info.plist` sets `CFBundleVersion` literally (the target has
 `GENERATE_INFOPLIST_FILE = NO`), so the lane patches that file during the build.
 The value is `BUILD_NUMBER_BASE + GITHUB_RUN_NUMBER`, where `BUILD_NUMBER_BASE` is
-defined at the top of the workflow and currently equals `556`. The first automated
-run therefore uploads build 557.
+defined at the top of the workflow and currently equals `557`. The next automated
+run uploads `557` plus the workflow run number.
 
-The patched `Info.plist` is not committed back, so the file in git stays at 556.
+The patched `Info.plist` is not committed back, so the file in git stays at 557.
 
 If you upload a build manually from Xcode, bump `BUILD_NUMBER_BASE` in the
 workflow to stay ahead of it — TestFlight rejects a build whose number is not

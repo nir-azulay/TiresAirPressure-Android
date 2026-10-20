@@ -36,8 +36,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.nazulay.tiresairpressuremanagement.R
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.platform.LocalView
-import android.view.WindowManager
 import androidx.compose.material.icons.filled.BluetoothDisabled
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
@@ -94,23 +92,6 @@ fun MainScreen(
     
     // Animation for the pressure gauge
     val currentPressureAnimated = remember { Animatable(0f) }
-    
-    // Keep screen on during inflation/deflation
-    val view = LocalView.current
-    DisposableEffect(isInflating) {
-        if (isInflating) {
-            view.keepScreenOn = true
-            android.util.Log.d(TAG, "Screen will stay on during inflation/deflation")
-        } else {
-            view.keepScreenOn = false
-            android.util.Log.d(TAG, "Screen can turn off normally")
-        }
-        
-        onDispose {
-            view.keepScreenOn = false
-            android.util.Log.d(TAG, "Screen can turn off normally (cleanup)")
-        }
-    }
     
     LaunchedEffect(deviceStatus?.pressure) {
         deviceStatus?.pressure?.let {

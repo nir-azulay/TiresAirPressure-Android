@@ -414,6 +414,7 @@ class BleManager(
                     // עדכון מצב החיבור
                     _connectionState.value = ConnectionState.Disconnected
                     _connectedDeviceName.value = null
+                    _isInflating.value = false
                     android.util.Log.d(TAG, "Connection state set to DISCONNECTED")
                     
                     // סגירת לקוח GATT
@@ -842,6 +843,7 @@ class BleManager(
         
         // עדכון מצב החיבור
         _connectionState.value = ConnectionState.Disconnected
+        _isInflating.value = false
         android.util.Log.d(TAG, "Connection state set to DISCONNECTED")
         
         // ניתוק מהמכשיר
@@ -949,6 +951,7 @@ class BleManager(
             // Check if this is an inflate/deflate command to handle status updates
             if (command is BleCommand.StartTargetPressure) {
                 Log.d(TAG, "Setting flag to ignore next status update after INFLATE/DEFLATE command")
+                _isInflating.value = true
                 ignoreNextStatusUpdate = true
                 
                 Handler(Looper.getMainLooper()).postDelayed({
@@ -959,6 +962,7 @@ class BleManager(
                 }, 2000)
             } else if (command is BleCommand.Stop) {
                 Log.d(TAG, "Resetting ignore flag for STOP command")
+                _isInflating.value = false
                 ignoreNextStatusUpdate = false
             }
             
@@ -1257,12 +1261,8 @@ class BleManager(
                 _currentPressure.value = newPressure
             }
             
-            // Update operation mode (inflation status)
-            val isCurrentlyInflating = deviceStatus.operationMode == DeviceStatus.MODE_INFLATE
-            if (_isInflating.value != isCurrentlyInflating) {
-                android.util.Log.d(TAG, "Updating _isInflating to: $isCurrentlyInflating")
-                _isInflating.value = isCurrentlyInflating
-            }
+            // Inflate and deflate both count as an active compressor operation.
+            updateOperatingState(deviceStatus.operationMode)
             
             android.util.Log.d(TAG, "StateFlow updated, new values: status=${_deviceStatus.value}, pressure=${_currentPressure.value}, inflating=${_isInflating.value}")
         }
@@ -1301,6 +1301,7 @@ class BleManager(
             android.util.Log.d(TAG, "Updating _currentPressure from settings to: $pressureValue")
             _currentPressure.value = pressureValue
         }
+        updateOperatingState(settingsResponse.operationMode)
         
         _deviceSettings.value = settingsResponse.toDeviceSettings()
     }
@@ -1711,6 +1712,15 @@ class BleManager(
         Log.d(TAG, "Setting target pressure to: $pressure")
         _targetPressure.value = pressure
         // כאן יש להוסיף את הלוגיקה לשליחת הפקודה למכשיר
+    }
+
+    private fun updateOperatingState(operationMode: Int) {
+        val operating = operationMode == DeviceStatus.MODE_INFLATE ||
+            operationMode == DeviceStatus.MODE_DEFLATE
+        if (_isInflating.value != operating) {
+            android.util.Log.d(TAG, "Updating _isInflating to: $operating (mode=$operationMode)")
+            _isInflating.value = operating
+        }
     }
 
     fun startInflation() {

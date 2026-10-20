@@ -53,6 +53,7 @@ import com.nazulay.tiresairpressuremanagement.utils.LocaleHelper
 import com.nazulay.tiresairpressuremanagement.utils.ActivityProvider
 import android.provider.Settings
 import android.app.Activity
+import android.view.WindowManager
 import androidx.compose.ui.text.font.FontWeight
 
 class MainActivity : ComponentActivity() {
@@ -228,6 +229,20 @@ class MainActivity : ComponentActivity() {
         
         // Observe connection state
         val connectionState by bleManager.connectionState.collectAsState()
+        val keepScreenOn by bleManager.isInflating.collectAsState()
+
+        DisposableEffect(keepScreenOn) {
+            if (keepScreenOn) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                Log.d(TAG, "Screen stays on during inflate/deflate")
+            } else {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                Log.d(TAG, "Screen can sleep")
+            }
+            onDispose {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
+        }
         
         // Show permission settings dialog if needed
         LaunchedEffect(connectionState) {

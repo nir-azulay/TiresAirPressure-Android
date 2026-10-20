@@ -6,7 +6,7 @@ plugins {
 
 // Version management
 def versionPropsFile = file('version.properties')
-def versionBuild = 642
+def versionBuild = 646
 
 if (versionPropsFile.canRead()) {
     def versionProps = new Properties()

@@ -1,0 +1,27 @@
+.gitignore
+  s_1463e4843b891d::t_a368c2cc9c8462 49-50
+docs/android-play-ci.md
+  s_1463e4843b891d::t_3b06cfaf7b53bd 1-67
+app/build.gradle
+  s_1463e4843b891d::t_0974726ec385f7 93-105,113-115
+  s_1463e4843b891d::t_9a63bad022f8d3 11-24,26-27
+.github/workflows/android-play.yml
+  s_1463e4843b891d::t_01013240969ab6 1-56,58-74
+  s_1463e4843b891d::t_153198c3d4bad5 57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.9",
+  "base_commit_sha": "cf82c81de6e79f37ab0f2539a7c39447159fce4c",
+  "prompts": {},
+  "sessions": {
+    "s_1463e4843b891d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "fa0314ac-9e64-40d9-ae29-fda071eb0b1f",
+        "model": "grok-4.7"
+      },
+      "human_author": "Nir Azulay <nir.azulay@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,42 @@
+.github/workflows/ios-testflight.yml
+  s_1463e4843b891d::t_45d56fd40e3f1e 17
+TirePressureManager-iOS/TirePressureManager.xcodeproj/project.pbxproj
+  s_1463e4843b891d::t_5849e5c8e2fb90 557,597
+app/src/main/java/com/nazulay/tiresairpressuremanagement/MainActivity.kt
+  s_1463e4843b891d::t_ee8e5667cfc7ba 56
+  s_1463e4843b891d::t_0a778b87fca8a1 232-245
+TirePressureManager-iOS/App/Info.plist
+  s_1463e4843b891d::t_c738964d729e64 39
+app/build.gradle
+  s_1463e4843b891d::t_f1db18a205fad3 9
+docs/ios-testflight-ci.md
+  s_1463e4843b891d::t_5518ad3eab95b8 67-68,70
+app/src/main/java/com/nazulay/tiresairpressuremanagement/data/ble/BleManager.kt
+  s_1463e4843b891d::t_884c6854bd4df1 1264-1265
+  s_1463e4843b891d::t_2b5772ef49339c 846
+  s_1463e4843b891d::t_2a30791d16d230 417
+  s_1463e4843b891d::t_4b3ea3d6b9a4ce 1304
+  s_1463e4843b891d::t_b6dad350f6826e 965
+  s_1463e4843b891d::t_6531c0475039f6 1717-1725
+  s_1463e4843b891d::t_66c2f9e036c464 954
+TirePressureManager-iOS/Features/Main/MainView.swift
+  s_1463e4843b891d::t_f04d3b804a70d6 2,6
+  s_1463e4843b891d::t_db2bf4f4520cca 138-148
+  s_1463e4843b891d::t_f1da12d786f1b8 174-178
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.9",
+  "base_commit_sha": "092339a0bf50a5d5d1f72d571fe46cf18d63d279",
+  "prompts": {},
+  "sessions": {
+    "s_1463e4843b891d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "fa0314ac-9e64-40d9-ae29-fda071eb0b1f",
+        "model": "grok-4.7"
+      },
+      "human_author": "Nir Azulay <nir.azulay@gmail.com>"
+    }
+  }
+}

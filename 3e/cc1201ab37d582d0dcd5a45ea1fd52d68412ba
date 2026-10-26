@@ -1,0 +1,19 @@
+.github/workflows/android-play.yml
+  s_a78bf3d6b9a4f7::t_dbcbf128d8e3d0 4-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.11",
+  "base_commit_sha": "3ecc1201ab37d582d0dcd5a45ea1fd52d68412ba",
+  "prompts": {},
+  "sessions": {
+    "s_a78bf3d6b9a4f7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "71cf080a-c3c3-429c-bb57-cf6aae336486",
+        "model": "grok-4.7"
+      },
+      "human_author": "Nir Azulay <nir.azulay@gmail.com>"
+    }
+  }
+}

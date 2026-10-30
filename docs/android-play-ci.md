@@ -56,8 +56,8 @@ Paste the clipboard into `ANDROID_KEYSTORE_BASE64`. The alias in that command is
 
 `versionCode` must increase for every Play upload. CI sets it to
 `BUILD_NUMBER_BASE + GITHUB_RUN_NUMBER`, where `BUILD_NUMBER_BASE` is at the top
-of the workflow and currently equals `646`. The first automated run therefore
-uploads version code 647. The version name stays `1.3.9`.
+of the workflow and currently equals `662`. Internal testing already has version
+code 662. The version name stays `1.3.9`.
 
 Local Android Studio builds still increment `app/version.properties` on their own.
 That file is not used by CI. If you upload a higher build from Android Studio,

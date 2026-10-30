@@ -12,7 +12,7 @@ concurrency:
 env:
   # versionCode is BUILD_NUMBER_BASE + the workflow run number. Raise the base
   # if Play already has a higher versionCode.
-  BUILD_NUMBER_BASE: "646"
+  BUILD_NUMBER_BASE: "662"
 
 jobs:
   play:

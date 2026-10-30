@@ -1,0 +1,55 @@
+app/src/main/java/com/nazulay/tiresairpressuremanagement/data/repository/BleRepository.kt
+  s_8a297305c5de68::t_a917a0d8cd288e 138-145
+app/src/main/java/com/nazulay/tiresairpressuremanagement/domain/models/BleCommand.kt
+  s_8a297305c5de68::t_bf3516fccf2c4b 74-79
+  s_8a297305c5de68::t_24a425c944f2f4 18
+app/src/main/res/values/strings.xml
+  s_8a297305c5de68::t_b459c92dcb987d 144-145
+app/src/main/java/com/nazulay/tiresairpressuremanagement/data/local/SavedDevicesManager.kt
+  s_8a297305c5de68::t_a14aec0f9d6f66 158
+  s_8a297305c5de68::t_ee66597bf388c3 14-15
+  s_8a297305c5de68::t_9ddb045fdc7ae8 118,125-126
+  s_8a297305c5de68::t_c7c1eeea0b9bb5 230-246
+  s_8a297305c5de68::t_fb500070560b00 168
+  s_8a297305c5de68::t_f95fdf8c98a873 68,72,75
+  s_8a297305c5de68::t_3e15dffdff6336 90,96
+  s_8a297305c5de68::t_b45b5063af381c 186-196,213,222
+  s_8a297305c5de68::t_4ae41c03ed7e7c 143,147,150
+  s_8a297305c5de68::t_80ec30bfca77da 202,205
+docs/BLE_PROTOCOL.md
+  s_8a297305c5de68::t_8cac90d5eecccb 161-174,180
+  s_8a297305c5de68::t_3c8574b96ee457 187
+docs/IOS_REFERENCE_DOCUMENTATION.md
+  s_8a297305c5de68::t_879f91a86cca5a 438
+  s_8a297305c5de68::t_1c69aba3a2fbaa 629
+app/src/main/java/com/nazulay/tiresairpressuremanagement/data/ble/BleManager.kt
+  s_8a297305c5de68::t_31a8040f433adf 385
+  s_8a297305c5de68::t_284b525d2ea5b7 422-423
+  s_8a297305c5de68::t_cc7860de51e435 1130,1132-1137
+  s_8a297305c5de68::t_b35764dec28c4b 1360-1373
+  s_8a297305c5de68::t_537036781af153 1444-1455
+  s_8a297305c5de68::t_7113ff97c03c7e 1036-1042,1045-1049
+  s_8a297305c5de68::t_008f95766fe008 70-73
+app/src/main/res/values-iw/strings.xml
+  s_8a297305c5de68::t_fc28749dbc8510 138-139
+app/src/main/java/com/nazulay/tiresairpressuremanagement/ui/screens/MainScreen.kt
+  s_8a297305c5de68::t_8ec40a192346bc 36-38
+  s_8a297305c5de68::t_0177865f808d01 68-69
+  s_8a297305c5de68::t_31154afe230334 188-219
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.11",
+  "base_commit_sha": "606e9c6b6993cbae150b97dda480798c82de14f1",
+  "prompts": {},
+  "sessions": {
+    "s_8a297305c5de68": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "66286c43-ccd4-44ad-8e32-9f73f2cf029a",
+        "model": "grok-4.7"
+      },
+      "human_author": "Nir Azulay <nir.azulay@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+TirePressureManager-iOS/fastlane/Fastfile
+  s_1463e4843b891d::t_cba1ec4356be9a 45-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "4edb8009b7fabe247cea1752b9730a9c6460e18c",
+  "prompts": {},
+  "sessions": {
+    "s_1463e4843b891d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "fa0314ac-9e64-40d9-ae29-fda071eb0b1f",
+        "model": "gemini-3.7-flash"
+      },
+      "human_author": "Nir Azulay <nir.azulay@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+docs/ios-testflight-ci.md
+  s_1463e4843b891d::t_11783295e70aab 1-106
+.github/workflows/ios-testflight.yml
+  s_1463e4843b891d::t_cc20419e967924 49-52
+  s_1463e4843b891d::t_837f0fa1d1b1f0 1-48,53-66,74-78,80-81
+  s_1463e4843b891d::t_f6d52ad8fdee55 67-73,79
+TirePressureManager-iOS/fastlane/Appfile
+  s_1463e4843b891d::t_07fb8af54d738b 1-2
+TirePressureManager-iOS/fastlane/Fastfile
+  s_1463e4843b891d::t_6ebb97c26d1538 1-62
+TirePressureManager-iOS/Gemfile
+  s_1463e4843b891d::t_31a25b2babc4aa 1-3
+.gitignore
+  s_1463e4843b891d::t_31bcf24c50ef49 58-75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "96128a0a86cd6f8fd5ac67d542615ee03cfddb6d",
+  "prompts": {},
+  "sessions": {
+    "s_1463e4843b891d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "fa0314ac-9e64-40d9-ae29-fda071eb0b1f",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Nir Azulay <nir.azulay@gmail.com>"
+    }
+  }
+}

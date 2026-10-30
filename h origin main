@@ -1,5 +1,0 @@
-[33mcommit 1f726606b22e5a6b08951bbb40a2fef51ef7c6c9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
-Author: Nir Azulay <nir.azulay@gmail.com>
-Date:   Thu Mar 13 20:04:52 2025 +0200
-
-    Add simulation mode to settings screen and include it in the UpdateSettings command

@@ -1,0 +1,23 @@
+app/build.gradle
+  s_8a297305c5de68::t_818ce73fb51b71 39
+  s_8a297305c5de68::t_d6fdb1688e59a2 53
+  s_8a297305c5de68::t_d4b8c9a6c4b538 44
+docs/android-play-ci.md
+  s_8a297305c5de68::t_26c01ebd782f52 59-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.11",
+  "base_commit_sha": "8a5e575c5904755d4e281f711da88b29ecc6fd2a",
+  "prompts": {},
+  "sessions": {
+    "s_8a297305c5de68": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "66286c43-ccd4-44ad-8e32-9f73f2cf029a",
+        "model": "grok-4.7"
+      },
+      "human_author": "Nir Azulay <nir.azulay@gmail.com>"
+    }
+  }
+}

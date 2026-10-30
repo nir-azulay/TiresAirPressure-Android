@@ -331,7 +331,6 @@ fun SettingsScreen(
                                             sensorValueAt50PSI = updatedSettings.sensorValueAt50PSI,
                                             measureWait = updatedSettings.measureWait,
                                             precision = updatedSettings.precision,
-                                            btPinCode = updatedSettings.btPinCode,
                                             pressureCalcMethod = updatedSettings.pressureCalcMethod
                                         )
                                     }
@@ -856,7 +855,6 @@ private fun HardwareSettings(
     var sensorValueAt50PSI by remember { mutableStateOf(settings.sensorValueAt50PSI.toString()) }
     var measureWait by remember { mutableStateOf(settings.measureWait.toString()) }
     var precision by remember { mutableStateOf(settings.precision.toString()) }
-    var btPinCode by remember { mutableStateOf(settings.btPinCode) }
     
     Column(modifier = Modifier.fillMaxWidth()) {
         // Title section (no expand/collapse)
@@ -998,20 +996,6 @@ private fun HardwareSettings(
                 colors = textFieldColors
             )
             
-            OutlinedTextField(
-                value = btPinCode,
-                onValueChange = { value -> 
-                    onSettingsChanged(settings.copy(btPinCode = value))
-                    btPinCode = value
-                },
-                label = { Text(stringResource(R.string.bt_pin_code), color = Color.White.copy(alpha = 0.8f)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                colors = textFieldColors
-            )
-
             // PressureCalcMethod selector (vertical layout)
             Spacer(modifier = Modifier.height(8.dp))
             Text(

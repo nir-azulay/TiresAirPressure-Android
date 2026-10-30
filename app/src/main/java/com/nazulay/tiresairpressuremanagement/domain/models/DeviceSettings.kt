@@ -17,7 +17,6 @@ data class DeviceSettings(
     @Json(name = "SensorValueAt50PSI") val sensorValueAt50PSI: Float = 2.853f,
     @Json(name = "MessureWait") val measureWait: Float = 2f,
     @Json(name = "Precision") val precision: Float = 1f,
-    @Json(name = "BTPinCode") val btPinCode: String = "1234",
     @Json(name = "CurrentPressure") val currentPressure: Float = 0f,
     @Json(name = "Software_VER") val softwareVersion: String = "",
     @Json(name = "IP") val ipAddress: String = "",

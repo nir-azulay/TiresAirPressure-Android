@@ -171,7 +171,6 @@ All commands are JSON objects written to the Command characteristic.
   "SensorValueAt50PSI": 3182.000,
   "MessureWait": 2.0,
   "Precision": 0.5,
-  "BTPinCode": "1234",
   "SimulationMode": false,
   "PressureCalcMethod": 1
 }
@@ -251,7 +250,6 @@ All commands are JSON objects written to the Command characteristic.
   "SensorValueAt50PSI": "3182.000",
   "MessureWait": "2.0",
   "Precision": "0.5",
-  "BTPinCode": "1234",
   "CurrentPressure": "28.5",
   "Software_VER": "1.04",
   "IP": "192.168.1.100",
@@ -352,7 +350,6 @@ struct DeviceSettings {
     var sensorValueAt50PSI: Float = 2.853
     var measureWait: Float = 2.0
     var precision: Float = 1.0
-    var btPinCode: String = "1234"
     var currentPressure: Float = 0
     var softwareVersion: String = ""
     var ipAddress: String = ""
@@ -438,7 +435,7 @@ MAIN ──► Settings | About | Disconnect ──► CONNECTION
   - WiFi SSID, password (with scan)
   - Hardware: relay pins, sensor pin, maxSecForStatus
   - Calibration: sensorValueAt0PSI, sensorValueAt50PSI (3 decimal precision)
-  - measureWait, precision, btPinCode
+  - measureWait, precision
   - pressureCalcMethod: 1=ADC, 2=voltage
   - Simulation mode toggle
   - Debug mode toggle
@@ -629,7 +626,7 @@ let clientConfigUUID = CBUUID(string: "00002902-0000-1000-8000-00805f9b34fb")
 
 ### Send: UpdateSettings
 ```json
-{"command":3,"DeviceName":"esp32-AirUpDownController","wifissid":"","wifipassword":"","RelayCompressorPin":25,"RelayFreePin":26,"SensorPin":27,"MaxSecForStatus":30,"SensorValueAt0PSI":412.0,"SensorValueAt50PSI":3182.0,"MessureWait":2.0,"Precision":0.5,"BTPinCode":"1234","SimulationMode":false,"PressureCalcMethod":1,"type":"settings"}
+{"command":3,"DeviceName":"esp32-AirUpDownController","wifissid":"","wifipassword":"","RelayCompressorPin":25,"RelayFreePin":26,"SensorPin":27,"MaxSecForStatus":30,"SensorValueAt0PSI":412.0,"SensorValueAt50PSI":3182.0,"MessureWait":2.0,"Precision":0.5,"SimulationMode":false,"PressureCalcMethod":1,"type":"settings"}
 ```
 
 ### Send: DebugMode

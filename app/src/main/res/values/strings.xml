@@ -141,7 +141,8 @@
     <string name="max_sec_for_status">Max Time for Status (seconds)</string>
     <string name="measure_wait">Measurement Wait Time (seconds)</string>
     <string name="auto_start">Auto Start</string>
-    <string name="bt_pin_code">Bluetooth PIN Code</string>
+    <string name="access_code_title">Access code</string>
+    <string name="access_code_message">Enter the access code from the controller configuration page.</string>
     <string name="ssid">SSID</string>
     <string name="password">Password</string>
     

@@ -33,6 +33,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.res.stringResource
 import com.nazulay.tiresairpressuremanagement.R
 import androidx.compose.ui.graphics.painter.Painter
@@ -62,6 +65,8 @@ fun MainScreen(
 ) {
     val connectionState by bleManager.connectionState.collectAsState()
     val deviceName by bleManager.connectedDeviceName.collectAsState()
+    val accessCodeRequired by bleManager.accessCodeRequired.collectAsState()
+    var accessCodeInput by remember { mutableStateOf("") }
     val deviceStatus by bleManager.deviceStatus.collectAsState()
     var targetPressure by remember { mutableStateOf(30f) }
     var isInflating by remember { mutableStateOf(false) }
@@ -180,6 +185,38 @@ fun MainScreen(
         }
     }
     
+    if (accessCodeRequired) {
+        AlertDialog(
+            onDismissRequest = { bleManager.dismissAccessPrompt() },
+            title = { Text(stringResource(R.string.access_code_title)) },
+            text = {
+                Column {
+                    Text(stringResource(R.string.access_code_message))
+                    OutlinedTextField(
+                        value = accessCodeInput,
+                        onValueChange = { accessCodeInput = it.take(32) },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    bleManager.submitAccessCode(accessCodeInput)
+                    accessCodeInput = ""
+                }) {
+                    Text(stringResource(R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { bleManager.dismissAccessPrompt() }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
     // Target reached dialog
     if (showTargetReachedDialog && targetReachedInfo != null) {
         android.util.Log.d(TAG, "Showing target reached dialog with info: $targetReachedInfo")

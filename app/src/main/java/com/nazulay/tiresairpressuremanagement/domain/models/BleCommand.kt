@@ -15,6 +15,7 @@ sealed class BleCommand {
         const val CMD_LOG_LEVEL = 5
         const val CMD_GET_SETTINGS = 6
         const val CMD_REQUEST_STATUS = 7
+        const val CMD_AUTHENTICATE = 8
     }
     
     abstract val command: Int
@@ -44,7 +45,6 @@ sealed class BleCommand {
         val sensorValueAt50PSI: Float,
         val measureWait: Float,
         val precision: Float,
-        val btPinCode: String,
         val simulationMode: Boolean,
         val pressureCalcMethod: Int,
         override val type: String = "settings"
@@ -69,6 +69,12 @@ sealed class BleCommand {
     data class DebugMode(
         override val command: Int = 7,
         val enabled: Boolean,
+        override val type: String = "command"
+    ) : BleCommand()
+
+    data class Authenticate(
+        val accessCode: String,
+        override val command: Int = CMD_AUTHENTICATE,
         override val type: String = "command"
     ) : BleCommand()
 } 

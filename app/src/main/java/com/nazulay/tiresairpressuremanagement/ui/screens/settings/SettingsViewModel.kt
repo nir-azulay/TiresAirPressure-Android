@@ -287,7 +287,6 @@ class SettingsViewModel(
         sensorValueAt50PSI: Float? = null,
         measureWait: Float? = null,
         precision: Float? = null,
-        btPinCode: String? = null,
         pressureCalcMethod: Int? = null
     ) {
         val currentSettings = _localDeviceSettings.value
@@ -305,7 +304,6 @@ class SettingsViewModel(
                 sensorValueAt50PSI = sensorValueAt50PSI ?: currentSettings.sensorValueAt50PSI,
                 measureWait = measureWait ?: currentSettings.measureWait,
                 precision = precision ?: currentSettings.precision,
-                btPinCode = btPinCode ?: currentSettings.btPinCode,
                 pressureCalcMethod = pressureCalcMethod ?: currentSettings.pressureCalcMethod
             )
             
@@ -335,7 +333,6 @@ class SettingsViewModel(
                 precision = settingsToSave.precision,
                 maxSecForStatus = settingsToSave.maxSecForStatus,
                 measureWait = settingsToSave.measureWait,
-                btPinCode = settingsToSave.btPinCode,
                 simulationMode = settingsToSave.simulationMode,
                 pressureCalcMethod = settingsToSave.pressureCalcMethod
             ))
@@ -375,7 +372,6 @@ class SettingsViewModel(
                     precision = settingsToSave.precision,
                     maxSecForStatus = settingsToSave.maxSecForStatus,
                     measureWait = settingsToSave.measureWait,
-                    btPinCode = settingsToSave.btPinCode,
                     simulationMode = settingsToSave.simulationMode,
                     pressureCalcMethod = settingsToSave.pressureCalcMethod
                 ))

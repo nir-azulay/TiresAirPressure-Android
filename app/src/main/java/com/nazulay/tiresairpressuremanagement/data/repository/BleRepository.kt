@@ -135,6 +135,14 @@ class BleRepository(
         savedDevicesManager.reorderDevices(deviceAddresses)
     }
 
+    fun getAccessCode(address: String): String {
+        return savedDevicesManager.getAccessCode(address)
+    }
+
+    fun setAccessCode(address: String, code: String) {
+        savedDevicesManager.setAccessCode(address, code)
+    }
+
     suspend fun connectToSavedDevices() {
         if (isAutoConnecting) {
             Log.d("BleRepository", "Already attempting to connect to saved devices")

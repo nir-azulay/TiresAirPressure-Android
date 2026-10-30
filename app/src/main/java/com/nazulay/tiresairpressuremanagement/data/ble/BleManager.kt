@@ -67,6 +67,10 @@ class BleManager(
     
     private val _connectedDeviceName = MutableStateFlow<String?>(null)
     val connectedDeviceName: StateFlow<String?> = _connectedDeviceName
+
+    private val _accessCodeRequired = MutableStateFlow(false)
+    val accessCodeRequired: StateFlow<Boolean> = _accessCodeRequired
+    private var connectedAddress: String? = null
     
     private var connectionStartTime: Long = 0
     
@@ -378,6 +382,7 @@ class BleManager(
                     
                     if (deviceAddress != null) {
                         android.util.Log.d(TAG, "Saving connected device address: $deviceAddress")
+                        connectedAddress = deviceAddress
                         saveSelectedDevice(deviceAddress)
                         _connectedDeviceName.value = deviceName
                         
@@ -414,6 +419,8 @@ class BleManager(
                     // עדכון מצב החיבור
                     _connectionState.value = ConnectionState.Disconnected
                     _connectedDeviceName.value = null
+                    _accessCodeRequired.value = false
+                    connectedAddress = null
                     _isInflating.value = false
                     android.util.Log.d(TAG, "Connection state set to DISCONNECTED")
                     
@@ -995,7 +1002,6 @@ class BleManager(
                         put("SensorValueAt50PSI", String.format("%.3f", command.sensorValueAt50PSI).toDouble())
                         put("MessureWait", command.measureWait)
                         put("Precision", command.precision)
-                        put("BTPinCode", command.btPinCode)
                         put("SimulationMode", command.simulationMode)
                         put("PressureCalcMethod", command.pressureCalcMethod)
                         put("type", command.type)
@@ -1027,9 +1033,20 @@ class BleManager(
                         put("type", command.type)
                     }.toString()
                 }
+                is BleCommand.Authenticate -> {
+                    JSONObject().apply {
+                        put("command", command.command)
+                        put("accessCode", command.accessCode)
+                        put("type", command.type)
+                    }.toString()
+                }
             }
             
-            Log.d(TAG, "Queueing command: $jsonString")
+            if (command is BleCommand.Authenticate) {
+                Log.d(TAG, "Queueing access code")
+            } else {
+                Log.d(TAG, "Queueing command: $jsonString")
+            }
             
             // Add to write queue and start processing if not already writing
             writeQueue.add(jsonString.toByteArray())
@@ -1110,8 +1127,14 @@ class BleManager(
             }
         }
         
-        // Request a settings update to trigger a notification
+        // Send a saved access code before asking for settings.
         try {
+            val address = connectedAddress ?: bluetoothGatt?.device?.address
+            val savedCode = address?.let { bleRepository?.getAccessCode(it) }.orEmpty()
+            if (savedCode.isNotEmpty()) {
+                android.util.Log.d(TAG, "Sending saved access code")
+                sendCommand(BleCommand.Authenticate(savedCode))
+            }
             android.util.Log.d(TAG, "Requesting settings update to trigger notification")
             sendCommand(BleCommand.RequestSettings())
         } catch (e: Exception) {
@@ -1226,7 +1249,6 @@ class BleManager(
         editor.putString("sensorValueAt50PSI", settings.sensorValueAt50PSI) // Store as string to preserve decimals
         editor.putFloat("measureWait", settings.measureWait.toFloatOrNull() ?: 2f)
         editor.putFloat("precision", settings.precision.toFloatOrNull() ?: 1f)
-        editor.putString("btPinCode", settings.btPinCode)
         editor.putFloat("pressure", settings.pressure.toFloatOrNull() ?: 0f)
         editor.putString("softwareVersion", settings.softwareVersion)
         editor.putString("ipAddress", settings.ipAddress)
@@ -1335,6 +1357,20 @@ class BleManager(
         Log.d(TAG, "Reordered devices: $deviceAddresses")
     }
 
+    fun submitAccessCode(code: String) {
+        val trimmed = code.take(32)
+        val address = connectedAddress ?: bluetoothGatt?.device?.address
+        if (address != null) {
+            bleRepository?.setAccessCode(address, trimmed)
+        }
+        _accessCodeRequired.value = false
+        sendCommand(BleCommand.Authenticate(trimmed))
+    }
+
+    fun dismissAccessPrompt() {
+        _accessCodeRequired.value = false
+    }
+
     fun connectToSavedDevice() {
         // Get devices from SavedDevicesManager instead of private SharedPreferences
         val savedDevices = bleRepository?.getSavedDevices() ?: emptyList()
@@ -1405,6 +1441,18 @@ class BleManager(
             // Try direct JSONObject parsing first which is more forgiving with malformed JSON
             try {
                 val jsonObject = JSONObject(jsonString)
+
+                if (jsonObject.optString("type") == "auth") {
+                    val accepted = jsonObject.optBoolean("ok", false)
+                    val required = jsonObject.optBoolean("required", false)
+                    if (accepted) {
+                        _accessCodeRequired.value = false
+                        requestDeviceSettings()
+                    } else if (required) {
+                        _accessCodeRequired.value = true
+                    }
+                    return
+                }
                 
                 // Log raw calibration values from JSON
                 if (jsonObject.has("SensorValueAt0PSI")) {
@@ -1822,7 +1870,6 @@ class DeviceSettingsResponseAdapter {
             sensorValueAt50PSI = sensorValueAt50PSI,
             measureWait = (jsonObject["MessureWait"] as? String) ?: "2",
             precision = (jsonObject["Precision"] as? String) ?: "1",
-            btPinCode = (jsonObject["BTPinCode"] as? String) ?: "1234",
             pressure = pressure,
             softwareVersion = (jsonObject["Software_VER"] as? String) ?: "",
             ipAddress = (jsonObject["IP"] as? String) ?: "",

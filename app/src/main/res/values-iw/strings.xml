@@ -135,7 +135,8 @@
     <string name="max_sec_for_status">זמן מקסימלי לסטטוס (שניות)</string>
     <string name="measure_wait">זמן המתנה למדידה (שניות)</string>
     <string name="auto_start">התחלה אוטומטית</string>
-    <string name="bt_pin_code">קוד PIN של Bluetooth</string>
+    <string name="access_code_title">קוד גישה</string>
+    <string name="access_code_message">הזן את קוד הגישה מעמוד ההגדרות של הבקר.</string>
     <string name="ssid">SSID</string>
     <string name="password">סיסמה</string>
     

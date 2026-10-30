@@ -11,6 +11,8 @@ class SavedDevicesManager(private val context: Context) {
         private const val KEY_DEVICE_2 = "device_2"
         private const val KEY_DEVICE_1_NAME = "device_1_name"
         private const val KEY_DEVICE_2_NAME = "device_2_name"
+        private const val KEY_DEVICE_1_CODE = "device_1_code"
+        private const val KEY_DEVICE_2_CODE = "device_2_code"
     }
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -63,11 +65,14 @@ class SavedDevicesManager(private val context: Context) {
         // If this device is already saved as device 2, move it to position 1
         if (address == device2Address) {
             Log.d(TAG, "Device already saved as device 2, moving to position 1")
+            val device2Code = prefs.getString(KEY_DEVICE_2_CODE, "") ?: ""
             prefs.edit()
                 .putString(KEY_DEVICE_1, address)
                 .putString(KEY_DEVICE_1_NAME, name)
+                .putString(KEY_DEVICE_1_CODE, device2Code)
                 .remove(KEY_DEVICE_2)
                 .remove(KEY_DEVICE_2_NAME)
+                .remove(KEY_DEVICE_2_CODE)
                 .apply()
             Log.d(TAG, "Device moved to position 1: $name ($address)")
             return
@@ -82,11 +87,13 @@ class SavedDevicesManager(private val context: Context) {
         if (device1Address != null) {
             editor.putString(KEY_DEVICE_2, device1Address)
             editor.putString(KEY_DEVICE_2_NAME, prefs.getString(KEY_DEVICE_1_NAME, ""))
+            editor.putString(KEY_DEVICE_2_CODE, prefs.getString(KEY_DEVICE_1_CODE, ""))
         }
         
         // Save new device as device 1
         editor.putString(KEY_DEVICE_1, address)
         editor.putString(KEY_DEVICE_1_NAME, name)
+        editor.putString(KEY_DEVICE_1_CODE, "")
         editor.apply()
         
         Log.d(TAG, "New device saved as device 1: $name ($address)")
@@ -108,12 +115,15 @@ class SavedDevicesManager(private val context: Context) {
     
     fun ensureOnlyRecentDevice(address: String, name: String) {
         Log.d(TAG, "Ensuring only recent device is saved: $name ($address)")
+        val accessCode = getAccessCode(address)
         
         // Clear all devices first
         clearOldDevices()
         
         // Save only the recent device as device 1
         saveDevice(address, name)
+        if (accessCode.isNotEmpty())
+            setAccessCode(address, accessCode)
         
         Log.d(TAG, "Device list cleaned up, only recent device saved")
     }
@@ -130,11 +140,14 @@ class SavedDevicesManager(private val context: Context) {
                 if (device2Address != null) {
                     // Move device 2 to position 1
                     val device2Name = prefs.getString(KEY_DEVICE_2_NAME, "") ?: ""
+                    val device2Code = prefs.getString(KEY_DEVICE_2_CODE, "") ?: ""
                     prefs.edit()
                         .putString(KEY_DEVICE_1, device2Address)
                         .putString(KEY_DEVICE_1_NAME, device2Name)
+                        .putString(KEY_DEVICE_1_CODE, device2Code)
                         .remove(KEY_DEVICE_2)
                         .remove(KEY_DEVICE_2_NAME)
+                        .remove(KEY_DEVICE_2_CODE)
                         .apply()
                     Log.d(TAG, "Moved device 2 to position 1")
                 } else {
@@ -142,6 +155,7 @@ class SavedDevicesManager(private val context: Context) {
                     prefs.edit()
                         .remove(KEY_DEVICE_1)
                         .remove(KEY_DEVICE_1_NAME)
+                        .remove(KEY_DEVICE_1_CODE)
                         .apply()
                     Log.d(TAG, "Cleared device 1, no devices remaining")
                 }
@@ -151,6 +165,7 @@ class SavedDevicesManager(private val context: Context) {
                 prefs.edit()
                     .remove(KEY_DEVICE_2)
                     .remove(KEY_DEVICE_2_NAME)
+                    .remove(KEY_DEVICE_2_CODE)
                     .apply()
                 Log.d(TAG, "Removed device 2")
             }
@@ -168,13 +183,26 @@ class SavedDevicesManager(private val context: Context) {
             return
         }
         
+        val savedDevice1Code = prefs.getString(KEY_DEVICE_1_CODE, "") ?: ""
+        val savedDevice2Code = prefs.getString(KEY_DEVICE_2_CODE, "") ?: ""
+        val savedDevice1Address = prefs.getString(KEY_DEVICE_1, null)
+        val savedDevice2Address = prefs.getString(KEY_DEVICE_2, null)
+        fun savedCode(address: String): String {
+            return when (address) {
+                savedDevice1Address -> savedDevice1Code
+                savedDevice2Address -> savedDevice2Code
+                else -> ""
+            }
+        }
         val editor = prefs.edit()
         
         // Clear all devices first
         editor.remove(KEY_DEVICE_1)
         editor.remove(KEY_DEVICE_1_NAME)
+        editor.remove(KEY_DEVICE_1_CODE)
         editor.remove(KEY_DEVICE_2)
         editor.remove(KEY_DEVICE_2_NAME)
+        editor.remove(KEY_DEVICE_2_CODE)
         
         // Save devices in new order
         if (deviceAddresses.isNotEmpty()) {
@@ -182,6 +210,7 @@ class SavedDevicesManager(private val context: Context) {
             val device1Name = getDeviceNameByAddress(device1Address)
             editor.putString(KEY_DEVICE_1, device1Address)
             editor.putString(KEY_DEVICE_1_NAME, device1Name)
+            editor.putString(KEY_DEVICE_1_CODE, savedCode(device1Address))
             Log.d(TAG, "Set device 1: $device1Name ($device1Address)")
         }
         
@@ -190,6 +219,7 @@ class SavedDevicesManager(private val context: Context) {
             val device2Name = getDeviceNameByAddress(device2Address)
             editor.putString(KEY_DEVICE_2, device2Address)
             editor.putString(KEY_DEVICE_2_NAME, device2Name)
+            editor.putString(KEY_DEVICE_2_CODE, savedCode(device2Address))
             Log.d(TAG, "Set device 2: $device2Name ($device2Address)")
         }
         
@@ -197,6 +227,23 @@ class SavedDevicesManager(private val context: Context) {
         Log.d(TAG, "Device reordering completed")
     }
     
+    fun getAccessCode(address: String): String {
+        return when (address) {
+            prefs.getString(KEY_DEVICE_1, null) -> prefs.getString(KEY_DEVICE_1_CODE, "") ?: ""
+            prefs.getString(KEY_DEVICE_2, null) -> prefs.getString(KEY_DEVICE_2_CODE, "") ?: ""
+            else -> ""
+        }
+    }
+
+    fun setAccessCode(address: String, code: String) {
+        val key = when (address) {
+            prefs.getString(KEY_DEVICE_1, null) -> KEY_DEVICE_1_CODE
+            prefs.getString(KEY_DEVICE_2, null) -> KEY_DEVICE_2_CODE
+            else -> return
+        }
+        prefs.edit().putString(key, code).apply()
+    }
+
     private fun getDeviceNameByAddress(address: String): String {
         val device1Address = prefs.getString(KEY_DEVICE_1, null)
         val device2Address = prefs.getString(KEY_DEVICE_2, null)

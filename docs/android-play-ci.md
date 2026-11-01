@@ -56,8 +56,7 @@ Paste the clipboard into `ANDROID_KEYSTORE_BASE64`. The alias in that command is
 
 `versionCode` must increase for every Play upload. CI sets it to
 `BUILD_NUMBER_BASE + GITHUB_RUN_NUMBER`, where `BUILD_NUMBER_BASE` is at the top
-of the workflow and currently equals `668`. Internal testing is at version
-code 667, so the next run uploads 670. The version name is `2.0.0`. Play also requires target SDK 36.
+of the workflow and currently equals `668`. The current version name is `2.1.0`. Play also requires target SDK 36.
 
 Local Android Studio builds still increment `app/version.properties` on their own.
 That file is not used by CI. If you upload a higher build from Android Studio,

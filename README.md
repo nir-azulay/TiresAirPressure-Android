@@ -1,94 +1,40 @@
-# ניהול לחץ אוויר בצמיגים
+# Tire Pressure Manager — Android & Android Auto (`v2.1.0`)
 
-אפליקציה לניטור וניהול לחץ אוויר בצמיגים באמצעות חיבור Bluetooth, עם תמיכה באנדרואיד אוטו.
+Kotlin and Jetpack Compose application for monitoring and controlling the ESP32 Tire Air Pressure Controller over Bluetooth Low Energy (BLE), with full Android Auto support.
 
-## תכונות עיקריות
+## Features
 
-### ניטור לחץ אוויר
-- קריאת לחץ אוויר בזמן אמת מהמכשיר
-- הצגת לחץ נוכחי ולחץ יעד
-- התראות על לחץ נמוך או גבוה מדי
+- **270° Off-Road Speedometer Gauge:** Live manifold pressure in PSI or BAR with high-contrast off-road dark theme (`#101318` / `#181C24`).
+- **Automated Closed-Loop Inflation & Deflation:** Set target pressure via slider, `+/-` steppers, or quick preset chips, with an animated **Target Reached Celebration** overlay when the target pressure is reached.
+- **Full Controller Configuration over BLE:** Edit all 18 ESP32 hardware and safety settings directly from `SettingsScreen`:
+  - Device Name, Wi-Fi SSID (combining local Android Wi-Fi scan and **ESP32 BLE Wi-Fi scan** via `command: 9`), and Wi-Fi Password (with Show/Hide toggle)
+  - Hotspot Password and BLE Access Code (with Show/Hide toggles)
+  - Relay Compressor Pin, Relay Free Pin, and Sensor Pin (ADC1)
+  - Pressure Calculation Method (`1`: Raw ADC, `2`: Voltage Divider) and calibration values
+  - Sensor Full Scale PSI, Max Pressure PSI, Max Valve Open Seconds, Measure Wait, Precision, Simulation Mode, and Debug Mode
+- **Android Auto Integration:** Control inflation, deflation, presets, and emergency stop directly from the vehicle's Android Auto screen (`TiresPressureCarAppService`).
+- **Bilingual Localization:** Runtime language switching between English (`values/strings.xml`) and Hebrew (`values-iw/strings.xml`).
 
-### בקרת לחץ אוויר
-- ניפוח אוטומטי עד ללחץ היעד
-- הוצאת אוויר אוטומטית עד ללחץ היעד
-- עצירה אוטומטית בהגעה ללחץ הרצוי
+## Technology Stack
 
-### תמיכה באנדרואיד אוטו
-- תצוגה מותאמת למסך הרכב
-- שליטה בניפוח דרך ממשק אנדרואיד אוטו
-- הצגת סטטוס פעולה בזמן אמת
+- **Language:** Kotlin (`JDK 17`)
+- **UI Framework:** Jetpack Compose + Material Design 3
+- **BLE Transport:** Android BLE GATT with `180`-byte bidirectional chunking (`BleManager.kt`)
+- **Automotive:** Jetpack Car App Library (`androidx.car.app`)
+- **Target / Compile SDK:** `36` (Min SDK `29` / Android 10+)
 
-### חיבור Bluetooth
-- סריקה וחיבור למכשירי BLE
-- חיבור אוטומטי למכשיר האחרון
-- ניהול חיבורים מרובים
+## Build & Release
 
-## דרישות מערכת
-
-- Android 10 (API level 29) ומעלה
-- תמיכה ב-Bluetooth Low Energy (BLE)
-- הרשאות נדרשות:
-  - Bluetooth (סריקה, חיבור ופרסום)
-  - מיקום (נדרש עבור סריקת BLE)
-  - התראות (עבור Android 13 ומעלה)
-
-## התקנה
-
-1. הורד את הקובץ APK האחרון מדף ה-Releases
-2. התקן את האפליקציה במכשיר האנדרואיד
-3. אשר את כל ההרשאות הנדרשות בהפעלה הראשונה
-
-## פיתוח
-
-### מנגנון גרסאות אוטומטי
-
-הפרויקט כולל מנגנון אוטומטי להגדלת מספר הגרסה בכל בנייה:
-
-- מספר הגרסה מורכב מ-4 חלקים: `Major.Minor.Patch.Build`
-- בכל בנייה, מספר ה-Build מוגדל אוטומטית
-- מספרי הגרסה מנוהלים בקובץ `app/version.properties`
-- לשינוי מספרי ה-Major, Minor או Patch, ערוך את הקבועים בקובץ `app/build.gradle`:
-  ```gradle
-  def versionMajor = 1
-  def versionMinor = 1
-  def versionPatch = 1
+- **Debug APK:**
+  ```bash
+  ./gradlew assembleDebug
   ```
+- **Release Bundle (`.aab`):**
+  ```bash
+  ./gradlew bundleRelease
+  ```
+- **Google Play Internal Track CI/CD:** GitHub Actions workflow [`android-play.yml`](.github/workflows/android-play.yml) (see [`docs/android-play-ci.md`](docs/android-play-ci.md)).
 
-### גישה למספר הגרסה בקוד
+## License
 
-ניתן לגשת למספר הגרסה המלא בקוד באמצעות:
-
-```kotlin
-BuildConfig.VERSION_NAME // מחזיר את מחרוזת הגרסה המלאה (לדוגמה: "1.1.1.42")
-```
-
-### בנייה והתקנה
-
-1. בניית גרסת debug:
-```bash
-./gradlew assembleDebug
-```
-
-2. בניית גרסת release:
-```bash
-./gradlew assembleRelease
-```
-
-3. התקנה ישירה למכשיר מחובר:
-```bash
-./gradlew installDebug
-```
-
-## טכנולוגיות
-
-- Kotlin
-- Jetpack Compose
-- Android Auto SDK
-- Nordic Semiconductor BLE Library
-- Coroutines
-- Material Design 3
-
-## רישיון
-
-Copyright © 2024 Nir Azulay. כל הזכויות שמורות. 
+Copyright © 2026 Nir Azulay. All rights reserved.

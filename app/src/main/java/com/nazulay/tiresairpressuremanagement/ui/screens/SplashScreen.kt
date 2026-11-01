@@ -2,6 +2,7 @@ package com.nazulay.tiresairpressuremanagement.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -32,8 +33,6 @@ fun SplashScreen(
     onTimeout: () -> Unit,
     connectionInProgress: Boolean
 ) {
-    val backgroundColor = Color(0xFF0E1318)
-
     LaunchedEffect(key1 = true) {
         delay(3000)
         onTimeout()
@@ -42,14 +41,14 @@ fun SplashScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(backgroundColor),
+            .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
         Image(
             painter = painterResource(id = R.drawable.splash_logo),
             contentDescription = stringResource(R.string.app_logo),
             modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
+            contentScale = ContentScale.Fit
         )
 
         if (connectionInProgress) {
@@ -60,14 +59,19 @@ fun SplashScreen(
                     .zIndex(2f)
                     .padding(bottom = 64.dp)
                     .background(
-                        color = Color.Black.copy(alpha = 0.6f),
+                        color = Color.Black.copy(alpha = 0.75f),
+                        shape = RoundedCornerShape(14.dp)
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = Color(0xFFFF7A00).copy(alpha = 0.6f),
                         shape = RoundedCornerShape(14.dp)
                     )
                     .padding(horizontal = 28.dp, vertical = 16.dp)
             ) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(44.dp),
-                    color = Color.White
+                    color = Color(0xFFFF7A00)
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))

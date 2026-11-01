@@ -273,9 +273,9 @@ fun MainScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = Color(0xFF131A24),
+                    titleContentColor = Color.White,
+                    actionIconContentColor = Color.White
                 )
             )
         }
@@ -283,7 +283,7 @@ fun MainScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFF121212)) // רקע כהה
+                .background(Color(0xFF0D1117))
         ) {
             // Main content
             BoxWithConstraints(
@@ -352,7 +352,11 @@ fun MainScreen(
                                 )
                                 
                                 // Preset pressure buttons
-                                PresetButtons(viewModel.predefinedPressures.collectAsState().value, { targetPressure = it })
+                                PresetButtons(
+                                    predefinedPressures = viewModel.predefinedPressures.collectAsState().value,
+                                    selectedPressure = targetPressure,
+                                    onPresetSelected = { targetPressure = it }
+                                )
 
                                 InflationControlButton(
                                     isInflating = isInflating,
@@ -420,7 +424,11 @@ fun MainScreen(
                             )
                             
                             // Preset pressure buttons
-                            PresetButtons(viewModel.predefinedPressures.collectAsState().value, { targetPressure = it })
+                            PresetButtons(
+                                predefinedPressures = viewModel.predefinedPressures.collectAsState().value,
+                                selectedPressure = targetPressure,
+                                onPresetSelected = { targetPressure = it }
+                            )
 
                             InflationControlButton(
                                 isInflating = isInflating,
@@ -607,6 +615,13 @@ private fun PressureGaugeCard(
     debugMode: Boolean = false,
     deviceStatus: DeviceStatus? = null
 ) {
+    val isDeflating = currentPressureAnimated.value > targetPressure + 0.5f
+    val activeAccent = when {
+        Math.abs(currentPressureAnimated.value - targetPressure) <= 0.5f && currentPressureAnimated.value > 0f -> Color(0xFF10B981)
+        isDeflating -> Color(0xFFFF453A)
+        else -> Color(0xFF00B4FF)
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -617,9 +632,9 @@ private fun PressureGaugeCard(
                     (screenHeight * 0.35f).coerceAtLeast(180.dp)
                 }
             ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E2530) // Dark blue-gray color from screenshot
+            containerColor = Color(0xFF171F2C)
         )
     ) {
         Row(
@@ -635,10 +650,10 @@ private fun PressureGaugeCard(
                     .padding(horizontal = 16.dp)
             ) {
                 Text(
-                    text = stringResource(R.string.current_pressure),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Normal,
-                    color = Color.White
+                    text = stringResource(R.string.current_pressure).uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF94A3B8)
                 )
                 Text(
                     text = String.format("%.1f", currentPressureAnimated.value),
@@ -650,21 +665,29 @@ private fun PressureGaugeCard(
                     text = stringResource(R.string.pressure_unit),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = activeAccent
+                )
+                val delta = targetPressure - currentPressureAnimated.value
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = if (Math.abs(delta) <= 0.5f) "At Target" else String.format("%+.1f PSI to target", delta),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = activeAccent
                 )
                 // Show debug info if debugMode is enabled and values are present
                 Log.d(TAG, "Debug display check: debugMode=$debugMode, deviceStatus=$deviceStatus, rawADC=${deviceStatus?.rawADC}, voltage=${deviceStatus?.voltage}")
                 if (debugMode && deviceStatus?.rawADC != null && deviceStatus.voltage != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = "rawADC: ${deviceStatus.rawADC}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Yellow
+                        color = Color(0xFFFFD60A)
                     )
                     Text(
                         text = "voltage: ${String.format("%.3f", deviceStatus.voltage)} V",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Yellow
+                        color = Color(0xFFFFD60A)
                     )
                 }
             }
@@ -686,8 +709,8 @@ private fun PressureGaugeCard(
                     progress = progress,
                     modifier = Modifier.fillMaxSize(),
                     strokeWidth = 16.dp,
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = Color.DarkGray
+                    color = activeAccent,
+                    trackColor = Color(0xFF293548)
                 )
                 
                 // Target indicator (smaller circle)
@@ -695,20 +718,28 @@ private fun PressureGaugeCard(
                     progress = targetProgress,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(8.dp),
-                    strokeWidth = 8.dp,
-                    color = Color(0xFFBBDEFB), // Light blue color from screenshot
+                        .padding(10.dp),
+                    strokeWidth = 7.dp,
+                    color = Color(0xFFFFA726),
                     trackColor = Color.Transparent
                 )
                 
                 // Target pressure text in the center
-                Text(
-                    text = String.format("%.1f", targetPressure),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    textAlign = TextAlign.Center,
-                    color = Color.White
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "TARGET",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF94A3B8)
+                    )
+                    Text(
+                        text = String.format("%.1f", targetPressure),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        textAlign = TextAlign.Center,
+                        color = Color(0xFFFFA726)
+                    )
+                }
             }
         }
     }
@@ -725,9 +756,9 @@ private fun TargetPressureCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E2530) // Dark blue-gray color from screenshot
+            containerColor = Color(0xFF171F2C)
         )
     ) {
         Column(
@@ -737,10 +768,10 @@ private fun TargetPressureCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = stringResource(R.string.target_pressure),
-                style = MaterialTheme.typography.titleMedium,
+                text = stringResource(R.string.target_pressure).uppercase(),
+                style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = Color(0xFF94A3B8)
             )
             
             Spacer(modifier = Modifier.height(8.dp))
@@ -753,9 +784,9 @@ private fun TargetPressureCard(
                 steps = ((maxPressure - minPressure) / 0.5f).toInt() - 1,
                 modifier = Modifier.fillMaxWidth(),
                 colors = SliderDefaults.colors(
-                    thumbColor = Color(0xFFBBDEFB),
-                    activeTrackColor = Color(0xFFBBDEFB),
-                    inactiveTrackColor = Color.DarkGray
+                    thumbColor = Color(0xFFFF7A00),
+                    activeTrackColor = Color(0xFFFF7A00),
+                    inactiveTrackColor = Color(0xFF293548)
                 )
             )
             
@@ -770,12 +801,12 @@ private fun TargetPressureCard(
                 FloatingActionButton(
                     onClick = { if (targetPressure > minPressure) onTargetPressureChange(targetPressure - 0.5f) },
                     modifier = Modifier.size(48.dp),
-                    containerColor = Color(0xFFBBDEFB)
+                    containerColor = Color(0xFF1E293B)
                 ) {
                     Icon(
                         Icons.Default.Remove,
                         contentDescription = stringResource(R.string.decrease),
-                        tint = Color.Black,
+                        tint = Color.White,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -785,19 +816,19 @@ private fun TargetPressureCard(
                     text = stringResource(R.string.pressure_format, targetPressure),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color.White
+                    color = Color(0xFFFFA726)
                 )
                 
                 // Increase button
                 FloatingActionButton(
                     onClick = { if (targetPressure < maxPressure) onTargetPressureChange(targetPressure + 0.5f) },
                     modifier = Modifier.size(48.dp),
-                    containerColor = Color(0xFFBBDEFB)
+                    containerColor = Color(0xFFFF7A00)
                 ) {
                     Icon(
                         Icons.Default.Add,
                         contentDescription = stringResource(R.string.increase),
-                        tint = Color.Black,
+                        tint = Color.White,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -815,11 +846,11 @@ private fun InflationControlButton(
         onClick = onInflationToggle,
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp),
+            .height(58.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (isInflating) MaterialTheme.colorScheme.error else Color(0xFF3F51B5)
+            containerColor = if (isInflating) Color(0xFFE53935) else Color(0xFFFF7A00)
         ),
-        shape = RoundedCornerShape(28.dp)
+        shape = RoundedCornerShape(16.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -840,9 +871,9 @@ private fun InflationControlButton(
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = if (isInflating) stringResource(R.string.stop) else stringResource(R.string.start),
+                text = (if (isInflating) stringResource(R.string.stop) else stringResource(R.string.start)).uppercase(),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.ExtraBold
             )
         }
     }
@@ -855,19 +886,20 @@ private fun InflationStatusIndicator(
     targetPressure: Float = 0f,
     currentPressureAnimated: Animatable<Float, AnimationVector1D>? = null
 ) {
-    // Determine if we're inflating or deflating based on pressure comparison
     val isDeflating = currentPressureAnimated != null && targetPressure < currentPressureAnimated.value
+    val accentColor = if (isDeflating) Color(0xFFFF453A) else Color(0xFF00B4FF)
     
     AnimatedVisibility(
         visible = isInflating,
         enter = fadeIn(),
-        exit = fadeOut(),
-        modifier = Modifier.height(48.dp)
+        exit = fadeOut()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp),
+                .clip(RoundedCornerShape(14.dp))
+                .background(accentColor.copy(alpha = 0.14f))
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -875,13 +907,15 @@ private fun InflationStatusIndicator(
                 modifier = Modifier
                     .size((12.dp * scale).coerceAtLeast(10.dp))
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.error)
+                    .background(accentColor)
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(10.dp))
+            val remaining = currentPressureAnimated?.let { Math.abs(targetPressure - it.value) } ?: 0f
             Text(
-                text = if (isDeflating) stringResource(R.string.mode_deflating) else stringResource(R.string.mode_inflating),
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyLarge,
+                text = (if (isDeflating) stringResource(R.string.mode_deflating) else stringResource(R.string.mode_inflating)) +
+                    String.format(" (%.1f PSI remaining)", remaining),
+                color = Color.White,
+                style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -891,10 +925,10 @@ private fun InflationStatusIndicator(
 @Composable
 fun PresetButtons(
     predefinedPressures: List<Float>,
+    selectedPressure: Float = 30f,
     onPresetSelected: (Float) -> Unit
 ) {
     if (predefinedPressures.isEmpty()) {
-        // If no preset pressures, show nothing
         return
     }
     
@@ -902,33 +936,30 @@ fun PresetButtons(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Always split the predefined pressures into rows with exactly 4 buttons per row
         val chunkedPressures = predefinedPressures.chunked(4)
         
-        // Create rows for each chunk
         chunkedPressures.forEach { rowPressures ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 2.dp),
+                    .padding(vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
             ) {
-                // Always create a row with 4 buttons, even if some are empty
                 repeat(4) { index ->
                     if (index < rowPressures.size) {
-                        // Real button with pressure value
+                        val pressure = rowPressures[index]
                         PresetPressureButton(
-                            pressure = rowPressures[index], 
+                            pressure = pressure,
+                            isSelected = Math.abs(pressure - selectedPressure) < 0.05f,
                             onSelect = onPresetSelected,
-                            modifier = Modifier.weight(1f).padding(horizontal = 2.dp).defaultMinSize(minHeight = 48.dp)
+                            modifier = Modifier.weight(1f).padding(horizontal = 2.dp).defaultMinSize(minHeight = 52.dp)
                         )
                     } else {
-                        // Empty space with the same size as a button for alignment
                         Spacer(
                             modifier = Modifier
                                 .weight(1f)
                                 .padding(horizontal = 2.dp)
-                                .defaultMinSize(minHeight = 48.dp)
+                                .defaultMinSize(minHeight = 52.dp)
                         )
                     }
                 }
@@ -940,21 +971,22 @@ fun PresetButtons(
 @Composable
 fun PresetPressureButton(
     pressure: Float,
+    isSelected: Boolean = false,
     onSelect: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(4.dp))
-            .background(MaterialTheme.colorScheme.primaryContainer)
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (isSelected) Color(0xFFFF7A00) else Color(0xFF171F2C))
             .clickable { onSelect(pressure) }
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = stringResource(R.string.preset_pressure_format, pressure.toInt()),
-            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 16.sp),
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold),
+            color = if (isSelected) Color.White else Color(0xFFE2E8F0),
             textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis

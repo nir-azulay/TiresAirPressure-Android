@@ -1,0 +1,35 @@
+app/build.gradle
+  s_d312b23a5c97c7::t_cfcd819ac7fe54 31
+app/src/main/java/com/nazulay/tiresairpressuremanagement/ui/screens/settings/SettingsScreen.kt
+  s_d312b23a5c97c7::t_bcf428948b232d 1244,1252
+  s_d312b23a5c97c7::t_ab19c002d1bd57 1351,1362,1371
+  s_d312b23a5c97c7::t_337b09f9c10cc1 1175
+app/src/main/java/com/nazulay/tiresairpressuremanagement/data/ble/BleManager.kt
+  s_d312b23a5c97c7::t_61654759aac1fb 1060-1066
+  s_d312b23a5c97c7::t_3c68e10c084d94 1511-1526
+  s_d312b23a5c97c7::t_a086ac36351122 85-87
+app/src/main/java/com/nazulay/tiresairpressuremanagement/ui/screens/settings/SettingsViewModel.kt
+  s_d312b23a5c97c7::t_92afe829821c1c 41-45
+  s_d312b23a5c97c7::t_d13242682e49ba 161-172
+  s_d312b23a5c97c7::t_039dcae07b1f43 78-80
+  s_d312b23a5c97c7::t_0c12200eb85981 216-219,221-224,227,230-234,236,238,240,244-246
+app/src/main/java/com/nazulay/tiresairpressuremanagement/domain/models/BleCommand.kt
+  s_d312b23a5c97c7::t_d3fbda92dee7cb 19
+  s_d312b23a5c97c7::t_563c258ebb6046 87-92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.11",
+  "base_commit_sha": "75a78079d55569d95f57a879a4301ed74a0cf520",
+  "prompts": {},
+  "sessions": {
+    "s_d312b23a5c97c7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4073ab5b-854e-4e47-8475-abc551f21d7a",
+        "model": "gemini-4-argon"
+      },
+      "human_author": "Nir Azulay <nir.azulay@gmail.com>"
+    }
+  }
+}

@@ -29,7 +29,14 @@ data class DeviceSettings(
     @Json(name = "PredefinedPressure6") val predefinedPressure6: Float = 30f,
     @Json(name = "PredefinedPressure7") val predefinedPressure7: Float = 38f,
     @Json(name = "PredefinedPressure8") val predefinedPressure8: Float = 40f,
-    @Json(name = "PressureCalcMethod") val pressureCalcMethod: Int = 1
+    @Json(name = "PressureCalcMethod") val pressureCalcMethod: Int = 1,
+    @Json(name = "SensorFullScalePSI") val sensorFullScalePSI: Float = 50f,
+    @Json(name = "MaxPressurePSI") val maxPressurePSI: Float = 50f,
+    @Json(name = "MaxValveOpenSec") val maxValveOpenSec: Int = 120,
+    @Json(name = "AccessPointPassword") val accessPointPassword: String = "12345678",
+    @Json(name = "HasAccessCode") val hasAccessCode: Boolean = false,
+    val accessCode: String = "",
+    val clearAccessCode: Boolean = false
 )
 
 enum class PressureUnit {

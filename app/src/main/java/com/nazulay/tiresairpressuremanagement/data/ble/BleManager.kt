@@ -989,6 +989,14 @@ class BleManager(
                     }.toString()
                 }
                 is BleCommand.UpdateSettings -> {
+                    val address = connectedAddress ?: bluetoothGatt?.device?.address
+                    if (address != null) {
+                        if (command.clearAccessCode) {
+                            bleRepository?.setAccessCode(address, "")
+                        } else if (command.accessCode.isNotEmpty()) {
+                            bleRepository?.setAccessCode(address, command.accessCode.take(32))
+                        }
+                    }
                     JSONObject().apply {
                         put("command", command.command)
                         put("DeviceName", command.deviceName)
@@ -998,12 +1006,18 @@ class BleManager(
                         put("RelayFreePin", command.relayFreePin)
                         put("SensorPin", command.sensorPin)
                         put("MaxSecForStatus", command.maxSecForStatus)
-                        put("SensorValueAt0PSI", String.format("%.3f", command.sensorValueAt0PSI).toDouble())
-                        put("SensorValueAt50PSI", String.format("%.3f", command.sensorValueAt50PSI).toDouble())
+                        put("SensorValueAt0PSI", String.format(java.util.Locale.US, "%.3f", command.sensorValueAt0PSI).toDouble())
+                        put("SensorValueAt50PSI", String.format(java.util.Locale.US, "%.3f", command.sensorValueAt50PSI).toDouble())
                         put("MessureWait", command.measureWait)
                         put("Precision", command.precision)
                         put("SimulationMode", command.simulationMode)
                         put("PressureCalcMethod", command.pressureCalcMethod)
+                        put("SensorFullScalePSI", String.format(java.util.Locale.US, "%.1f", command.sensorFullScalePSI).toDouble())
+                        put("MaxPressurePSI", String.format(java.util.Locale.US, "%.1f", command.maxPressurePSI).toDouble())
+                        put("MaxValveOpenSec", command.maxValveOpenSec)
+                        put("AccessPointPassword", command.accessPointPassword)
+                        put("AccessCode", command.accessCode)
+                        put("ClearAccessCode", command.clearAccessCode)
                         put("type", command.type)
                     }.toString()
                 }
@@ -1874,7 +1888,12 @@ class DeviceSettingsResponseAdapter {
             softwareVersion = (jsonObject["Software_VER"] as? String) ?: "",
             ipAddress = (jsonObject["IP"] as? String) ?: "",
             simulationMode = (jsonObject["SimulationMode"] as? String) ?: "0",
-            pressureCalcMethod = (jsonObject["PressureCalcMethod"] as? String) ?: "1"
+            pressureCalcMethod = (jsonObject["PressureCalcMethod"] as? String) ?: "1",
+            sensorFullScalePSI = (jsonObject["SensorFullScalePSI"] as? String) ?: "50.0",
+            maxPressurePSI = (jsonObject["MaxPressurePSI"] as? String) ?: "50.0",
+            maxValveOpenSec = (jsonObject["MaxValveOpenSec"] as? String) ?: "120",
+            accessPointPassword = (jsonObject["AccessPointPassword"] as? String) ?: "12345678",
+            hasAccessCode = (jsonObject["HasAccessCode"] as? String) ?: "0"
         )
     }
 } 

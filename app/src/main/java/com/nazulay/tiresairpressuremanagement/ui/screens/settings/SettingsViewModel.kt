@@ -287,7 +287,13 @@ class SettingsViewModel(
         sensorValueAt50PSI: Float? = null,
         measureWait: Float? = null,
         precision: Float? = null,
-        pressureCalcMethod: Int? = null
+        pressureCalcMethod: Int? = null,
+        sensorFullScalePSI: Float? = null,
+        maxPressurePSI: Float? = null,
+        maxValveOpenSec: Int? = null,
+        accessPointPassword: String? = null,
+        accessCode: String? = null,
+        clearAccessCode: Boolean? = null
     ) {
         val currentSettings = _localDeviceSettings.value
         if (currentSettings != null) {
@@ -304,7 +310,13 @@ class SettingsViewModel(
                 sensorValueAt50PSI = sensorValueAt50PSI ?: currentSettings.sensorValueAt50PSI,
                 measureWait = measureWait ?: currentSettings.measureWait,
                 precision = precision ?: currentSettings.precision,
-                pressureCalcMethod = pressureCalcMethod ?: currentSettings.pressureCalcMethod
+                pressureCalcMethod = pressureCalcMethod ?: currentSettings.pressureCalcMethod,
+                sensorFullScalePSI = sensorFullScalePSI ?: currentSettings.sensorFullScalePSI,
+                maxPressurePSI = maxPressurePSI ?: currentSettings.maxPressurePSI,
+                maxValveOpenSec = maxValveOpenSec ?: currentSettings.maxValveOpenSec,
+                accessPointPassword = accessPointPassword ?: currentSettings.accessPointPassword,
+                accessCode = accessCode ?: currentSettings.accessCode,
+                clearAccessCode = clearAccessCode ?: currentSettings.clearAccessCode
             )
             
             Log.d(TAG, "Updating local device settings: $updatedSettings")
@@ -334,7 +346,13 @@ class SettingsViewModel(
                 maxSecForStatus = settingsToSave.maxSecForStatus,
                 measureWait = settingsToSave.measureWait,
                 simulationMode = settingsToSave.simulationMode,
-                pressureCalcMethod = settingsToSave.pressureCalcMethod
+                pressureCalcMethod = settingsToSave.pressureCalcMethod,
+                sensorFullScalePSI = settingsToSave.sensorFullScalePSI,
+                maxPressurePSI = settingsToSave.maxPressurePSI,
+                maxValveOpenSec = settingsToSave.maxValveOpenSec,
+                accessPointPassword = settingsToSave.accessPointPassword,
+                accessCode = settingsToSave.accessCode,
+                clearAccessCode = settingsToSave.clearAccessCode
             ))
             _hasUnsavedChanges.value = false
             delay(1500) 
@@ -373,7 +391,13 @@ class SettingsViewModel(
                     maxSecForStatus = settingsToSave.maxSecForStatus,
                     measureWait = settingsToSave.measureWait,
                     simulationMode = settingsToSave.simulationMode,
-                    pressureCalcMethod = settingsToSave.pressureCalcMethod
+                    pressureCalcMethod = settingsToSave.pressureCalcMethod,
+                    sensorFullScalePSI = settingsToSave.sensorFullScalePSI,
+                    maxPressurePSI = settingsToSave.maxPressurePSI,
+                    maxValveOpenSec = settingsToSave.maxValveOpenSec,
+                    accessPointPassword = settingsToSave.accessPointPassword,
+                    accessCode = settingsToSave.accessCode,
+                    clearAccessCode = settingsToSave.clearAccessCode
                 ))
                 
                 _hasUnsavedChanges.value = false

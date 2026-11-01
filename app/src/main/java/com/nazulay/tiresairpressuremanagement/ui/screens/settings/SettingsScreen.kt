@@ -331,7 +331,13 @@ fun SettingsScreen(
                                             sensorValueAt50PSI = updatedSettings.sensorValueAt50PSI,
                                             measureWait = updatedSettings.measureWait,
                                             precision = updatedSettings.precision,
-                                            pressureCalcMethod = updatedSettings.pressureCalcMethod
+                                            pressureCalcMethod = updatedSettings.pressureCalcMethod,
+                                            sensorFullScalePSI = updatedSettings.sensorFullScalePSI,
+                                            maxPressurePSI = updatedSettings.maxPressurePSI,
+                                            maxValveOpenSec = updatedSettings.maxValveOpenSec,
+                                            accessPointPassword = updatedSettings.accessPointPassword,
+                                            accessCode = updatedSettings.accessCode,
+                                            clearAccessCode = updatedSettings.clearAccessCode
                                         )
                                     }
                                 )
@@ -853,6 +859,12 @@ private fun HardwareSettings(
     var maxSecForStatus by remember { mutableStateOf(settings.maxSecForStatus.toString()) }
     var sensorValueAt0PSI by remember { mutableStateOf(settings.sensorValueAt0PSI.toString()) }
     var sensorValueAt50PSI by remember { mutableStateOf(settings.sensorValueAt50PSI.toString()) }
+    var sensorFullScalePSI by remember { mutableStateOf(settings.sensorFullScalePSI.toString()) }
+    var maxPressurePSI by remember { mutableStateOf(settings.maxPressurePSI.toString()) }
+    var maxValveOpenSec by remember { mutableStateOf(settings.maxValveOpenSec.toString()) }
+    var accessPointPassword by remember { mutableStateOf(settings.accessPointPassword) }
+    var accessCode by remember { mutableStateOf(settings.accessCode) }
+    var clearAccessCode by remember { mutableStateOf(settings.clearAccessCode) }
     var measureWait by remember { mutableStateOf(settings.measureWait.toString()) }
     var precision by remember { mutableStateOf(settings.precision.toString()) }
     
@@ -883,11 +895,20 @@ private fun HardwareSettings(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 cursorColor = Color.White
             )
+
+            if (settings.softwareVersion.isNotEmpty() || settings.ipAddress.isNotEmpty()) {
+                Text(
+                    text = "Firmware: ${settings.softwareVersion} | IP: ${settings.ipAddress}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
             
             OutlinedTextField(
                 value = relayCompressorPin,
                 onValueChange = { value -> 
-                    onSettingsChanged(settings.copy(relayCompressorPin = value.toIntOrNull() ?: 0))
+                    onSettingsChanged(settings.copy(relayCompressorPin = value.toIntOrNull() ?: 16))
                     relayCompressorPin = value
                 },
                 label = { Text(stringResource(R.string.relay_compressor_pin), color = Color.White.copy(alpha = 0.8f)) },
@@ -901,7 +922,7 @@ private fun HardwareSettings(
             OutlinedTextField(
                 value = relayFreePin,
                 onValueChange = { value -> 
-                    onSettingsChanged(settings.copy(relayFreePin = value.toIntOrNull() ?: 0))
+                    onSettingsChanged(settings.copy(relayFreePin = value.toIntOrNull() ?: 17))
                     relayFreePin = value
                 },
                 label = { Text(stringResource(R.string.relay_free_pin), color = Color.White.copy(alpha = 0.8f)) },
@@ -915,7 +936,7 @@ private fun HardwareSettings(
             OutlinedTextField(
                 value = sensorPin,
                 onValueChange = { value -> 
-                    onSettingsChanged(settings.copy(sensorPin = value.toIntOrNull() ?: 0))
+                    onSettingsChanged(settings.copy(sensorPin = value.toIntOrNull() ?: 34))
                     sensorPin = value
                 },
                 label = { Text(stringResource(R.string.sensor_pin), color = Color.White.copy(alpha = 0.8f)) },
@@ -929,7 +950,7 @@ private fun HardwareSettings(
             OutlinedTextField(
                 value = maxSecForStatus,
                 onValueChange = { value -> 
-                    onSettingsChanged(settings.copy(maxSecForStatus = value.toIntOrNull() ?: 30))
+                    onSettingsChanged(settings.copy(maxSecForStatus = value.toIntOrNull() ?: 10))
                     maxSecForStatus = value
                 },
                 label = { Text(stringResource(R.string.max_sec_for_status), color = Color.White.copy(alpha = 0.8f)) },
@@ -943,7 +964,7 @@ private fun HardwareSettings(
             OutlinedTextField(
                 value = measureWait,
                 onValueChange = { value -> 
-                    onSettingsChanged(settings.copy(measureWait = value.toFloatOrNull() ?: 2f))
+                    onSettingsChanged(settings.copy(measureWait = value.toFloatOrNull() ?: 1f))
                     measureWait = value
                 },
                 label = { Text(stringResource(R.string.measure_wait), color = Color.White.copy(alpha = 0.8f)) },
@@ -957,7 +978,7 @@ private fun HardwareSettings(
             OutlinedTextField(
                 value = sensorValueAt0PSI,
                 onValueChange = { value -> 
-                    onSettingsChanged(settings.copy(sensorValueAt0PSI = value.toFloatOrNull() ?: 0.228f))
+                    onSettingsChanged(settings.copy(sensorValueAt0PSI = value.toFloatOrNull() ?: 410f))
                     sensorValueAt0PSI = value
                 },
                 label = { Text(stringResource(R.string.sensor_value_at_0_psi), color = Color.White.copy(alpha = 0.8f)) },
@@ -971,7 +992,7 @@ private fun HardwareSettings(
             OutlinedTextField(
                 value = sensorValueAt50PSI,
                 onValueChange = { value -> 
-                    onSettingsChanged(settings.copy(sensorValueAt50PSI = value.toFloatOrNull() ?: 2.853f))
+                    onSettingsChanged(settings.copy(sensorValueAt50PSI = value.toFloatOrNull() ?: 3400f))
                     sensorValueAt50PSI = value
                 },
                 label = { Text(stringResource(R.string.sensor_value_at_50_psi), color = Color.White.copy(alpha = 0.8f)) },
@@ -981,11 +1002,53 @@ private fun HardwareSettings(
                     .padding(vertical = 4.dp),
                 colors = textFieldColors
             )
-            
+
+            OutlinedTextField(
+                value = sensorFullScalePSI,
+                onValueChange = { value ->
+                    onSettingsChanged(settings.copy(sensorFullScalePSI = value.toFloatOrNull() ?: 50f))
+                    sensorFullScalePSI = value
+                },
+                label = { Text("Sensor Full Scale (PSI)", color = Color.White.copy(alpha = 0.8f)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                colors = textFieldColors
+            )
+
+            OutlinedTextField(
+                value = maxPressurePSI,
+                onValueChange = { value ->
+                    onSettingsChanged(settings.copy(maxPressurePSI = value.toFloatOrNull() ?: 50f))
+                    maxPressurePSI = value
+                },
+                label = { Text("Max Pressure (PSI)", color = Color.White.copy(alpha = 0.8f)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                colors = textFieldColors
+            )
+
+            OutlinedTextField(
+                value = maxValveOpenSec,
+                onValueChange = { value ->
+                    onSettingsChanged(settings.copy(maxValveOpenSec = value.toIntOrNull() ?: 120))
+                    maxValveOpenSec = value
+                },
+                label = { Text("Max Valve Open (sec)", color = Color.White.copy(alpha = 0.8f)) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                colors = textFieldColors
+            )
+
             OutlinedTextField(
                 value = precision,
                 onValueChange = { value -> 
-                    onSettingsChanged(settings.copy(precision = value.toFloatOrNull() ?: 1f))
+                    onSettingsChanged(settings.copy(precision = value.toFloatOrNull() ?: 0.5f))
                     precision = value
                 },
                 label = { Text(stringResource(R.string.precision_psi), color = Color.White.copy(alpha = 0.8f)) },
@@ -995,6 +1058,65 @@ private fun HardwareSettings(
                     .padding(vertical = 4.dp),
                 colors = textFieldColors
             )
+
+            OutlinedTextField(
+                value = accessPointPassword,
+                onValueChange = { value ->
+                    onSettingsChanged(settings.copy(accessPointPassword = value))
+                    accessPointPassword = value
+                },
+                label = { Text("Hotspot Password (min 8 chars)", color = Color.White.copy(alpha = 0.8f)) },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                colors = textFieldColors
+            )
+
+            OutlinedTextField(
+                value = accessCode,
+                onValueChange = { value ->
+                    onSettingsChanged(settings.copy(accessCode = value, clearAccessCode = false))
+                    accessCode = value
+                    clearAccessCode = false
+                },
+                enabled = !clearAccessCode,
+                label = {
+                    Text(
+                        if (settings.hasAccessCode) "BLE Access Code (SET - leave blank to keep)"
+                        else "BLE Access Code (Unlocked - enter to set)",
+                        color = Color.White.copy(alpha = 0.8f)
+                    )
+                },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                colors = textFieldColors
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Clear BLE Access Code",
+                    color = Color.White
+                )
+                Switch(
+                    checked = clearAccessCode,
+                    onCheckedChange = { checked ->
+                        clearAccessCode = checked
+                        if (checked) accessCode = ""
+                        onSettingsChanged(settings.copy(clearAccessCode = checked, accessCode = if (checked) "" else accessCode))
+                    }
+                )
+            }
             
             // PressureCalcMethod selector (vertical layout)
             Spacer(modifier = Modifier.height(8.dp))

@@ -47,6 +47,12 @@ sealed class BleCommand {
         val precision: Float,
         val simulationMode: Boolean,
         val pressureCalcMethod: Int,
+        val sensorFullScalePSI: Float = 50f,
+        val maxPressurePSI: Float = 50f,
+        val maxValveOpenSec: Int = 120,
+        val accessPointPassword: String = "12345678",
+        val accessCode: String = "",
+        val clearAccessCode: Boolean = false,
         override val type: String = "settings"
     ) : BleCommand()
     

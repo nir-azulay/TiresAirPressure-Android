@@ -38,16 +38,97 @@ class AppSettingsManager private constructor(private val context: Context) {
     val settings: StateFlow<AppSettings> = _settings.asStateFlow()
 
     private fun loadSettings(): AppSettings {
-        val debugMode = prefs.getBoolean(DEBUG_MODE_KEY, false)
-        Log.d(TAG, "Loading settings - debugMode: $debugMode")
-        return AppSettings(
+        var needsRepair = false
+        val knownKeys = setOf(
+            THEME_MODE_KEY,
+            SIMULATION_MODE_KEY,
+            DEBUG_MODE_KEY,
+            PREDEFINED_PRESSURES_KEY_PREFIX,
+            MIN_PRESSURE_COUNT_KEY,
+            MAX_PRESSURE_COUNT_KEY
+        )
+
+        val allEntries = prefs.all
+        val editor = prefs.edit()
+        for (key in allEntries.keys) {
+            if (key !in knownKeys) {
+                Log.w(TAG, "Removing unknown preference key: $key")
+                editor.remove(key)
+                needsRepair = true
+            }
+        }
+
+        val simulationMode = try {
+            prefs.getBoolean(SIMULATION_MODE_KEY, false)
+        } catch (e: ClassCastException) {
+            needsRepair = true
+            false
+        }
+
+        val debugMode = try {
+            prefs.getBoolean(DEBUG_MODE_KEY, false)
+        } catch (e: ClassCastException) {
+            needsRepair = true
+            false
+        }
+
+        val minCount = try {
+            val v = prefs.getInt(MIN_PRESSURE_COUNT_KEY, 1)
+            if (v in 1..8) v else { needsRepair = true; 1 }
+        } catch (e: ClassCastException) {
+            needsRepair = true
+            1
+        }
+
+        val maxCount = try {
+            val v = prefs.getInt(MAX_PRESSURE_COUNT_KEY, 8)
+            if (v in minCount..16) v else { needsRepair = true; 8 }
+        } catch (e: ClassCastException) {
+            needsRepair = true
+            8
+        }
+
+        val defaultPressures = listOf(8f, 10f, 12f, 16f, 20f, 30f, 38f, 40f)
+        val rawPressures = try {
+            prefs.getString(PREDEFINED_PRESSURES_KEY_PREFIX, null)
+                ?.split(",")
+                ?.mapNotNull { it.trim().toFloatOrNull() }
+                ?.filter { !it.isNaN() && it in 1f..80f }
+                ?.distinct()
+                ?.sorted()
+        } catch (e: ClassCastException) {
+            needsRepair = true
+            null
+        }
+
+        val pressures = if (rawPressures != null && rawPressures.size >= minCount) {
+            rawPressures.take(maxCount)
+        } else {
+            needsRepair = true
+            defaultPressures
+        }
+
+        val loaded = AppSettings(
             themeMode = SettingsViewModel.THEME_MODE_DARK,
-            simulationMode = prefs.getBoolean(SIMULATION_MODE_KEY, false),
-            predefinedPressures = loadPredefinedPressures(),
-            minPressureCount = prefs.getInt(MIN_PRESSURE_COUNT_KEY, 1),
-            maxPressureCount = prefs.getInt(MAX_PRESSURE_COUNT_KEY, 8),
+            simulationMode = simulationMode,
+            predefinedPressures = pressures,
+            minPressureCount = minCount,
+            maxPressureCount = maxCount,
             debugMode = debugMode
         )
+
+        if (needsRepair) {
+            editor.putInt(THEME_MODE_KEY, SettingsViewModel.THEME_MODE_DARK)
+            editor.putBoolean(SIMULATION_MODE_KEY, loaded.simulationMode)
+            editor.putString(PREDEFINED_PRESSURES_KEY_PREFIX, loaded.predefinedPressures.joinToString(","))
+            editor.putInt(MIN_PRESSURE_COUNT_KEY, loaded.minPressureCount)
+            editor.putInt(MAX_PRESSURE_COUNT_KEY, loaded.maxPressureCount)
+            editor.putBoolean(DEBUG_MODE_KEY, loaded.debugMode)
+            editor.apply()
+            Log.i(TAG, "Auto-fixed app settings preferences at runtime")
+        }
+
+        return loaded
     }
 
     private fun loadPredefinedPressures(): List<Float> {

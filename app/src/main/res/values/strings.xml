@@ -257,4 +257,19 @@
     <string name="device_management">Device Management</string>
     <string name="delete">Delete</string>
     <string name="cancel">Cancel</string>
+
+    <!-- New UI & Device Configuration Strings -->
+    <string name="at_target">At Target</string>
+    <string name="psi_to_target_format" formatted="false">%+.1f PSI to target</string>
+    <string name="target_short">TARGET</string>
+    <string name="current_short">CURRENT</string>
+    <string name="psi_remaining_short_format"> (%1$.1f PSI remaining)</string>
+    <string name="sensor_full_scale_psi">Sensor Full Scale (PSI)</string>
+    <string name="max_pressure_psi">Max Pressure (PSI)</string>
+    <string name="max_valve_open_sec">Max Valve Open (sec)</string>
+    <string name="hotspot_password_hint">Hotspot Password (min 8 chars)</string>
+    <string name="access_code_set_hint">BLE Access Code (SET - leave blank to keep)</string>
+    <string name="access_code_unlocked_hint">BLE Access Code (Unlocked - enter to set)</string>
+    <string name="clear_access_code">Clear BLE Access Code</string>
+    <string name="firmware_ip_format" formatted="false">Firmware: %1$s | IP: %2$s</string>
 </resources>

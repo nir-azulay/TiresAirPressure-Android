@@ -898,7 +898,7 @@ private fun HardwareSettings(
 
             if (settings.softwareVersion.isNotEmpty() || settings.ipAddress.isNotEmpty()) {
                 Text(
-                    text = "Firmware: ${settings.softwareVersion} | IP: ${settings.ipAddress}",
+                    text = stringResource(R.string.firmware_ip_format, settings.softwareVersion, settings.ipAddress),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.8f),
                     modifier = Modifier.padding(bottom = 8.dp)
@@ -1009,7 +1009,7 @@ private fun HardwareSettings(
                     onSettingsChanged(settings.copy(sensorFullScalePSI = value.toFloatOrNull() ?: 50f))
                     sensorFullScalePSI = value
                 },
-                label = { Text("Sensor Full Scale (PSI)", color = Color.White.copy(alpha = 0.8f)) },
+                label = { Text(stringResource(R.string.sensor_full_scale_psi), color = Color.White.copy(alpha = 0.8f)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1023,7 +1023,7 @@ private fun HardwareSettings(
                     onSettingsChanged(settings.copy(maxPressurePSI = value.toFloatOrNull() ?: 50f))
                     maxPressurePSI = value
                 },
-                label = { Text("Max Pressure (PSI)", color = Color.White.copy(alpha = 0.8f)) },
+                label = { Text(stringResource(R.string.max_pressure_psi), color = Color.White.copy(alpha = 0.8f)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1037,7 +1037,7 @@ private fun HardwareSettings(
                     onSettingsChanged(settings.copy(maxValveOpenSec = value.toIntOrNull() ?: 120))
                     maxValveOpenSec = value
                 },
-                label = { Text("Max Valve Open (sec)", color = Color.White.copy(alpha = 0.8f)) },
+                label = { Text(stringResource(R.string.max_valve_open_sec), color = Color.White.copy(alpha = 0.8f)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1065,7 +1065,7 @@ private fun HardwareSettings(
                     onSettingsChanged(settings.copy(accessPointPassword = value))
                     accessPointPassword = value
                 },
-                label = { Text("Hotspot Password (min 8 chars)", color = Color.White.copy(alpha = 0.8f)) },
+                label = { Text(stringResource(R.string.hotspot_password_hint), color = Color.White.copy(alpha = 0.8f)) },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 modifier = Modifier
@@ -1084,8 +1084,8 @@ private fun HardwareSettings(
                 enabled = !clearAccessCode,
                 label = {
                     Text(
-                        if (settings.hasAccessCode) "BLE Access Code (SET - leave blank to keep)"
-                        else "BLE Access Code (Unlocked - enter to set)",
+                        if (settings.hasAccessCode) stringResource(R.string.access_code_set_hint)
+                        else stringResource(R.string.access_code_unlocked_hint),
                         color = Color.White.copy(alpha = 0.8f)
                     )
                 },
@@ -1105,7 +1105,7 @@ private fun HardwareSettings(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Clear BLE Access Code",
+                    text = stringResource(R.string.clear_access_code),
                     color = Color.White
                 )
                 Switch(

@@ -250,4 +250,27 @@
     <string name="device_management">ניהול מכשירים</string>
     <string name="delete">מחק</string>
     <string name="cancel">בטל</string>
+
+    <!-- Missing & New UI Strings -->
+    <string name="bluetooth_permissions_explanation">אפליקציה זו זקוקה להרשאות Bluetooth ומיקום כדי למצוא ולהתחבר למכשיר TPMS שלך.</string>
+    <string name="permissions_required_for_scanning">ללא הרשאות אלה, האפליקציה לא יכולה לגלות או לתקשר עם מכשירי Bluetooth.</string>
+    <string name="not_now">לא עכשיו</string>
+    <string name="bluetooth_required">נדרש Bluetooth</string>
+    <string name="bluetooth_required_explanation">אפליקציה זו דורשת הפעלת Bluetooth. אנא הפעל את ה-Bluetooth כדי להמשיך.</string>
+    <string name="unknown_device_with_id">מכשיר לא ידוע (%1$s)</string>
+    <string name="simple_pressure_format">%1$d PSI</string>
+    <string name="networks_found">רשתות נמצאו</string>
+    <string name="at_target">הגיע ליעד</string>
+    <string name="psi_to_target_format" formatted="false">%+.1f PSI ליעד</string>
+    <string name="target_short">יעד</string>
+    <string name="current_short">נוכחי</string>
+    <string name="psi_remaining_short_format"> (נותרו %1$.1f PSI)</string>
+    <string name="sensor_full_scale_psi">טווח חיישן מקסימלי (PSI)</string>
+    <string name="max_pressure_psi">לחץ מקסימלי מותר (PSI)</string>
+    <string name="max_valve_open_sec">זמן פתיחת שסתום מקסימלי (שניות)</string>
+    <string name="hotspot_password_hint">סיסמת נקודה חמה (לפחות 8 תווים)</string>
+    <string name="access_code_set_hint">קוד גישה BLE (מוגדר - השאר ריק לשמירה)</string>
+    <string name="access_code_unlocked_hint">קוד גישה BLE (פתוח - הזן להגדרה)</string>
+    <string name="clear_access_code">נקה קוד גישה BLE</string>
+    <string name="firmware_ip_format" formatted="false">קושחה: %1$s | IP: %2$s</string>
 </resources> 

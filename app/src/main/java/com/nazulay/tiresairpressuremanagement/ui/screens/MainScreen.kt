@@ -324,11 +324,11 @@ fun MainScreen(
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("TARGET", style = MaterialTheme.typography.labelSmall, color = Color(0xFF94A3B8))
+                                Text(stringResource(R.string.target_short), style = MaterialTheme.typography.labelSmall, color = Color(0xFF94A3B8))
                                 Text(String.format("%.1f PSI", targetVal), fontWeight = FontWeight.Bold, color = Color(0xFFFFA726))
                             }
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("CURRENT", style = MaterialTheme.typography.labelSmall, color = Color(0xFF94A3B8))
+                                Text(stringResource(R.string.current_short), style = MaterialTheme.typography.labelSmall, color = Color(0xFF94A3B8))
                                 Text(String.format("%.1f PSI", currentVal), fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
                             }
                         }
@@ -781,7 +781,7 @@ private fun PressureGaugeCard(
                 val delta = targetPressure - currentPressureAnimated.value
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = if (Math.abs(delta) <= 0.5f) "At Target" else String.format("%+.1f PSI to target", delta),
+                    text = if (Math.abs(delta) <= 0.5f) stringResource(R.string.at_target) else String.format(stringResource(R.string.psi_to_target_format), delta),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold,
                     color = activeAccent
@@ -886,7 +886,7 @@ private fun PressureGaugeCard(
                 // Target pressure text in the center
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "TARGET",
+                        text = stringResource(R.string.target_short),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF94A3B8)
@@ -1078,7 +1078,7 @@ private fun InflationStatusIndicator(
             val remaining = currentPressureAnimated?.let { Math.abs(targetPressure - it.value) } ?: 0f
             Text(
                 text = (if (isDeflating) stringResource(R.string.mode_deflating) else stringResource(R.string.mode_inflating)) +
-                    String.format(" (%.1f PSI remaining)", remaining),
+                    stringResource(R.string.psi_remaining_short_format, remaining),
                 color = Color.White,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold

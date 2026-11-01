@@ -1,0 +1,29 @@
+app/src/main/java/com/nazulay/tiresairpressuremanagement/utils/PermissionManager.kt
+  s_d312b23a5c97c7::t_4752edc3a4b6f9 28,32
+app/src/main/java/com/nazulay/tiresairpressuremanagement/MainActivity.kt
+  s_d312b23a5c97c7::t_81e5938bbddee7 477,508-515
+  s_d312b23a5c97c7::t_d6f6d07a79550e 83-91,103-111
+  s_d312b23a5c97c7::t_d5035dc3af8eaf 150-151
+app/build.gradle
+  s_d312b23a5c97c7::t_a01d740858e0c1 43,52
+app/src/main/AndroidManifest.xml
+  s_d312b23a5c97c7::t_9288f2f0dee9f1 47,50,67
+app/src/main/java/com/nazulay/tiresairpressuremanagement/data/ble/BleManager.kt
+  s_d312b23a5c97c7::t_8890005943c7c2 1181,1187-1188,1191-1192
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.11",
+  "base_commit_sha": "cc5e9b5565b9850fddbcb7f5e2535bd1886756f4",
+  "prompts": {},
+  "sessions": {
+    "s_d312b23a5c97c7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4073ab5b-854e-4e47-8475-abc551f21d7a",
+        "model": "gemini-4-argon"
+      },
+      "human_author": "Nir Azulay <nir.azulay@gmail.com>"
+    }
+  }
+}

@@ -222,31 +222,137 @@ fun MainScreen(
         )
     }
 
-    // Target reached dialog
+    // Animated Target Reached Celebration Dialog
     if (showTargetReachedDialog && targetReachedInfo != null) {
-        android.util.Log.d(TAG, "Showing target reached dialog with info: $targetReachedInfo")
-        AlertDialog(
-            onDismissRequest = { 
-                android.util.Log.d(TAG, "Target reached dialog dismissed")
-                showTargetReachedDialog = false 
-            },
-            title = { Text(stringResource(R.string.target_reached_title)) },
-            text = { 
-                Column {
-                    Text(stringResource(R.string.target_reached_message))
-                    Text(stringResource(R.string.target_value, targetReachedInfo?.first ?: 0f))
-                    Text(stringResource(R.string.current_value, targetReachedInfo?.second ?: 0f))
+        val targetVal = targetReachedInfo?.first ?: 0f
+        val currentVal = targetReachedInfo?.second ?: 0f
+        val dialogScale = remember { Animatable(0.6f) }
+        val ringProgress = remember { Animatable(0f) }
+
+        LaunchedEffect(showTargetReachedDialog) {
+            dialogScale.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
+            )
+        }
+        LaunchedEffect(Unit) {
+            ringProgress.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 1100, easing = FastOutSlowInEasing)
+            )
+        }
+
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showTargetReachedDialog = false }
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                // Shockwave ring behind card
+                Canvas(modifier = Modifier.size(260.dp)) {
+                    val r = (size.minDimension / 2f) * (0.5f + ringProgress.value * 0.8f)
+                    drawCircle(
+                        color = Color(0xFF10B981).copy(alpha = (1f - ringProgress.value).coerceIn(0f, 1f)),
+                        radius = r,
+                        style = Stroke(width = 3.dp.toPx())
+                    )
                 }
-            },
-            confirmButton = {
-                Button(onClick = { 
-                    android.util.Log.d(TAG, "Target reached dialog confirmed")
-                    showTargetReachedDialog = false 
-                }) {
-                    Text(stringResource(R.string.ok))
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF171F2C)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size((76.dp * scale).coerceIn(68.dp, 88.dp))
+                                .clip(CircleShape)
+                                .background(Color(0xFF10B981).copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = Color(0xFF10B981),
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = stringResource(R.string.target_reached_title).uppercase(),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = stringResource(R.string.target_reached_message),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF94A3B8),
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = String.format("%.1f PSI", currentVal),
+                            style = MaterialTheme.typography.displayMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF10B981)
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.White.copy(alpha = 0.05f))
+                                .padding(vertical = 10.dp, horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("TARGET", style = MaterialTheme.typography.labelSmall, color = Color(0xFF94A3B8))
+                                Text(String.format("%.1f PSI", targetVal), fontWeight = FontWeight.Bold, color = Color(0xFFFFA726))
+                            }
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("CURRENT", style = MaterialTheme.typography.labelSmall, color = Color(0xFF94A3B8))
+                                Text(String.format("%.1f PSI", currentVal), fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        Button(
+                            onClick = { showTargetReachedDialog = false },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
+                        ) {
+                            Text(
+                                text = stringResource(R.string.ok).uppercase(),
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White
+                            )
+                        }
+                    }
                 }
             }
-        )
+        }
     }
     
     Scaffold(

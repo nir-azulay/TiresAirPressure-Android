@@ -1,0 +1,19 @@
+app/src/main/java/com/nazulay/tiresairpressuremanagement/ui/screens/MainScreen.kt
+  s_d312b23a5c97c7::t_8b364a8f004cb7 225,227-256,258-352,355
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.11",
+  "base_commit_sha": "03473508e315b30e7724d3830afa9cb60bad98ac",
+  "prompts": {},
+  "sessions": {
+    "s_d312b23a5c97c7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4073ab5b-854e-4e47-8475-abc551f21d7a",
+        "model": "gemini-4-argon"
+      },
+      "human_author": "Nir Azulay <nir.azulay@gmail.com>"
+    }
+  }
+}

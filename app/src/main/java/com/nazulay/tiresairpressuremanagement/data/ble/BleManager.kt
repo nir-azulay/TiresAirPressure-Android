@@ -82,6 +82,9 @@ class BleManager(
     
     private val _scanResults = MutableStateFlow<List<BleDevice>>(emptyList())
     val scanResults: StateFlow<List<BleDevice>> = _scanResults
+
+    private val _bleWifiNetworks = MutableStateFlow<List<Pair<String, Int>>>(emptyList())
+    val bleWifiNetworks: StateFlow<List<Pair<String, Int>>> = _bleWifiNetworks
     
     // Add a flow for target reached events (targetPressure, currentPressure)
     private val _targetReachedEvent = MutableSharedFlow<Pair<Float, Float>>(replay = 1, extraBufferCapacity = 1)
@@ -1054,6 +1057,13 @@ class BleManager(
                         put("type", command.type)
                     }.toString()
                 }
+                is BleCommand.ScanWifi -> {
+                    JSONObject().apply {
+                        put("command", command.command)
+                        put("rescan", command.rescan)
+                        put("type", command.type)
+                    }.toString()
+                }
             }
             
             if (command is BleCommand.Authenticate) {
@@ -1496,6 +1506,22 @@ class BleManager(
                     
                     // Handle target reached notification
                     onTargetPressureReached(targetPressure, currentPressure)
+                    return
+                }
+
+                if (jsonObject.optString("type") == "wifi_list") {
+                    val raw = jsonObject.optString("networks", "")
+                    val parsed = raw.split(";")
+                        .mapNotNull { entry ->
+                            val parts = entry.split("|", limit = 2)
+                            val ssid = parts.getOrNull(0)?.trim().orEmpty()
+                            if (ssid.isEmpty()) null
+                            else ssid to (parts.getOrNull(1)?.toIntOrNull() ?: -80)
+                        }
+                        .distinctBy { it.first }
+                        .sortedByDescending { it.second }
+                    _bleWifiNetworks.value = parsed
+                    Log.d(TAG, "Received ${parsed.size} Wi-Fi networks from BLE controller")
                     return
                 }
                 

@@ -1172,7 +1172,7 @@ private fun HardwareSettings(
 private fun WifiSettings(
     wifiSsid: String,
     wifiPassword: String,
-    availableNetworks: List<ScanResult>,
+    availableNetworks: List<WifiNetworkInfo>,
     onSsidChanged: (String) -> Unit,
     onPasswordChanged: (String) -> Unit,
     onScanClicked: () -> Unit,
@@ -1241,7 +1241,7 @@ private fun WifiSettings(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    text = network.SSID,
+                                    text = "${network.ssid} (${network.level} dBm)",
                                     color = Color.White,
                                     modifier = Modifier.weight(1f)
                                 )
@@ -1249,7 +1249,7 @@ private fun WifiSettings(
                             }
                         },
                         onClick = {
-                            onNetworkSelected(network.SSID)
+                            onNetworkSelected(network.ssid)
                             showNetworkDropdown = false
                         },
                         modifier = Modifier.background(Color(0xFF1E2530))
@@ -1348,7 +1348,7 @@ private fun WifiSettings(
                  ) {
                      availableNetworks.forEach { network ->
                          NetworkListItem(network = network) {
-                             onNetworkSelected(network.SSID)
+                             onNetworkSelected(network.ssid)
                              showNetworkList = false
                          }
                      }
@@ -1359,7 +1359,7 @@ private fun WifiSettings(
 }
 
 @Composable
-private fun NetworkListItem(network: ScanResult, onClick: () -> Unit) {
+private fun NetworkListItem(network: WifiNetworkInfo, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1368,7 +1368,7 @@ private fun NetworkListItem(network: ScanResult, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(network.SSID, modifier = Modifier.weight(1f).padding(end = 8.dp))
+        Text("${network.ssid} (${network.level} dBm)", color = Color.White, modifier = Modifier.weight(1f).padding(end = 8.dp))
         SignalStrengthIndicator(level = network.level)
     }
 }

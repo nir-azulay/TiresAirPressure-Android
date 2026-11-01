@@ -28,7 +28,7 @@ if (project.hasProperty('versionBuildOverride')) {
 }
 
 def versionMajor = 2
-def versionMinor = 0
+def versionMinor = 1
 def versionPatch = 0
 
 // Create full version string

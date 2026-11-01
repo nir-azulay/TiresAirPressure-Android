@@ -38,6 +38,11 @@ import com.nazulay.tiresairpressuremanagement.utils.LocaleHelper
 import com.nazulay.tiresairpressuremanagement.utils.getActivity
 import com.nazulay.tiresairpressuremanagement.MainActivity
 
+data class WifiNetworkInfo(
+    val ssid: String,
+    val level: Int
+)
+
 class SettingsViewModel(
     private val bleManager: BleManager,
     private val application: Application
@@ -70,9 +75,9 @@ class SettingsViewModel(
     // App Settings
     val appSettings = appSettingsManager.settings
     
-    // Available WiFi networks - Store ScanResult to get signal strength
-    private val _availableNetworks = MutableStateFlow<List<ScanResult>>(emptyList())
-    val availableNetworks: StateFlow<List<ScanResult>> = _availableNetworks.asStateFlow()
+    // Available WiFi networks (from BLE controller and/or local Wi-Fi scan)
+    private val _availableNetworks = MutableStateFlow<List<WifiNetworkInfo>>(emptyList())
+    val availableNetworks: StateFlow<List<WifiNetworkInfo>> = _availableNetworks.asStateFlow()
     
     // BLE Device Settings
     private val _localDeviceSettings = MutableStateFlow<DeviceSettings?>(null)
@@ -153,8 +158,18 @@ class SettingsViewModel(
             }
         }
 
-        // The ViewModel now automatically reflects the state from the single BleManager instance.
-        // No need for explicit collection here for connection/device states.
+        // Observe Wi-Fi networks reported by the ESP32 controller over BLE
+        viewModelScope.launch {
+            bleManager.bleWifiNetworks.collect { bleList ->
+                if (bleList.isNotEmpty()) {
+                    val merged = (bleList.map { WifiNetworkInfo(it.first, it.second) } + _availableNetworks.value)
+                        .filter { it.ssid.isNotBlank() }
+                        .distinctBy { it.ssid }
+                        .sortedByDescending { it.level }
+                    _availableNetworks.value = merged
+                }
+            }
+        }
     }
     
     // Public method to reconnect to saved device if needed
@@ -198,64 +213,40 @@ class SettingsViewModel(
     
     fun scanWifiNetworks() {
         try {
-            Log.d(TAG, "Starting WiFi scan")
-            val context = application.applicationContext
-            
-            // Permissions check (simplified, assumes MainActivity handles requests)
-            if (!hasWifiScanningPermissions(context)) {
-                Log.w(TAG, "Required permissions not granted for WiFi scan")
-                // Consider emitting a specific state or error message here
-                _availableNetworks.value = emptyList() // Clear previous results
-                // Maybe set a separate error state flow?
-                return
-            }
-            
-            if (!wifiManager.isWifiEnabled) {
-                Log.w(TAG, "WiFi is disabled, cannot scan networks")
-                _availableNetworks.value = emptyList()
-                return
-            }
-            
-            // API >= 30 requires location services to be enabled for WiFi scanning
-            // Add check if needed based on target SDK and testing
-            
-            val success = wifiManager.startScan()
-            if (!success) {
-                Log.w(TAG, "wifiManager.startScan() returned false")
-                // May happen if scans are too frequent
-                // Get previous results if available
-                 val results = try { wifiManager.scanResults ?: emptyList() } catch (e: SecurityException) { emptyList() }
-                 _availableNetworks.value = results.filter { !it.SSID.isNullOrEmpty() }.distinctBy { it.SSID }
-                 Log.d(TAG, "Failed to start new scan, using previous results: ${results.size}")
-                 return
-            }
-            
-            // It takes some time for scan results to be available. 
-            // A BroadcastReceiver for SCAN_RESULTS_AVAILABLE_ACTION is the proper way,
-            // but for simplicity here, we'll query after a short delay.
-            viewModelScope.launch {
-                delay(2000) // Wait 2 seconds for scan results
-                val results = try {
-                     wifiManager.scanResults ?: emptyList()
-                } catch (e: SecurityException) {
-                    Log.e(TAG, "SecurityException getting scan results: ${e.message}")
-                    emptyList()
-                }
-                
-                // Filter out empty SSIDs and duplicates, sort by signal strength
-                val networks = results
-                    .filter { !it.SSID.isNullOrEmpty() }
-                    .distinctBy { it.SSID } // Keep only one entry per SSID
-                    .sortedByDescending { it.level } // Strongest signal first
-                    
-                Log.d(TAG, "Found ${networks.size} unique WiFi networks: ${networks.map { it.SSID + " (" + it.level + ")" }}")
-                _availableNetworks.value = networks
+            Log.d(TAG, "Starting WiFi scan (BLE controller + local Wi-Fi)")
+            // Always request Wi-Fi scan from the connected ESP32 controller over BLE
+            if (connectionState.value == ConnectionState.Connected) {
+                bleManager.sendCommand(BleCommand.ScanWifi(rescan = true))
             }
 
+            val context = application.applicationContext
+            if (!hasWifiScanningPermissions(context) || !wifiManager.isWifiEnabled) {
+                Log.w(TAG, "Local WiFi scan skipped (relying on BLE controller Wi-Fi scan)")
+                return
+            }
+
+            val success = wifiManager.startScan()
+            if (!success) {
+                val results = try { wifiManager.scanResults ?: emptyList() } catch (e: SecurityException) { emptyList() }
+                val localNets = results.filter { !it.SSID.isNullOrEmpty() }.map { WifiNetworkInfo(it.SSID, it.level) }
+                val bleNets = bleManager.bleWifiNetworks.value.map { WifiNetworkInfo(it.first, it.second) }
+                _availableNetworks.value = (bleNets + localNets).distinctBy { it.ssid }.sortedByDescending { it.level }
+                return
+            }
+
+            viewModelScope.launch {
+                delay(2000)
+                val results = try {
+                    wifiManager.scanResults ?: emptyList()
+                } catch (e: SecurityException) {
+                    emptyList()
+                }
+                val localNets = results.filter { !it.SSID.isNullOrEmpty() }.map { WifiNetworkInfo(it.SSID, it.level) }
+                val bleNets = bleManager.bleWifiNetworks.value.map { WifiNetworkInfo(it.first, it.second) }
+                _availableNetworks.value = (bleNets + localNets).distinctBy { it.ssid }.sortedByDescending { it.level }
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error scanning WiFi networks: ${e.message}", e)
-            // Update UI to show error?
-            _availableNetworks.value = emptyList()
         }
     }
     

@@ -16,6 +16,7 @@ sealed class BleCommand {
         const val CMD_GET_SETTINGS = 6
         const val CMD_REQUEST_STATUS = 7
         const val CMD_AUTHENTICATE = 8
+        const val CMD_SCAN_WIFI = 9
     }
     
     abstract val command: Int
@@ -81,6 +82,12 @@ sealed class BleCommand {
     data class Authenticate(
         val accessCode: String,
         override val command: Int = CMD_AUTHENTICATE,
+        override val type: String = "command"
+    ) : BleCommand()
+
+    data class ScanWifi(
+        val rescan: Boolean = true,
+        override val command: Int = CMD_SCAN_WIFI,
         override val type: String = "command"
     ) : BleCommand()
 } 

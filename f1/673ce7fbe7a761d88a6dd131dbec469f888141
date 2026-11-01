@@ -1,0 +1,27 @@
+app/src/main/java/com/nazulay/tiresairpressuremanagement/ui/screens/SplashScreen.kt
+  s_d312b23a5c97c7::t_300b1f8c371ed9 5,44,51,62-67,74
+app/src/main/res/drawable/splash_background.xml
+  s_d312b23a5c97c7::t_bc23d9cf5e2f00 4,11
+app/src/main/java/com/nazulay/tiresairpressuremanagement/ui/screens/MainScreen.kt
+  s_d312b23a5c97c7::t_138048a91b0caa 276-278,286
+  s_d312b23a5c97c7::t_71df333721f79a 759,761,771-772,774,787-789,804,809,819,826,831,849,851,853,874,876,890,895,900-902,910,912-913,915-918,928,945,950,952-953,955,962,974,980-981,983,988-989
+  s_d312b23a5c97c7::t_bf415b7282ff30 427-431
+  s_d312b23a5c97c7::t_80cdabf6d7f9de 355-359
+  s_d312b23a5c97c7::t_e8bb077b9bdd63 618-624,635,637,653-656,668-676,681,685,690,712-713,721-723,728-742
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.11",
+  "base_commit_sha": "f1673ce7fbe7a761d88a6dd131dbec469f888141",
+  "prompts": {},
+  "sessions": {
+    "s_d312b23a5c97c7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4073ab5b-854e-4e47-8475-abc551f21d7a",
+        "model": "gemini-4-argon"
+      },
+      "human_author": "Nir Azulay <nir.azulay@gmail.com>"
+    }
+  }
+}

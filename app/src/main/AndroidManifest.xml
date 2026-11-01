@@ -9,12 +9,10 @@
     <!-- BLE permissions for Android 12+ -->
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
     
     <!-- Location permissions (required for BLE scanning) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     
     <!-- WiFi permissions -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
@@ -46,10 +44,10 @@
         android:required="true" />
     <uses-feature
         android:name="android.hardware.location.gps"
-        android:required="true" />
+        android:required="false" />
     <uses-feature
         android:name="android.hardware.location.network"
-        android:required="true" />
+        android:required="false" />
     
     <!-- Android Auto support -->
     <uses-feature
@@ -66,7 +64,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.TiresAirPressureManagement"
-        tools:targetApi="33">
+        tools:targetApi="34">
             
         <!-- Meta-data for Android Auto -->
         <meta-data

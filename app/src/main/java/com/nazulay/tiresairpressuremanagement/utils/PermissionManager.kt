@@ -25,32 +25,14 @@ object PermissionManager {
     fun requiredPermissions(context: Context): List<String> {
         val basePermissions = mutableListOf<String>()
         
-        // Location permissions are required for BLE scanning on all Android versions prior to 12
+        // Location permissions are required for BLE/Wi-Fi scanning
         basePermissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
         basePermissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
         
-        // Add Bluetooth permissions based on Android version
+        // Add Bluetooth runtime permissions for Android 12 (API 31) and above (including Android 14)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // Android 12 (API 31) and above
             basePermissions.add(Manifest.permission.BLUETOOTH_SCAN)
             basePermissions.add(Manifest.permission.BLUETOOTH_CONNECT)
-            // Only add ADVERTISE if your app needs to advertise
-            basePermissions.add(Manifest.permission.BLUETOOTH_ADVERTISE)
-        } else {
-            // Android 11 (API 30) and below
-            basePermissions.add(Manifest.permission.BLUETOOTH)
-            basePermissions.add(Manifest.permission.BLUETOOTH_ADMIN)
-            // Location is mandatory for scanning on older Android versions
-            // Already added above
-        }
-        
-        // Add WiFi permissions if needed
-        basePermissions.add(Manifest.permission.ACCESS_WIFI_STATE)
-        basePermissions.add(Manifest.permission.CHANGE_WIFI_STATE)
-        
-        // Add notification permission for Android 13+ (TIRAMISU, API 33)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            basePermissions.add(Manifest.permission.POST_NOTIFICATIONS)
         }
         
         Log.d(TAG, "Required permissions for this device: ${basePermissions.joinToString()}")

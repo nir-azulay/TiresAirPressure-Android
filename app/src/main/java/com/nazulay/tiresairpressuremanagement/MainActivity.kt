@@ -79,29 +79,36 @@ class MainActivity : ComponentActivity() {
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        val allGranted = permissions.values.all { it }
         Log.d(TAG, "Permission results: $permissions")
-        
-        if (!allGranted) {
-            // Check which permissions were denied
+        val hasCoreBlePermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+        } else {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        }
+
+        if (!hasCoreBlePermissions) {
             val deniedPermissions = permissions.filter { !it.value }.keys
             Log.d(TAG, "Denied permissions: $deniedPermissions")
-            
-            // Check if any permission is permanently denied
             val permanentlyDenied = deniedPermissions.any { permission ->
                 !shouldShowRequestPermissionRationale(permission)
             }
-            
             if (permanentlyDenied) {
-                // Show settings dialog if any permission is permanently denied
                 showPermissionSettingsDialog = true
             } else {
-                // Show regular permission dialog for temporary denial
                 showPermissionDialog = true
             }
         } else {
-            Log.d(TAG, "All permissions granted")
-            tryConnectToSavedDevice()
+            Log.d(TAG, "Core BLE permissions granted")
+            if (!hasNotificationPermission()) {
+                requestNotificationPermission()
+            }
+            if (!PermissionManager.isBluetoothEnabled(this)) {
+                PermissionManager.requestEnableBluetooth(this)
+            } else {
+                tryConnectToSavedDevice()
+            }
         }
     }
 
@@ -140,8 +147,8 @@ class MainActivity : ComponentActivity() {
         // Initialize BLE Manager with repository
         bleManager = BleManager(applicationContext, bleRepository)
         
-        // Check Bluetooth enabled
-        if (!PermissionManager.isBluetoothEnabled(this)) {
+        // Check Bluetooth enabled only if permissions are already granted
+        if (PermissionManager.hasRequiredPermissions(this) && !PermissionManager.isBluetoothEnabled(this)) {
             Log.d(TAG, "Bluetooth is disabled, requesting enable")
             PermissionManager.requestEnableBluetooth(this)
         }
@@ -467,14 +474,7 @@ class MainActivity : ComponentActivity() {
     private fun checkAndRequestPermissions() {
         Log.d(TAG, "Checking and requesting necessary permissions")
         
-        // Check if Bluetooth is enabled first
-        if (!PermissionManager.isBluetoothEnabled(this)) {
-            Log.d(TAG, "Bluetooth is not enabled, requesting to enable")
-            PermissionManager.requestEnableBluetooth(this)
-            return
-        }
-        
-        // Get all missing permissions
+        // Request runtime permissions BEFORE attempting BluetoothAdapter.ACTION_REQUEST_ENABLE (required on Android 12-14+)
         val missingPermissions = PermissionManager.getMissingPermissions(this).toTypedArray()
         
         if (missingPermissions.isNotEmpty()) {
@@ -505,6 +505,14 @@ class MainActivity : ComponentActivity() {
             }
         } else {
             Log.d(TAG, "All required permissions are granted")
+            if (!hasNotificationPermission()) {
+                requestNotificationPermission()
+            }
+            if (!PermissionManager.isBluetoothEnabled(this)) {
+                Log.d(TAG, "Bluetooth is not enabled, requesting to enable")
+                PermissionManager.requestEnableBluetooth(this)
+                return
+            }
             tryConnectToSavedDevice()
         }
     }

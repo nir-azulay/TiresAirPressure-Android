@@ -1178,38 +1178,19 @@ class BleManager(
     }
     
     private fun hasRequiredPermissions(): Boolean {
-        // Check location permissions
-        val hasLocationPermissions = ActivityCompat.checkSelfPermission(
-            context,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-        
-        // Check Bluetooth permissions based on Android version with fallbacks
-        val hasBluetoothPermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // For Android 12+, check the specific BLUETOOTH_SCAN and BLUETOOTH_CONNECT
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val hasScan = hasPermission(Manifest.permission.BLUETOOTH_SCAN)
             val hasConnect = hasPermission(Manifest.permission.BLUETOOTH_CONNECT)
-            
-            // Log each permission status
             Log.d(TAG, "Android 12+ BT permissions: SCAN=$hasScan, CONNECT=$hasConnect")
-            
             hasScan && hasConnect
         } else {
-            // For older Android versions
+            val hasLocation = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) ||
+                hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
             val hasBt = hasPermission(Manifest.permission.BLUETOOTH)
             val hasBtAdmin = hasPermission(Manifest.permission.BLUETOOTH_ADMIN)
-            
-            // Log each permission status
-            Log.d(TAG, "Pre-Android 12 BT permissions: BT=$hasBt, BT_ADMIN=$hasBtAdmin")
-            
-            hasBt && hasBtAdmin
+            Log.d(TAG, "Pre-Android 12 permissions: LOCATION=$hasLocation, BT=$hasBt, BT_ADMIN=$hasBtAdmin")
+            hasLocation && hasBt && hasBtAdmin
         }
-        
-        // Log overall permission status
-        val hasAllPermissions = hasLocationPermissions && hasBluetoothPermissions
-        Log.d(TAG, "Required permissions: LOCATION=$hasLocationPermissions, BLUETOOTH=$hasBluetoothPermissions, ALL=$hasAllPermissions")
-        
-        return hasAllPermissions
     }
     
     private fun hasPermission(permission: String): Boolean {

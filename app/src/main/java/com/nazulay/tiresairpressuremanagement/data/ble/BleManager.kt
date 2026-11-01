@@ -1062,8 +1062,19 @@ class BleManager(
                 Log.d(TAG, "Queueing command: $jsonString")
             }
             
-            // Add to write queue and start processing if not already writing
-            writeQueue.add(jsonString.toByteArray())
+            // Add to write queue in <=180B chunks so large payloads (e.g. UpdateSettings) never fail GATT MTU limits
+            val fullBytes = jsonString.toByteArray(Charsets.UTF_8)
+            val maxChunkSize = 180
+            if (fullBytes.size <= maxChunkSize) {
+                writeQueue.add(fullBytes)
+            } else {
+                var offset = 0
+                while (offset < fullBytes.size) {
+                    val end = minOf(offset + maxChunkSize, fullBytes.size)
+                    writeQueue.add(fullBytes.copyOfRange(offset, end))
+                    offset = end
+                }
+            }
             if (!isWriting) {
                 processWriteQueue()
             }

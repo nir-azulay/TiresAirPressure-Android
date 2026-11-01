@@ -865,6 +865,8 @@ private fun HardwareSettings(
     var accessPointPassword by remember { mutableStateOf(settings.accessPointPassword) }
     var accessCode by remember { mutableStateOf(settings.accessCode) }
     var clearAccessCode by remember { mutableStateOf(settings.clearAccessCode) }
+    var hotspotPasswordVisible by remember { mutableStateOf(false) }
+    var accessCodeVisible by remember { mutableStateOf(false) }
     var measureWait by remember { mutableStateOf(settings.measureWait.toString()) }
     var precision by remember { mutableStateOf(settings.precision.toString()) }
     
@@ -1066,12 +1068,21 @@ private fun HardwareSettings(
                     accessPointPassword = value
                 },
                 label = { Text(stringResource(R.string.hotspot_password_hint), color = Color.White.copy(alpha = 0.8f)) },
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (hotspotPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp),
-                colors = textFieldColors
+                colors = textFieldColors,
+                trailingIcon = {
+                    IconButton(onClick = { hotspotPasswordVisible = !hotspotPasswordVisible }) {
+                        Icon(
+                            imageVector = if (hotspotPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                            contentDescription = if (hotspotPasswordVisible) "Hide password" else "Show password",
+                            tint = Color.White.copy(alpha = 0.7f)
+                        )
+                    }
+                }
             )
 
             OutlinedTextField(
@@ -1089,12 +1100,21 @@ private fun HardwareSettings(
                         color = Color.White.copy(alpha = 0.8f)
                     )
                 },
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (accessCodeVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp),
-                colors = textFieldColors
+                colors = textFieldColors,
+                trailingIcon = {
+                    IconButton(onClick = { accessCodeVisible = !accessCodeVisible }) {
+                        Icon(
+                            imageVector = if (accessCodeVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                            contentDescription = if (accessCodeVisible) "Hide access code" else "Show access code",
+                            tint = Color.White.copy(alpha = 0.7f)
+                        )
+                    }
+                }
             )
 
             Row(

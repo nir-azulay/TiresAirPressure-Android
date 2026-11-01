@@ -1,0 +1,38 @@
+app/src/main/java/com/nazulay/tiresairpressuremanagement/ui/screens/settings/SettingsViewModel.kt
+  s_d312b23a5c97c7::t_8dce644843c6fd 290-296,313-319,349-355,394-400
+app/src/main/java/com/nazulay/tiresairpressuremanagement/ui/screens/settings/SettingsScreen.kt
+  s_d312b23a5c97c7::t_23020b963bcf34 334-340
+  s_d312b23a5c97c7::t_800398e4aee2c0 862-867,898-906,911,925,939,953,967,981,995,1005-1047,1051,1061-1119
+app/src/main/java/com/nazulay/tiresairpressuremanagement/domain/models/DeviceSettingsResponse.kt
+  s_d312b23a5c97c7::t_6a20ea5447fe07 24-29,35,38-45,50-55
+app/src/main/java/com/nazulay/tiresairpressuremanagement/domain/models/BleCommand.kt
+  s_d312b23a5c97c7::t_f586dac8066903 50-55
+app/src/main/java/com/nazulay/tiresairpressuremanagement/data/local/AppSettingsManager.kt
+  s_d312b23a5c97c7::t_73d1ad9194ecd1 41-111,113-116,119-131
+app/src/main/java/com/nazulay/tiresairpressuremanagement/ui/screens/SplashScreen.kt
+  s_d312b23a5c97c7::t_80886797143e21 6-7,9-10,12,27,35-36,41,51-52,54-64,66-67,69-70,72-74,78-79,84
+app/src/main/res/drawable/ic_launcher_background.xml
+  s_d312b23a5c97c7::t_2b221217c6fd43 8
+app/src/main/java/com/nazulay/tiresairpressuremanagement/domain/models/DeviceSettings.kt
+  s_d312b23a5c97c7::t_aefa999b834cd2 32-39
+app/src/main/java/com/nazulay/tiresairpressuremanagement/data/ble/BleManager.kt
+  s_d312b23a5c97c7::t_d347a986d2b31d 994-999,1009-1010,1015-1020
+  s_d312b23a5c97c7::t_9eda3c494280a7 1891-1896
+  s_d312b23a5c97c7::t_4ae7b17757d081 992-993
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.11",
+  "base_commit_sha": "55b6b28378c71b57d48bb6d48ceab40523a71036",
+  "prompts": {},
+  "sessions": {
+    "s_d312b23a5c97c7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4073ab5b-854e-4e47-8475-abc551f21d7a",
+        "model": "gemini-4-argon"
+      },
+      "human_author": "Nir Azulay <nir.azulay@gmail.com>"
+    }
+  }
+}

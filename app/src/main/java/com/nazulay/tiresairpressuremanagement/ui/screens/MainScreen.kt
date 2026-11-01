@@ -4,7 +4,12 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -692,38 +697,86 @@ private fun PressureGaugeCard(
                 }
             }
             
-            // Progress indicator
+            // 270° Speedometer Dial with Tick Marks
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .aspectRatio(1f)
-                    .padding(16.dp),
+                    .padding(12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                // Calculate progress
                 val progress = (currentPressureAnimated.value / maxPressure).coerceIn(0f, 1f)
                 val targetProgress = (targetPressure / maxPressure).coerceIn(0f, 1f)
-                
-                // Draw circular progress
-                CircularProgressIndicator(
-                    progress = progress,
-                    modifier = Modifier.fillMaxSize(),
-                    strokeWidth = 16.dp,
-                    color = activeAccent,
-                    trackColor = Color(0xFF293548)
-                )
-                
-                // Target indicator (smaller circle)
-                CircularProgressIndicator(
-                    progress = targetProgress,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(10.dp),
-                    strokeWidth = 7.dp,
-                    color = Color(0xFFFFA726),
-                    trackColor = Color.Transparent
-                )
-                
+
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val strokePx = 14.dp.toPx()
+                    val innerStrokePx = 6.dp.toPx()
+                    val outerRadius = (size.minDimension / 2f) - 4.dp.toPx()
+                    val arcDiameter = (outerRadius - 12.dp.toPx()) * 2f
+                    val arcOffset = Offset(
+                        (size.width - arcDiameter) / 2f,
+                        (size.height - arcDiameter) / 2f
+                    )
+                    val innerDiameter = arcDiameter - 22.dp.toPx()
+                    val innerOffset = Offset(
+                        (size.width - innerDiameter) / 2f,
+                        (size.height - innerDiameter) / 2f
+                    )
+
+                    // Outer tick marks (270 degrees from 135° to 405°)
+                    for (tick in 0..20) {
+                        val isMajor = tick % 5 == 0
+                        val angleRad = Math.toRadians(135.0 + tick * 13.5)
+                        val tickLen = if (isMajor) 8.dp.toPx() else 5.dp.toPx()
+                        val startR = outerRadius - tickLen
+                        val sx = center.x + (startR * Math.cos(angleRad)).toFloat()
+                        val sy = center.y + (startR * Math.sin(angleRad)).toFloat()
+                        val ex = center.x + (outerRadius * Math.cos(angleRad)).toFloat()
+                        val ey = center.y + (outerRadius * Math.sin(angleRad)).toFloat()
+                        val tickColor = if (tick / 20f <= progress) activeAccent else Color.White.copy(alpha = if (isMajor) 0.35f else 0.15f)
+                        drawLine(
+                            color = tickColor,
+                            start = Offset(sx, sy),
+                            end = Offset(ex, ey),
+                            strokeWidth = if (isMajor) 2.5.dp.toPx() else 1.5.dp.toPx(),
+                            cap = StrokeCap.Round
+                        )
+                    }
+
+                    // Background 270° track
+                    drawArc(
+                        color = Color(0xFF293548),
+                        startAngle = 135f,
+                        sweepAngle = 270f,
+                        useCenter = false,
+                        topLeft = arcOffset,
+                        size = Size(arcDiameter, arcDiameter),
+                        style = Stroke(width = strokePx, cap = StrokeCap.Round)
+                    )
+
+                    // Target pressure inner 270° arc
+                    drawArc(
+                        color = Color(0xFFFFA726).copy(alpha = 0.55f),
+                        startAngle = 135f,
+                        sweepAngle = 270f * targetProgress,
+                        useCenter = false,
+                        topLeft = innerOffset,
+                        size = Size(innerDiameter, innerDiameter),
+                        style = Stroke(width = innerStrokePx, cap = StrokeCap.Round)
+                    )
+
+                    // Current pressure active 270° arc
+                    drawArc(
+                        color = activeAccent,
+                        startAngle = 135f,
+                        sweepAngle = 270f * progress,
+                        useCenter = false,
+                        topLeft = arcOffset,
+                        size = Size(arcDiameter, arcDiameter),
+                        style = Stroke(width = strokePx, cap = StrokeCap.Round)
+                    )
+                }
+
                 // Target pressure text in the center
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
@@ -738,6 +791,12 @@ private fun PressureGaugeCard(
                         fontWeight = FontWeight.ExtraBold,
                         textAlign = TextAlign.Center,
                         color = Color(0xFFFFA726)
+                    )
+                    Text(
+                        text = "PSI",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF94A3B8)
                     )
                 }
             }

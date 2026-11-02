@@ -1,0 +1,19 @@
+PRIVACY.md
+  s_8a297305c5de68::t_637c9ea6d0ef15 1-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.11",
+  "base_commit_sha": "80bb836d3980deabb3a3809b380845b9dbaacf54",
+  "prompts": {},
+  "sessions": {
+    "s_8a297305c5de68": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "66286c43-ccd4-44ad-8e32-9f73f2cf029a",
+        "model": "grok-4.7"
+      },
+      "human_author": "Nir Azulay <nir.azulay@gmail.com>"
+    }
+  }
+}

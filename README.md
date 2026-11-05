@@ -1,4 +1,4 @@
-# Tire Pressure Manager — Android & Android Auto (`v2.1.0`)
+# Tire Pressure Manager — Android & Android Auto (`v2.2.0`)
 
 Kotlin and Jetpack Compose companion application for the open-source **DIY (Do-It-Yourself)** ESP32 Tire Air Pressure Management System over Bluetooth Low Energy (BLE), with full Android Auto support (Android 10 through Android 14+).
 

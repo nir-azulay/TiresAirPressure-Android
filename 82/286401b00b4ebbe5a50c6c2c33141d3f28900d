@@ -1,0 +1,21 @@
+whatsnew/whatsnew-en-US
+  s_c6b8b716f084ae::t_b7aad09f29a010 1-9
+.github/workflows/android-play.yml
+  s_c6b8b716f084ae::t_a63cbc20df1609 75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.11",
+  "base_commit_sha": "82286401b00b4ebbe5a50c6c2c33141d3f28900d",
+  "prompts": {},
+  "sessions": {
+    "s_c6b8b716f084ae": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "522e06f5-c391-47e8-8a61-a9e7ff269c45",
+        "model": "gemini-4-argon"
+      },
+      "human_author": "Nir Azulay <nir.azulay@gmail.com>"
+    }
+  }
+}

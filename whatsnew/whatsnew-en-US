@@ -1,0 +1,9 @@
+v2.2.0 (Controller FW v1.0.261105_270):
+• Automatic BLE firmware version check & update banner on the main screen.
+• New Firmware & File System screen with 4 Wi-Fi OTA options:
+  - Full 1-Tap Upgrade
+  - Firmware Only (firmware.bin)
+  - SPIFFS Static Web UI Files Only
+  - Fix & Migrate settings.json Only (keeps user settings, adds new keys, removes deprecated keys)
+• Auto Simulation Mode guard during OTA flashing.
+• Full English & Hebrew support.

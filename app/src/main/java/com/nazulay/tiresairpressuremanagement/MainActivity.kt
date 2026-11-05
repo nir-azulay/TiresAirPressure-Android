@@ -228,6 +228,7 @@ class MainActivity : ComponentActivity() {
     private fun AppContent() {
         var currentScreen by remember { mutableStateOf(Screen.SPLASH) }
         var showDeviceManagement by remember { mutableStateOf(false) }
+        var showFirmwareUpgrade by remember { mutableStateOf(false) }
         
         // Check permissions when app starts
         LaunchedEffect(Unit) {
@@ -340,6 +341,10 @@ class MainActivity : ComponentActivity() {
                         onExitClick = {
                             android.util.Log.d(TAG, "User clicked exit")
                             finish()
+                        },
+                        onFirmwareUpgradeClick = {
+                            android.util.Log.d(TAG, "User clicked firmware upgrade")
+                            showFirmwareUpgrade = true
                         }
                     )
                 }
@@ -393,6 +398,10 @@ class MainActivity : ComponentActivity() {
                             android.util.Log.d(TAG, "User clicked device management")
                             showDeviceManagement = true
                         },
+                        onFirmwareUpgradeClick = {
+                            android.util.Log.d(TAG, "User clicked firmware upgrade from settings")
+                            showFirmwareUpgrade = true
+                        },
                         forceReconnect = {
                             android.util.Log.d(TAG, "Force reconnect callback triggered from SettingsScreen")
                             if (bleManager.connectionState.value == ConnectionState.Disconnected) {
@@ -435,6 +444,16 @@ class MainActivity : ComponentActivity() {
                         showDeviceManagement = false
                     },
                     viewModel = com.nazulay.tiresairpressuremanagement.ui.screens.device_management.DeviceManagementViewModel(bleManager)
+                )
+            }
+
+            if (showFirmwareUpgrade) {
+                com.nazulay.tiresairpressuremanagement.ui.screens.settings.FirmwareUpgradeScreen(
+                    bleManager = bleManager,
+                    onBackClick = {
+                        android.util.Log.d(TAG, "User clicked back from firmware upgrade")
+                        showFirmwareUpgrade = false
+                    }
                 )
             }
             

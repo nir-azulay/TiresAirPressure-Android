@@ -273,4 +273,63 @@
     <string name="access_code_unlocked_hint">קוד גישה BLE (פתוח - הזן להגדרה)</string>
     <string name="clear_access_code">נקה קוד גישה BLE</string>
     <string name="firmware_ip_format" formatted="false">קושחה: %1$s | IP: %2$s</string>
-</resources> 
+
+    <!-- Firmware, SPIFFS & settings.json Upgrade -->
+    <string name="firmware_upgrade_title">קושחה ומערכת קבצים</string>
+    <string name="firmware_version_status">סטטוס גרסת קושחה</string>
+    <string name="installed_on_device">מותקן בבקר</string>
+    <string name="bundled_in_app">כלול באפליקציה</string>
+    <string name="update_available_badge">עדכון זמין</string>
+    <string name="up_to_date_badge">מעודכן</string>
+    <string name="firmware_update_available_title">עדכון קושחה זמין לבקר</string>
+    <string name="firmware_update_available_message_format" formatted="false">הבקר מריץ כעת את גרסה %1$s ובאפליקציה קיימת גרסה חדשה יותר (%2$s).</string>
+    <string name="upgrade_now_button">שדרג עכשיו</string>
+    <string name="later_button">אחר כך</string>
+    <string name="wifi_connection_title">חיבור Wi-Fi לבקר</string>
+    <string name="wifi_not_verified">לא מאומת</string>
+    <string name="wifi_upgrade_instructions_format">השדרוג מתבצע דרך Wi-Fi. אם הטלפון אינו באותה רשת עם הבקר, לחץ על \'התחבר ל-Wi-Fi\' כדי להתחבר אל \"%1$s\".</string>
+    <string name="connect_wifi_button">התחבר ל-Wi-Fi</string>
+    <string name="wifi_connected_button">Wi-Fi מחובר</string>
+    <string name="wifi_connected_alert_title">חיבור Wi-Fi פעיל</string>
+    <string name="wifi_connected_alert_message_format">מחובר לשרת הבקר בכתובת %1$s. כעת ניתן להפעיל כל אחת מאפשרויות השדרוג למטה.</string>
+    <string name="wifi_manual_join_title">התחברות ל-Wi-Fi של הבקר</string>
+    <string name="wifi_manual_join_message_format" formatted="false">התחבר לרשת ה-Wi-Fi \"%1$s\" בהגדרות האנדרואיד.\n\nסיסמה: %2$s (הועתקה ללוח!)\nכתובת הבקר: %3$s</string>
+    <string name="open_wifi_settings_button">פתח הגדרות Wi-Fi</string>
+    <string name="check_again_button">התחברתי — בדוק שוב</string>
+    <string name="upgrade_options_header">אפשרויות שדרוג ותחזוקה</string>
+    <string name="upgrade_option_full_title">שדרוג מלא (מומלץ)</string>
+    <string name="upgrade_option_full_subtitle">משדרג את קובץ הקושחה (firmware.bin), מעדכן את כל הקבצים הסטטיים ב-SPIFFS ומתקן את settings.json תוך שמירה על ההגדרות הקיימות.</string>
+    <string name="upgrade_option_firmware_only_title">קושחה בלבד (firmware.bin)</string>
+    <string name="upgrade_option_firmware_only_subtitle">צורב רק את קובץ הקושחה של הבקר דרך /doUpdate ללא שינוי קבצי SPIFFS.</string>
+    <string name="upgrade_option_spiffs_only_title">קבצי SPIFFS סטטיים בלבד</string>
+    <string name="upgrade_option_spiffs_only_subtitle">מעלה את כל קבצי ה-HTML, CSS ו-JS של ממשק הווב ל-SPIFFS ללא שינוי הקושחה או settings.json.</string>
+    <string name="upgrade_option_settings_only_title">תיקון ומיזוג settings.json בלבד</string>
+    <string name="upgrade_option_settings_only_subtitle">שומר על ההגדרות הקיימות שלך תוך הוספת שדות חסרים והסרת שדות מיושנים.</string>
+    <string name="confirm_upgrade_title">להתחיל בעדכון הבקר?</string>
+    <string name="confirm_upgrade_full_message">פעולה זו תמזג את settings.json (תוך שמירה על ההגדרות הקיימות), תעלה את כל הקבצים הסטטיים ל-SPIFFS, תצרוב את firmware.bin ותאתחל את הבקר.</string>
+    <string name="confirm_upgrade_firmware_message">פעולה זו תצרוב את קובץ firmware.bin דרך Wi-Fi ותאתחל את הבקר. קבצי SPIFFS ו-settings.json יישארו ללא שינוי.</string>
+    <string name="confirm_upgrade_spiffs_message">פעולה זו תעלה את כל קבצי ה-HTML, CSS ו-JS ל-SPIFFS. הקובץ settings.json לא ישתנה.</string>
+    <string name="confirm_upgrade_settings_message">פעולה זו תשמור על ערכי ההגדרות הקיימים שלך תוך הוספת מפתחות חסרים והסרת מפתחות מיושנים מ-/spiffs/settings.json.</string>
+    <string name="upgrade_state_ready">מוכן</string>
+    <string name="upgrade_state_connecting_wifi_format">מתחבר ל-Wi-Fi \"%1$s\"...</string>
+    <string name="upgrade_state_migrating_settings">ממזג את settings.json...</string>
+    <string name="upgrade_state_uploading_spiffs_format" formatted="false">מעלה את %1$s (%2$d/%3$d)...</string>
+    <string name="upgrade_state_uploading_firmware_format">צורב את firmware.bin (%1$d%%)...</string>
+    <string name="upgrade_state_rebooting">מאתחל ומתחבר מחדש ב-BLE...</string>
+    <string name="settings_migration_summary_format" formatted="false">settings.json: %1$d נשמרו, %2$d נוספו, %3$d הוסרו</string>
+    <string name="upgrade_log_connected_ip_format">מחובר לשרת ה-HTTP של הבקר בכתובת %1$s</string>
+    <string name="upgrade_log_fetching_settings">קורא את /settings.json הנוכחי מהבקר...</string>
+    <string name="upgrade_log_settings_merged_format" formatted="false">settings.json מוזג (%1$d נשמרו, %2$d נוספו, %3$d הוסרו)</string>
+    <string name="upgrade_log_settings_uploaded">הועלה קובץ /spiffs/settings.json מעודכן</string>
+    <string name="upgrade_log_uploading_file_format" formatted="false">מעלה קובץ SPIFFS %1$s (%2$d/%3$d)</string>
+    <string name="upgrade_log_flashing_firmware_format" formatted="false">צורב קושחה %1$s (%2$d KB)...</string>
+    <string name="upgrade_log_firmware_uploaded">קובץ הקושחה נכתב לזיכרון הפלאש.</string>
+    <string name="upgrade_log_rebooting">מאתחל את הבקר ומתחבר מחדש ב-BLE...</string>
+    <string name="upgrade_complete_full_format">השדרוג המלא לגרסה %1$s הושלם!</string>
+    <string name="upgrade_complete_firmware_format">הקושחה שודרגה לגרסה %1$s!</string>
+    <string name="upgrade_complete_spiffs_format">הועלו %1$d קבצי SPIFFS סטטיים!</string>
+    <string name="upgrade_complete_settings_format" formatted="false">settings.json עודכן (%1$d נשמרו, %2$d נוספו, %3$d הוסרו)!</string>
+    <string name="upgrade_error_package_missing">חבילת הקושחה המובנית לא נמצאה באפליקציה.</string>
+    <string name="upgrade_error_unreachable_format" formatted="false">לא ניתן להגיע לבקר דרך Wi-Fi. אנא התחבר לרשת \"%1$s\" או בדוק את הכתובת %2$s.</string>
+    <string name="upgrade_error_upload_failed_format" formatted="false">העלאת הקובץ %1$s נכשלה (HTTP %2$d).</string>
+</resources>

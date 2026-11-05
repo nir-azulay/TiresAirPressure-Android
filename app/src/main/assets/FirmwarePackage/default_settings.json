@@ -1,0 +1,20 @@
+{
+    "DeviceName": "esp32-AirUpDownController",
+    "wifissid": "",
+    "wifipassword": "",
+    "RelayCompressorPin": 16,
+    "RelayFreePin": 17,
+    "SensorPin": 34,
+    "MaxSecForStatus": 10,
+    "SensorValueAt0PSI": 410,
+    "SensorValueAt50PSI": 3400,
+    "AccessCode": "",
+    "MessureWait": 1,
+    "Precision": 0.5,
+    "SimulationMode": true,
+    "PressureCalcMethod": 1,
+    "MaxPressurePSI": 50,
+    "MaxValveOpenSec": 120,
+    "SensorFullScalePSI": 50,
+    "AccessPointPassword": "12345678"
+}

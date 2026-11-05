@@ -29,6 +29,10 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Devices
+import androidx.compose.material.icons.filled.SystemUpdateAlt
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.platform.LocalContext
+import com.nazulay.tiresairpressuremanagement.data.ota.FirmwareUpgradeManager
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
@@ -65,8 +69,12 @@ fun SettingsScreen(
     viewModel: SettingsViewModel,
     onBackClick: () -> Unit,
     forceReconnect: () -> Unit = {},
-    onDeviceManagementClick: () -> Unit = {}
+    onDeviceManagementClick: () -> Unit = {},
+    onFirmwareUpgradeClick: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val upgradeManager = remember { FirmwareUpgradeManager.getInstance(context) }
+    val isUpdateAvailable by upgradeManager.isUpdateAvailable.collectAsState()
     var isSaving by remember { mutableStateOf(false) }
     val deviceSettings by viewModel.deviceSettings.collectAsState()
     val appSettings by viewModel.appSettings.collectAsState()
@@ -241,6 +249,57 @@ fun SettingsScreen(
                     val currentSettings = deviceSettings // Capture the value locally
                     if (currentSettings != null) {
                         // Add Simulation Mode Card to Device Settings
+                        item {
+                            SettingsCard {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onFirmwareUpgradeClick() }
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.SystemUpdateAlt,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(end = 16.dp)
+                                    )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = stringResource(R.string.firmware_upgrade_title),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = Color.White
+                                        )
+                                        Text(
+                                            text = currentSettings.softwareVersion.ifEmpty { "—" },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.White.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                    if (isUpdateAvailable) {
+                                        Surface(
+                                            color = Color(0xFFF59E0B).copy(alpha = 0.18f),
+                                            shape = RoundedCornerShape(6.dp),
+                                            modifier = Modifier.padding(end = 8.dp)
+                                        ) {
+                                            Text(
+                                                text = stringResource(R.string.update_available_badge),
+                                                color = Color(0xFFF59E0B),
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                            )
+                                        }
+                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.ExpandMore,
+                                        contentDescription = stringResource(R.string.expand),
+                                        tint = Color.White.copy(alpha = 0.7f)
+                                    )
+                                }
+                            }
+                        }
+
                         item {
                             SettingsCard {
                                 SimulationModeSettings(

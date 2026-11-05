@@ -272,4 +272,63 @@
     <string name="access_code_unlocked_hint">BLE Access Code (Unlocked - enter to set)</string>
     <string name="clear_access_code">Clear BLE Access Code</string>
     <string name="firmware_ip_format" formatted="false">Firmware: %1$s | IP: %2$s</string>
+
+    <!-- Firmware, SPIFFS & settings.json Upgrade -->
+    <string name="firmware_upgrade_title">Firmware &amp; File System</string>
+    <string name="firmware_version_status">Firmware Version Status</string>
+    <string name="installed_on_device">Installed on Controller</string>
+    <string name="bundled_in_app">Bundled in App</string>
+    <string name="update_available_badge">Update Available</string>
+    <string name="up_to_date_badge">Up to Date</string>
+    <string name="firmware_update_available_title">Controller Firmware Update Available</string>
+    <string name="firmware_update_available_message_format" formatted="false">Your controller is running %1$s and the app includes a newer version (%2$s).</string>
+    <string name="upgrade_now_button">Upgrade Now</string>
+    <string name="later_button">Later</string>
+    <string name="wifi_connection_title">Controller Wi-Fi Link</string>
+    <string name="wifi_not_verified">Not Verified</string>
+    <string name="wifi_upgrade_instructions_format">Upgrades run over Wi-Fi. If your phone is not on the same Wi-Fi as the controller, tap Connect Wi-Fi to join \"%1$s\".</string>
+    <string name="connect_wifi_button">Connect Wi-Fi</string>
+    <string name="wifi_connected_button">Wi-Fi Connected</string>
+    <string name="wifi_connected_alert_title">Wi-Fi Link Active</string>
+    <string name="wifi_connected_alert_message_format">Connected to the controller HTTP server at %1$s. You can now run any upgrade option below.</string>
+    <string name="wifi_manual_join_title">Connect to Controller Wi-Fi</string>
+    <string name="wifi_manual_join_message_format" formatted="false">Join the Wi-Fi network \"%1$s\" in Android Settings.\n\nPassword: %2$s (Copied to clipboard!)\nController IP: %3$s</string>
+    <string name="open_wifi_settings_button">Open Wi-Fi Settings</string>
+    <string name="check_again_button">I Connected — Check Again</string>
+    <string name="upgrade_options_header">Upgrade &amp; Maintenance Options</string>
+    <string name="upgrade_option_full_title">Full Upgrade (Recommended)</string>
+    <string name="upgrade_option_full_subtitle">Upgrades firmware.bin, updates all SPIFFS static Web UI files, and migrates settings.json while keeping your current values.</string>
+    <string name="upgrade_option_firmware_only_title">Firmware Only (firmware.bin)</string>
+    <string name="upgrade_option_firmware_only_subtitle">Flashes only the ESP32 firmware binary via /doUpdate without modifying SPIFFS files.</string>
+    <string name="upgrade_option_spiffs_only_title">SPIFFS Static Files Only</string>
+    <string name="upgrade_option_spiffs_only_subtitle">Uploads all bundled HTML, CSS, and JS Web UI files to SPIFFS without changing firmware or settings.json.</string>
+    <string name="upgrade_option_settings_only_title">Fix &amp; Migrate settings.json Only</string>
+    <string name="upgrade_option_settings_only_subtitle">Keeps your current device settings while adding missing schema keys and removing deprecated entities.</string>
+    <string name="confirm_upgrade_title">Start Controller Update?</string>
+    <string name="confirm_upgrade_full_message">This will migrate settings.json (keeping your current settings), upload all SPIFFS static files, flash the bundled firmware.bin, and reboot the controller.</string>
+    <string name="confirm_upgrade_firmware_message">This will flash the bundled firmware.bin over Wi-Fi and reboot the controller. SPIFFS files and settings.json will remain untouched.</string>
+    <string name="confirm_upgrade_spiffs_message">This will upload all bundled HTML, CSS, and JS Web UI files to SPIFFS. Your settings.json will not be modified.</string>
+    <string name="confirm_upgrade_settings_message">This will keep your existing settings values while adding any missing schema keys and removing deprecated keys from /spiffs/settings.json.</string>
+    <string name="upgrade_state_ready">Ready</string>
+    <string name="upgrade_state_connecting_wifi_format">Connecting to Wi-Fi \"%1$s\"...</string>
+    <string name="upgrade_state_migrating_settings">Migrating settings.json...</string>
+    <string name="upgrade_state_uploading_spiffs_format" formatted="false">Uploading %1$s (%2$d/%3$d)...</string>
+    <string name="upgrade_state_uploading_firmware_format">Flashing firmware.bin (%1$d%%)...</string>
+    <string name="upgrade_state_rebooting">Rebooting &amp; reconnecting BLE...</string>
+    <string name="settings_migration_summary_format" formatted="false">settings.json: %1$d kept, %2$d added, %3$d removed</string>
+    <string name="upgrade_log_connected_ip_format">Connected to controller HTTP server at %1$s</string>
+    <string name="upgrade_log_fetching_settings">Reading current /settings.json from controller...</string>
+    <string name="upgrade_log_settings_merged_format" formatted="false">Merged settings.json (%1$d kept, %2$d added, %3$d removed)</string>
+    <string name="upgrade_log_settings_uploaded">Uploaded clean /spiffs/settings.json</string>
+    <string name="upgrade_log_uploading_file_format" formatted="false">Uploading SPIFFS file %1$s (%2$d/%3$d)</string>
+    <string name="upgrade_log_flashing_firmware_format" formatted="false">Flashing firmware %1$s (%2$d KB)...</string>
+    <string name="upgrade_log_firmware_uploaded">Firmware binary written to flash.</string>
+    <string name="upgrade_log_rebooting">Rebooting controller and reconnecting over BLE...</string>
+    <string name="upgrade_complete_full_format">Full upgrade to %1$s completed!</string>
+    <string name="upgrade_complete_firmware_format">Firmware upgraded to %1$s!</string>
+    <string name="upgrade_complete_spiffs_format">Uploaded %1$d SPIFFS static files!</string>
+    <string name="upgrade_complete_settings_format" formatted="false">settings.json migrated (%1$d kept, %2$d added, %3$d removed)!</string>
+    <string name="upgrade_error_package_missing">Bundled firmware package not found in app assets.</string>
+    <string name="upgrade_error_unreachable_format" formatted="false">Could not reach controller over Wi-Fi. Please join Wi-Fi \"%1$s\" or verify IP %2$s.</string>
+    <string name="upgrade_error_upload_failed_format" formatted="false">Failed to upload %1$s (HTTP %2$d).</string>
 </resources>

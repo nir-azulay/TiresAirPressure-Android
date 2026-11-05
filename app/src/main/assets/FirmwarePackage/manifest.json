@@ -1,0 +1,66 @@
+{
+  "version": "v1.0.261105_270",
+  "versionFull": "v1.0.261105_270 - 2026-11-05 11:26:01.912742",
+  "buildNumber": 270,
+  "firmwareFile": "firmware.bin",
+  "firmwareSize": 1697040,
+  "firmwareSha256": "ed20f8676601f1d733f5df6cd21f37cd317f4ae89104455b96363a5123c37171",
+  "defaultSettingsFile": "default_settings.json",
+  "requiredSettingsKeys": [
+    "DeviceName",
+    "wifissid",
+    "wifipassword",
+    "RelayCompressorPin",
+    "RelayFreePin",
+    "SensorPin",
+    "MaxSecForStatus",
+    "SensorValueAt0PSI",
+    "SensorValueAt50PSI",
+    "AccessCode",
+    "MessureWait",
+    "Precision",
+    "SimulationMode",
+    "PressureCalcMethod",
+    "MaxPressurePSI",
+    "MaxValveOpenSec",
+    "SensorFullScalePSI",
+    "AccessPointPassword"
+  ],
+  "deprecatedSettingsKeys": [
+    "BTPinCode",
+    "BLESecurityEnabled",
+    "AutoStart"
+  ],
+  "staticFiles": [
+    {
+      "name": "index.html",
+      "size": 2038,
+      "sha256": "64b3d8b247414350fbb0633a61c15ddea1dd19ccd7163c844f8846d0c6f241e9"
+    },
+    {
+      "name": "configurations.html",
+      "size": 14480,
+      "sha256": "32f51e35f0730100d89e190e2437f0802f6a57f3954b95a8b828b838337f54c6"
+    },
+    {
+      "name": "update.html",
+      "size": 5198,
+      "sha256": "7bad72a810fed713bc3daa43b368c3c54de37bf90376730abe5fad9aff1a5a8f"
+    },
+    {
+      "name": "fs.html",
+      "size": 5566,
+      "sha256": "31bdc7e89a4542bae4fe53753d4c26156a946dfa1101b4515a1937bfc3bf9172"
+    },
+    {
+      "name": "about.html",
+      "size": 4259,
+      "sha256": "2ed07d2899854a21a072a914bbc796890c8370194fc5ef72968547cae9259b3e"
+    },
+    {
+      "name": "profile.jpg",
+      "size": 5122,
+      "sha256": "c4cf8015927427927913168b36be4cbf43bef715556dfb718c9eb91e51cf9e7f"
+    }
+  ]
+}

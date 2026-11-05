@@ -57,6 +57,9 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.ui.text.style.TextOverflow
 import kotlinx.coroutines.CancellationException
 
+import androidx.compose.foundation.BorderStroke
+import com.nazulay.tiresairpressuremanagement.data.ota.FirmwareUpgradeManager
+
 private const val TAG = "MainScreen"
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,8 +69,17 @@ fun MainScreen(
     onDisconnect: () -> Unit,
     onSettingsClick: () -> Unit,
     onAboutClick: () -> Unit,
-    onExitClick: () -> Unit
+    onExitClick: () -> Unit,
+    onFirmwareUpgradeClick: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val upgradeManager = remember {
+        FirmwareUpgradeManager.getInstance(context).also { it.attachBleManager(bleManager) }
+    }
+    val isUpdateAvailable by upgradeManager.isUpdateAvailable.collectAsState()
+    val updateSuggestionDismissed by upgradeManager.updateSuggestionDismissed.collectAsState()
+    val controllerVersion by upgradeManager.deviceVersion.collectAsState()
+
     val connectionState by bleManager.connectionState.collectAsState()
     val deviceName by bleManager.connectedDeviceName.collectAsState()
     val accessCodeRequired by bleManager.accessCodeRequired.collectAsState()
@@ -426,6 +438,15 @@ fun MainScreen(
                         ) {
                             // Connection status indicator
                             ConnectionStatusCard(connectionState, deviceName, bleManager)
+                            if (connectionState == ConnectionState.Connected && isUpdateAvailable && !updateSuggestionDismissed) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                FirmwareUpdateSuggestionBanner(
+                                    deviceVersion = controllerVersion,
+                                    bundledVersion = upgradeManager.bundledVersion,
+                                    onUpgrade = onFirmwareUpgradeClick,
+                                    onDismiss = { upgradeManager.dismissUpdateSuggestion() }
+                                )
+                            }
                             
                             // Pressure gauge
                             PressureGaugeCard(
@@ -507,6 +528,15 @@ fun MainScreen(
                     ) {
                         // Connection status indicator
                         ConnectionStatusCard(connectionState, deviceName, bleManager)
+                        if (connectionState == ConnectionState.Connected && isUpdateAvailable && !updateSuggestionDismissed) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            FirmwareUpdateSuggestionBanner(
+                                deviceVersion = controllerVersion,
+                                bundledVersion = upgradeManager.bundledVersion,
+                                onUpgrade = onFirmwareUpgradeClick,
+                                onDismiss = { upgradeManager.dismissUpdateSuggestion() }
+                            )
+                        }
                         
                         // Pressure gauge
                         PressureGaugeCard(
@@ -566,6 +596,92 @@ fun MainScreen(
                             )
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FirmwareUpdateSuggestionBanner(
+    deviceVersion: String,
+    bundledVersion: String,
+    onUpgrade: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFF6D00).copy(alpha = 0.14f)),
+        border = BorderStroke(1.dp, Color(0xFFFF6D00).copy(alpha = 0.6f))
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                Icon(
+                    imageVector = Icons.Default.SystemUpdateAlt,
+                    contentDescription = null,
+                    tint = Color(0xFFFF9E40),
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.firmware_update_available_title),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = stringResource(
+                            R.string.firmware_update_available_message_format,
+                            deviceVersion,
+                            bundledVersion
+                        ),
+                        color = Color(0xFF94A3B8),
+                        fontSize = 12.sp
+                    )
+                }
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = stringResource(R.string.close),
+                        tint = Color(0xFF94A3B8),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(
+                    onClick = onUpgrade,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF6D00)),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.upgrade_now_button),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(
+                        text = stringResource(R.string.later_button),
+                        color = Color(0xFF94A3B8),
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp
+                    )
                 }
             }
         }

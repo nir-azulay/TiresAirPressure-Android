@@ -1,0 +1,21 @@
+README.md
+  s_c6b8b716f084ae::t_0187a0d56861c8 1
+app/build.gradle
+  s_c6b8b716f084ae::t_20537b5e38ae3b 31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.11",
+  "base_commit_sha": "1986db1fe4e750f849a9d66383bc4488fac2280e",
+  "prompts": {},
+  "sessions": {
+    "s_c6b8b716f084ae": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "522e06f5-c391-47e8-8a61-a9e7ff269c45",
+        "model": "gemini-4-argon"
+      },
+      "human_author": "Nir Azulay <nir.azulay@gmail.com>"
+    }
+  }
+}

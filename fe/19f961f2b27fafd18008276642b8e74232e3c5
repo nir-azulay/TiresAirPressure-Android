@@ -1,0 +1,64 @@
+app/src/main/java/com/nazulay/tiresairpressuremanagement/MainActivity.kt
+  s_c6b8b716f084ae::t_a5740611f375ce 344-347
+  s_c6b8b716f084ae::t_dbd74e6e81b51b 401-404
+  s_c6b8b716f084ae::t_6d109b57c3c36b 449-458
+  s_c6b8b716f084ae::t_f94aefbee51ce2 231
+app/src/main/java/com/nazulay/tiresairpressuremanagement/data/ota/FirmwareUpgradeManager.kt
+  s_c6b8b716f084ae::t_1a572d7549f84a 930
+  s_c6b8b716f084ae::t_5e883f8b86a2ac 1-757,759-777,779-929,931-1163
+  s_c6b8b716f084ae::t_c8a771a1660135 758
+  s_c6b8b716f084ae::t_0be3156d6f2ee5 778
+app/src/main/java/com/nazulay/tiresairpressuremanagement/ui/screens/MainScreen.kt
+  s_c6b8b716f084ae::t_4d5dff93ccd2e6 60-62,72-73,75-82
+  s_c6b8b716f084ae::t_bf273e96f03cc8 606-690
+  s_c6b8b716f084ae::t_aa258669f32f03 441-449
+  s_c6b8b716f084ae::t_a3d77ba30fc6d1 531-539
+  s_c6b8b716f084ae::t_f28e4a4592a85a 605
+app/src/main/java/com/nazulay/tiresairpressuremanagement/ui/screens/settings/FirmwareUpgradeScreen.kt
+  s_c6b8b716f084ae::t_121e18fb43072e 1-740
+app/src/main/res/values-iw/strings.xml
+  s_c6b8b716f084ae::t_f7cfeec9675c87 276-335
+app/src/test/java/com/example/tiresairpressuremanagement/ExampleUnitTest.kt
+  s_c6b8b716f084ae::t_e9343d2fb2a8f9 3-4,6,13-111
+app/src/main/res/values/strings.xml
+  s_c6b8b716f084ae::t_0a753ddb174474 275-333
+app/build.gradle
+  s_c6b8b716f084ae::t_1c49bd6e71e344 188
+app/src/main/AndroidManifest.xml
+  s_c6b8b716f084ae::t_cc233f65635c28 66
+app/src/main/assets/FirmwarePackage/manifest.json
+  s_c6b8b716f084ae::t_83416d3811ea05 1-66
+app/src/main/java/com/nazulay/tiresairpressuremanagement/ui/screens/settings/SettingsScreen.kt
+  s_c6b8b716f084ae::t_0aa22c53a65aa2 72-73,75-77
+  s_c6b8b716f084ae::t_4eb234ba095150 32-35
+  s_c6b8b716f084ae::t_8d0717c6f86742 254-302
+  s_c6b8b716f084ae::t_53cc79940100f9 252-253
+app/src/main/assets/FirmwarePackage/default_settings.json
+  s_c6b8b716f084ae::t_6651543b44152b 1-20
+app/src/main/assets/FirmwarePackage/spiffs/about.html
+  s_c6b8b716f084ae::t_c26ae0ce6ff04f 1-95
+app/src/main/assets/FirmwarePackage/spiffs/configurations.html
+  s_c6b8b716f084ae::t_785bb1bd88e98a 1-306
+app/src/main/assets/FirmwarePackage/spiffs/fs.html
+  s_c6b8b716f084ae::t_c3111f6ba19ab3 1-113
+app/src/main/assets/FirmwarePackage/spiffs/index.html
+  s_c6b8b716f084ae::t_0bc5e573a2d5e9 1-36
+app/src/main/assets/FirmwarePackage/spiffs/update.html
+  s_c6b8b716f084ae::t_c3b83565f01edf 1-104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.11",
+  "base_commit_sha": "fe19f961f2b27fafd18008276642b8e74232e3c5",
+  "prompts": {},
+  "sessions": {
+    "s_c6b8b716f084ae": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "522e06f5-c391-47e8-8a61-a9e7ff269c45",
+        "model": "gemini-4-argon"
+      },
+      "human_author": "Nir Azulay <nir.azulay@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+app/build.gradle
+  s_c6b8b716f084ae::t_2f805459b6b8da 31
+  s_c6b8b716f084ae::t_3d8cbbe08346ca 32
+app/src/main/assets/FirmwarePackage/manifest.json
+  s_c6b8b716f084ae::t_328c9bd1cdecd5 2-4,7
+whatsnew/whatsnew-en-US
+  s_c6b8b716f084ae::t_bef355bb9f0450 1-5
+README.md
+  s_c6b8b716f084ae::t_cf197a0a0e0c07 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.11",
+  "base_commit_sha": "270a7a1e9b97ba507d7b9964abe4f39dae045dbb",
+  "prompts": {},
+  "sessions": {
+    "s_c6b8b716f084ae": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "522e06f5-c391-47e8-8a61-a9e7ff269c45",
+        "model": "muse-wonder-1.0"
+      },
+      "human_author": "Nir Azulay <nir.azulay@gmail.com>"
+    }
+  }
+}

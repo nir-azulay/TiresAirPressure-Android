@@ -1,6 +1,6 @@
-v2.2.1 (Controller FW v2.2.1_280):
-• Firmware version now synced with the app (v2.2.1), bundled in-app.
-• More reliable Wi-Fi OTA upgrades with verified reboot onto new firmware.
-• Stable BLE connection & complete controller settings sync.
-• Settings keyboard fix: Save stays reachable, tap outside to dismiss.
+v2.3.0 (Controller FW v2.3.0_283):
+• Full controller upgrade from the app: firmware, web UI files & settings migration.
+• Firmware version synced with the app (v2.3.0), bundled in-app.
+• New Settings design matching iOS, with keyboard fixes.
+• More reliable Wi-Fi OTA upgrades.
 • Bug fixes & stability improvements.

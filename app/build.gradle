@@ -29,7 +29,7 @@ if (project.hasProperty('versionBuildOverride')) {
 
 def versionMajor = 2
 def versionMinor = 2
-def versionPatch = 0
+def versionPatch = 1
 
 // Create full version string
 def fullVersionName = "${versionMajor}.${versionMinor}.${versionPatch}.${versionBuild}"
@@ -117,8 +117,6 @@ android {
         debug {
             buildConfigField "boolean", "DEBUG_MODE", "true"
             buildConfigField "String", "BUILD_TYPE", "\"DEBUG\""
-            applicationIdSuffix ".debug"
-            versionNameSuffix "-debug"
         }
     }
 

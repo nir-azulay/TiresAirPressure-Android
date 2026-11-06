@@ -1,10 +1,10 @@
 {
-  "version": "v1.0.261105_270",
-  "versionFull": "v1.0.261105_270 - 2026-11-05 11:26:01.912742",
-  "buildNumber": 270,
+  "version": "v2.2.2_282",
+  "versionFull": "v2.2.2_282 - 2026-11-06 17:09:52.173499",
+  "buildNumber": 282,
   "firmwareFile": "firmware.bin",
   "firmwareSize": 1697040,
-  "firmwareSha256": "ed20f8676601f1d733f5df6cd21f37cd317f4ae89104455b96363a5123c37171",
+  "firmwareSha256": "9a6b8cc09a728e9286f7ddf90ff10bddea2b6838c33356fae39aec10f79724ec",
   "defaultSettingsFile": "default_settings.json",
   "requiredSettingsKeys": [
     "DeviceName",

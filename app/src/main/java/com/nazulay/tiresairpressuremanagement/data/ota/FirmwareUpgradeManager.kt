@@ -360,8 +360,12 @@ class FirmwareUpgradeManager private constructor(private val context: Context) {
                     if (newVer.isNotEmpty()) {
                         _deviceVersion.value = newVer
                     }
-                    if (settings.ipAddress.isNotBlank() && _customHostIp.value.isBlank()) {
-                        _customHostIp.value = settings.ipAddress.trim()
+                    val newIp = settings.ipAddress.trim()
+                    if (newIp.isNotBlank()) {
+                        val currentCustom = _customHostIp.value.trim()
+                        if (currentCustom.isBlank() || (currentCustom == "192.168.4.1" && newIp != "192.168.4.1")) {
+                            _customHostIp.value = newIp
+                        }
                     }
                     if (newVer.isNotEmpty() && newVer != dismissedForDeviceVersion) {
                         _updateSuggestionDismissed.value = false
@@ -458,14 +462,17 @@ class FirmwareUpgradeManager private constructor(private val context: Context) {
 
     private fun candidateHosts(settings: DeviceSettings?): List<String> {
         val hosts = mutableListOf<String>()
+        val bleIp = settings?.ipAddress?.trim().orEmpty()
         val trimmedCustom = _customHostIp.value.trim()
             .removePrefix("http://")
             .removePrefix("https://")
             .trimEnd('/')
-        if (trimmedCustom.isNotEmpty()) {
+        if (bleIp.isNotEmpty() && bleIp != "192.168.4.1") {
+            hosts.add(bleIp)
+        }
+        if (trimmedCustom.isNotEmpty() && !hosts.contains(trimmedCustom)) {
             hosts.add(trimmedCustom)
         }
-        val bleIp = settings?.ipAddress?.trim().orEmpty()
         if (bleIp.isNotEmpty() && !hosts.contains(bleIp)) {
             hosts.add(bleIp)
         }
@@ -759,11 +766,9 @@ class FirmwareUpgradeManager private constructor(private val context: Context) {
             delay(1500)
             return true
         }
-        val resp = DirectWiFiHttpClient.sendGet(host, "/updateSettings?SimulationMode=1", 3000, activeWiFiNetwork())
-        if (resp != null && resp.first in 200..299) {
-            delay(5500)
-            return true
-        }
+        // Do NOT call `/updateSettings?SimulationMode=1` over HTTP here because `saveSettings`
+        // triggers `scheduleRestart(1500)`, which drops the ESP32 SoftAP and causes Android
+        // to auto-reconnect to home Wi-Fi right before the OTA upload starts!
         return false
     }
 
@@ -878,6 +883,28 @@ class FirmwareUpgradeManager private constructor(private val context: Context) {
         _upgradeState.value = UpgradeState.UploadingFirmware(0f)
         appendLog(context.getString(R.string.upgrade_log_flashing_firmware_format, bundledVersion, fwBytes.size / 1024))
 
+        // 1. Prime lastUpdateChunkMs only on controllers running older firmware
+        // (build < 270) where loop() on Core 1 checked `millis() - lastUpdateChunkMs > 20000`
+        // before lastUpdateChunkMs was initialized on the first OTA chunk. Controllers on
+        // build >= 270 already set lastUpdateChunkMs first, and the prime upload's failed
+        // Update.end() ("Flash Read Failed") can leave the updater in a bad state.
+        val deviceBuild = parseVersionComponents(_deviceVersion.value).second
+        val needsPrime = deviceBuild == null || deviceBuild < 270
+        if (needsPrime) try {
+            uploadMultipartFile(
+                host = host,
+                endpoint = "/doUpdate",
+                fieldName = "update",
+                fileName = "prime.bin",
+                mimeType = "application/octet-stream",
+                fileData = byteArrayOf(0x00),
+                isFirmwareOta = false,
+                onProgress = null
+            )
+            delay(250)
+        } catch (_: Exception) {
+        }
+
         uploadMultipartFile(
             host = host,
             endpoint = "/doUpdate",
@@ -915,9 +942,10 @@ class FirmwareUpgradeManager private constructor(private val context: Context) {
         attachedBleManager?.connectToSavedDevice()
 
         var verifiedVersion: String? = null
-        val wifiNet = activeWiFiNetwork()
-        for (i in 0 until 8) {
+        var didRestoreSim = restoreSimulationModeTo == null
+        for (i in 0 until 10) {
             delay(1000)
+            val wifiNet = activeWiFiNetwork()
             val httpVer = probeSettingsValues(host, wifiNet)
             if (!httpVer.isNullOrEmpty()) {
                 verifiedVersion = httpVer
@@ -926,8 +954,9 @@ class FirmwareUpgradeManager private constructor(private val context: Context) {
             }
             val ble = attachedBleManager
             if (ble != null && ble.connectionState.value == ConnectionState.Connected) {
-                if (restoreSimulationModeTo != null) {
+                if (!didRestoreSim && restoreSimulationModeTo != null) {
                     ble.sendCommand(BleCommand.SimulationMode(enabled = restoreSimulationModeTo))
+                    didRestoreSim = true
                     delay(400)
                 }
                 ble.requestDeviceSettings()
@@ -936,12 +965,21 @@ class FirmwareUpgradeManager private constructor(private val context: Context) {
                 if (bleVer.isNotEmpty()) {
                     verifiedVersion = bleVer
                     _deviceVersion.value = bleVer
+                    evaluateUpdateAvailability()
                 }
-                if (verifiedVersion != null) break
+            } else {
+                ble?.connectToSavedDevice()
+            }
+            if (verifiedVersion != null) {
+                if (!expectBundledFirmware || !isBundledVersionNewer(bundledVersion, verifiedVersion)) {
+                    break
+                }
             }
         }
 
         if (expectBundledFirmware && verifiedVersion == null && bundledVersion.isNotEmpty()) {
+            // If Android switched away from SoftAP during ESP32 reboot and BLE is still reconnecting,
+            // reflect the newly flashed version until BLE finishes reconnecting.
             _deviceVersion.value = bundledVersion
         }
         evaluateUpdateAvailability()
@@ -1071,14 +1109,21 @@ object DirectWiFiHttpClient {
             out.write(headers + preamble)
             out.flush()
 
-            // 2. Stream fileData in paced chunks
+            // 2. Stream fileData in paced chunks (3 ms per chunk, 25 ms at each
+            // 64 KB boundary where the controller erases a flash block).
             val totalBytes = fileData.size
             val chunkSize = if (isFirmwareOta) 1436 else 4096
             var offset = 0
             var lastPct = -1
 
             while (offset < totalBytes) {
-                val end = minOf(offset + chunkSize, totalBytes)
+                var end = minOf(offset + chunkSize, totalBytes)
+                // Avoid ending a TCP write on 0x0D ('\r') because ESPAsyncWebServer's
+                // _parseMultipartPostByte holds '\r' in state EXPECT_FEED1 without flushing
+                // _itemBuffer when `last == true`, which can overflow its 1460-byte buffer.
+                while (end < totalBytes && end - offset > 1 && fileData[end - 1] == 0x0D.toByte()) {
+                    end--
+                }
                 out.write(fileData, offset, end - offset)
                 out.flush()
 
@@ -1106,7 +1151,13 @@ object DirectWiFiHttpClient {
             out.flush()
             onProgress?.invoke(1.0f)
 
-            // 4. Read HTTP response
+            // 4. Read HTTP response. After a firmware upload the controller
+            // reboots as soon as it has answered, and its AsyncWebServer does
+            // not promptly close the connection — cap the wait so a successful
+            // flash is not stuck here until the 90 s socket timeout.
+            if (isFirmwareOta) {
+                socket.soTimeout = 15_000
+            }
             val resp = readHttpResponse(socket)
             resp?.first ?: -1
         }
@@ -1117,8 +1168,41 @@ object DirectWiFiHttpClient {
         socket.tcpNoDelay = true
         socket.sendBufferSize = 16384
         socket.soTimeout = timeoutMs
-        socket.connect(InetSocketAddress(host, port), minOf(timeoutMs, 5000))
+        socket.connect(InetSocketAddress(host, port), timeoutMs)
         return socket
+    }
+
+    /** True once headers are complete and the body matches Content-Length / final chunk. */
+    private fun isCompleteHttpResponse(bytes: ByteArray): Boolean {
+        var sepIdx = -1
+        for (i in 0 until bytes.size - 3) {
+            if (bytes[i] == 0x0D.toByte() && bytes[i + 1] == 0x0A.toByte() &&
+                bytes[i + 2] == 0x0D.toByte() && bytes[i + 3] == 0x0A.toByte()
+            ) {
+                sepIdx = i
+                break
+            }
+        }
+        if (sepIdx < 0) return false
+        val headers = bytes.copyOfRange(0, sepIdx).toString(Charsets.UTF_8)
+        val bodySize = bytes.size - (sepIdx + 4)
+        val contentLength = headers.lineSequence()
+            .firstOrNull { it.startsWith("Content-Length:", ignoreCase = true) }
+            ?.substringAfter(':')?.trim()?.toIntOrNull()
+        if (contentLength != null) {
+            return bodySize >= contentLength
+        }
+        if (headers.lineSequence().any { it.contains("Transfer-Encoding:", true) && it.contains("chunked", true) }) {
+            // Final zero-size chunk terminates with CRLF CRLF after the body start.
+            val body = bytes.copyOfRange(sepIdx + 4, bytes.size)
+            return body.size >= 5 &&
+                body[body.size - 5] == '0'.code.toByte() &&
+                body[body.size - 4] == 0x0D.toByte() && body[body.size - 3] == 0x0A.toByte() &&
+                body[body.size - 2] == 0x0D.toByte() && body[body.size - 1] == 0x0A.toByte()
+        }
+        // No length information: headers plus any body bytes is all we get
+        // (the server closes per `Connection: close`).
+        return bodySize > 0
     }
 
     private fun readHttpResponse(socket: Socket): Pair<Int, ByteArray>? {
@@ -1130,6 +1214,10 @@ object DirectWiFiHttpClient {
                 val n = input.read(buf)
                 if (n <= 0) break
                 rawBuffer.write(buf, 0, n)
+                // Return as soon as a complete response has arrived instead of
+                // waiting for the server to close the connection (the ESP32
+                // AsyncWebServer often keeps it open, e.g. after /doUpdate).
+                if (isCompleteHttpResponse(rawBuffer.toByteArray())) break
             }
         } catch (_: Exception) {
             if (rawBuffer.size() == 0) return null

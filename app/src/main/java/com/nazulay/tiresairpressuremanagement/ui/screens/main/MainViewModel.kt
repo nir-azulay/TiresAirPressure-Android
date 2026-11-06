@@ -38,8 +38,9 @@ class MainViewModel(
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val manager = bleManager ?: BleManager.getInstance(application)
                 return MainViewModel(
-                    bleRepository = BleRepository(application, bleManager),
+                    bleRepository = BleRepository.getInstance(application, manager),
                     applicationContext = application
                 ) as T
             }
@@ -184,6 +185,5 @@ class MainViewModel(
     
     override fun onCleared() {
         super.onCleared()
-        bleRepository.disconnect()
     }
 } 

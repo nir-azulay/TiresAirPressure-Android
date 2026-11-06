@@ -2,6 +2,7 @@ package com.nazulay.tiresairpressuremanagement.utils
 
 import android.content.Context
 import android.content.res.Configuration
+import android.content.res.Resources
 import android.preference.PreferenceManager
 import java.util.*
 
@@ -10,6 +11,7 @@ import java.util.*
  */
 object LocaleHelper {
     private const val SELECTED_LANGUAGE = "user_selected_language"
+    const val LANGUAGE_SYSTEM = "system"
 
     /**
      * Update the app's locale to the one provided
@@ -45,7 +47,8 @@ object LocaleHelper {
      * @return A map of language codes to their display names
      */
     fun getSupportedLanguages(): Map<String, String> {
-        return mapOf(
+        return linkedMapOf(
+            LANGUAGE_SYSTEM to "System Default",
             "en" to "English",
             "iw" to "עברית" // Hebrew
         )
@@ -63,8 +66,8 @@ object LocaleHelper {
      * Update resources with new locale
      */
     private fun updateResources(context: Context, languageCode: String): Context {
-        val locale = if (languageCode.isEmpty()) {
-            Locale.getDefault()
+        val locale = if (languageCode.isEmpty() || languageCode == LANGUAGE_SYSTEM) {
+            Resources.getSystem().configuration.locales[0]
         } else {
             Locale(languageCode)
         }

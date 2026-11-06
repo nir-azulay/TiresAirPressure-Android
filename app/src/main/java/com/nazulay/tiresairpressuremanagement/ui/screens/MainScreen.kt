@@ -903,7 +903,6 @@ private fun PressureGaugeCard(
                     color = activeAccent
                 )
                 // Show debug info if debugMode is enabled and values are present
-                Log.d(TAG, "Debug display check: debugMode=$debugMode, deviceStatus=$deviceStatus, rawADC=${deviceStatus?.rawADC}, voltage=${deviceStatus?.voltage}")
                 if (debugMode && deviceStatus?.rawADC != null && deviceStatus.voltage != null) {
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(

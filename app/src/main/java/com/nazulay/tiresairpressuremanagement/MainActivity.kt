@@ -9,6 +9,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.rememberNavController
@@ -45,6 +48,7 @@ import android.net.Uri
 import android.content.res.Configuration
 import kotlinx.coroutines.launch
 import com.nazulay.tiresairpressuremanagement.data.repository.BleRepository
+import com.nazulay.tiresairpressuremanagement.data.local.AppSettingsManager
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.Lifecycle
@@ -141,11 +145,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Initialize BLE Repository first
-        bleRepository = BleRepository(applicationContext)
-        
-        // Initialize BLE Manager with repository
-        bleManager = BleManager(applicationContext, bleRepository)
+        // Initialize singleton BLE Repository & BLE Manager so Activity recreation never orphans ViewModels
+        bleRepository = BleRepository.getInstance(applicationContext)
+        bleManager = BleManager.getInstance(applicationContext, bleRepository)
         
         // Check Bluetooth enabled only if permissions are already granted
         if (PermissionManager.hasRequiredPermissions(this) && !PermissionManager.isBluetoothEnabled(this)) {
@@ -173,8 +175,16 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            TiresAirPressureManagementTheme {
-                AppContent()
+            val appSettings by AppSettingsManager.getInstance(applicationContext).settings.collectAsState()
+            val currentDensity = LocalDensity.current
+            val scaledDensity = Density(
+                density = currentDensity.density,
+                fontScale = currentDensity.fontScale * appSettings.fontSizeScale.scale
+            )
+            CompositionLocalProvider(LocalDensity provides scaledDensity) {
+                TiresAirPressureManagementTheme {
+                    AppContent()
+                }
             }
         }
     }
@@ -580,8 +590,10 @@ class MainActivity : ComponentActivity() {
     
     override fun onDestroy() {
         super.onDestroy()
-        android.util.Log.d(TAG, "onDestroy called")
-        bleManager.disconnect()
+        android.util.Log.d(TAG, "onDestroy called (isFinishing=$isFinishing, isChangingConfigurations=$isChangingConfigurations)")
+        if (isFinishing && !isChangingConfigurations) {
+            bleManager.disconnect()
+        }
     }
 
     // Method to check if we have all WiFi scanning permissions

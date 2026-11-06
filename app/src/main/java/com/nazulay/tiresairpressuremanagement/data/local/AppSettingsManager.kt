@@ -2,6 +2,7 @@ package com.nazulay.tiresairpressuremanagement.data.local
 
 import android.content.Context
 import android.util.Log
+import com.nazulay.tiresairpressuremanagement.domain.models.AppFontSize
 import com.nazulay.tiresairpressuremanagement.domain.models.AppSettings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,6 +32,7 @@ class AppSettingsManager private constructor(private val context: Context) {
         private const val PREDEFINED_PRESSURES_KEY_PREFIX = "predefined_pressure_"
         private const val MIN_PRESSURE_COUNT_KEY = "min_pressure_count"
         private const val MAX_PRESSURE_COUNT_KEY = "max_pressure_count"
+        private const val FONT_SIZE_SCALE_KEY = "font_size_scale"
     }
 
     private val prefs = context.getSharedPreferences(APP_SETTINGS_PREF, Context.MODE_PRIVATE)
@@ -45,7 +47,8 @@ class AppSettingsManager private constructor(private val context: Context) {
             DEBUG_MODE_KEY,
             PREDEFINED_PRESSURES_KEY_PREFIX,
             MIN_PRESSURE_COUNT_KEY,
-            MAX_PRESSURE_COUNT_KEY
+            MAX_PRESSURE_COUNT_KEY,
+            FONT_SIZE_SCALE_KEY
         )
 
         val allEntries = prefs.all
@@ -70,6 +73,19 @@ class AppSettingsManager private constructor(private val context: Context) {
         } catch (e: ClassCastException) {
             needsRepair = true
             false
+        }
+
+        val fontSizeScale = try {
+            val stored = prefs.getString(FONT_SIZE_SCALE_KEY, null)
+            val parsed = AppFontSize.fromKey(stored)
+            if (stored != null && parsed.key != stored) {
+                needsRepair = true
+            }
+            if (stored == null) needsRepair = true
+            parsed
+        } catch (e: ClassCastException) {
+            needsRepair = true
+            AppFontSize.DEFAULT
         }
 
         val minCount = try {
@@ -114,7 +130,8 @@ class AppSettingsManager private constructor(private val context: Context) {
             predefinedPressures = pressures,
             minPressureCount = minCount,
             maxPressureCount = maxCount,
-            debugMode = debugMode
+            debugMode = debugMode,
+            fontSizeScale = fontSizeScale
         )
 
         if (needsRepair) {
@@ -124,6 +141,7 @@ class AppSettingsManager private constructor(private val context: Context) {
             editor.putInt(MIN_PRESSURE_COUNT_KEY, loaded.minPressureCount)
             editor.putInt(MAX_PRESSURE_COUNT_KEY, loaded.maxPressureCount)
             editor.putBoolean(DEBUG_MODE_KEY, loaded.debugMode)
+            editor.putString(FONT_SIZE_SCALE_KEY, loaded.fontSizeScale.key)
             editor.apply()
             Log.i(TAG, "Auto-fixed app settings preferences at runtime")
         }
@@ -145,6 +163,7 @@ class AppSettingsManager private constructor(private val context: Context) {
             putInt(MIN_PRESSURE_COUNT_KEY, settings.minPressureCount)
             putInt(MAX_PRESSURE_COUNT_KEY, settings.maxPressureCount)
             putBoolean(DEBUG_MODE_KEY, settings.debugMode)
+            putString(FONT_SIZE_SCALE_KEY, settings.fontSizeScale.key)
             apply()
         }
         _settings.value = settings.copy(themeMode = SettingsViewModel.THEME_MODE_DARK)
@@ -212,5 +231,23 @@ class AppSettingsManager private constructor(private val context: Context) {
         val currentSettings = _settings.value
         updateSettings(currentSettings.copy(debugMode = enabled))
         Log.d(TAG, "Debug mode updated and saved to SharedPreferences")
+    }
+
+    fun updateFontSizeScale(size: AppFontSize) {
+        updateSettings(_settings.value.copy(fontSizeScale = size))
+    }
+
+    fun resetToDefaults() {
+        updateSettings(
+            AppSettings(
+                themeMode = SettingsViewModel.THEME_MODE_DARK,
+                simulationMode = false,
+                predefinedPressures = listOf(8f, 10f, 12f, 16f, 20f, 30f, 38f, 40f),
+                minPressureCount = 1,
+                maxPressureCount = 8,
+                debugMode = false,
+                fontSizeScale = AppFontSize.DEFAULT
+            )
+        )
     }
 } 

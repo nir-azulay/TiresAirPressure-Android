@@ -10,6 +10,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.nazulay.tiresairpressuremanagement.data.repository.BleRepository
 import com.nazulay.tiresairpressuremanagement.domain.models.BleCommand
+import com.nazulay.tiresairpressuremanagement.domain.models.AppFontSize
 import com.nazulay.tiresairpressuremanagement.domain.models.DeviceSettings
 import com.nazulay.tiresairpressuremanagement.domain.models.PressureUnit
 import com.nazulay.tiresairpressuremanagement.domain.models.TemperatureUnit
@@ -145,15 +146,10 @@ class SettingsViewModel(
         viewModelScope.launch {
             bleManager.deviceSettings.collect { settings ->
                 if (settings != null) {
-                    // Add detailed debug logging of raw values from BLE device
                     Log.d(TAG, "Received device settings from BLE device: $settings")
-                    Log.d(TAG, "Raw sensor values - At 0 PSI: ${settings.sensorValueAt0PSI} (${settings.sensorValueAt0PSI.javaClass.simpleName})")
-                    Log.d(TAG, "Raw sensor values - At 50 PSI: ${settings.sensorValueAt50PSI} (${settings.sensorValueAt50PSI.javaClass.simpleName})")
-                }
-                
-                if (_localDeviceSettings.value == null) {
-                    // Initialize local settings on first load
-                    _localDeviceSettings.value = settings
+                    if (_localDeviceSettings.value == null || !_hasUnsavedChanges.value) {
+                        _localDeviceSettings.value = settings
+                    }
                 }
             }
         }
@@ -197,13 +193,14 @@ class SettingsViewModel(
         Log.d(TAG, "Requesting device settings via BleManager")
         try {
             bleManager.requestDeviceSettings()
-            bleManager.sendCommand(BleCommand.RequestSettings())
             
             // Update local settings from BleManager only if there are no unsaved changes
             if (!_hasUnsavedChanges.value) {
                 viewModelScope.launch {
                     delay(1000) // Give device time to respond
-                    _localDeviceSettings.value = bleManager.deviceSettings.value
+                    if (bleManager.deviceSettings.value != null) {
+                        _localDeviceSettings.value = bleManager.deviceSettings.value
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -533,10 +530,7 @@ class SettingsViewModel(
                 } else {
                     // We're connected according to the state, verify by requesting settings
                     Log.d(TAG, "Connected according to state, verifying by requesting settings")
-                    // Request device settings regardless of unsaved changes
-                    // This ensures we at least get initial settings from the device
                     bleManager.requestDeviceSettings()
-                    bleManager.sendCommand(BleCommand.RequestSettings())
                     
                     // If we don't have unsaved changes, update our local copy with the device settings
                     if (!_hasUnsavedChanges.value) {
@@ -588,5 +582,23 @@ class SettingsViewModel(
         Log.d(TAG, "setDebugMode: Sending DebugMode command to BLE device. enabled=$enabled")
         // Send BLE command to activate/deactivate debug mode
         bleManager.sendCommand(com.nazulay.tiresairpressuremanagement.domain.models.BleCommand.DebugMode(enabled = enabled))
+    }
+
+    fun updateFontSizeScale(size: AppFontSize) {
+        appSettingsManager.updateFontSizeScale(size)
+    }
+
+    fun resetAppSettings() {
+        val previous = appSettings.value
+        val deviceSimulation = _localDeviceSettings.value?.simulationMode == true
+        appSettingsManager.resetToDefaults()
+        _localDeviceSettings.value = _localDeviceSettings.value?.copy(simulationMode = false)
+        if (previous.debugMode) {
+            bleManager.sendCommand(BleCommand.DebugMode(enabled = false))
+        }
+        if (previous.simulationMode || deviceSimulation) {
+            bleManager.sendCommand(BleCommand.SimulationMode(enabled = false))
+        }
+        updateLanguage(LocaleHelper.LANGUAGE_SYSTEM)
     }
 } 

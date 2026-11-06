@@ -213,6 +213,17 @@
     <!-- Language -->
     <string name="language">Language</string>
     <string name="language_change_notice">Changing language will restart the app</string>
+
+    <!-- Font Size -->
+    <string name="font_size">Font Size</string>
+    <string name="font_size_smallest">Smallest</string>
+    <string name="font_size_smaller">Smaller</string>
+    <string name="font_size_default">Default</string>
+    <string name="font_size_bigger">Bigger</string>
+    <string name="font_size_biggest">Biggest</string>
+    <string name="reset_to_defaults">Reset to Defaults</string>
+    <string name="reset_defaults_message">This will reset all settings to their default values.</string>
+    <string name="reset">Reset</string>
     
     <!-- WiFi Network List -->
     <string name="show_list">Show List</string>
@@ -331,4 +342,32 @@
     <string name="upgrade_error_package_missing">Bundled firmware package not found in app assets.</string>
     <string name="upgrade_error_unreachable_format" formatted="false">Could not reach controller over Wi-Fi. Please join Wi-Fi \"%1$s\" or verify IP %2$s.</string>
     <string name="upgrade_error_upload_failed_format" formatted="false">Failed to upload %1$s (HTTP %2$d).</string>
+    <string name="device_configuration">Device Configuration</string>
+    <string name="general">General</string>
+    <string name="wifi_and_hotspot">Wi-Fi &amp; Hotspot</string>
+    <string name="ble_security">BLE Security</string>
+    <string name="safety_limits">Safety Limits</string>
+    <string name="hardware_pins">Hardware Pins</string>
+    <string name="calibration_and_timing">Calibration &amp; Timing</string>
+    <string name="device_info">Device Info</string>
+    <string name="ip_address">IP Address</string>
+    <string name="configure_device_settings">Configure Device Settings</string>
+    <string name="unsaved_changes_warning">You have unsaved changes that will be lost.</string>
+    <string name="saving_restarting">Saving &amp; Restarting Device...</string>
+    <string name="presets_count">Presets: %1$d/%2$d</string>
+    <string name="enter_pressure_hint">Enter a pressure value between 1 and 80 PSI</string>
+    <string name="sensor_at_0_psi">Sensor at 0 PSI:</string>
+    <string name="sensor_at_50_psi">Sensor at 50 PSI:</string>
+    <string name="measure_wait_label">Measure Wait:</string>
+    <string name="precision_label">Precision:</string>
+    <string name="compressor_pin_format">Compressor Pin (GPIO): %1$d</string>
+    <string name="free_pin_format">Free/Deflate Pin (GPIO): %1$d</string>
+    <string name="sensor_pin_format">Sensor Pin (ADC1 GPIO): %1$d</string>
+    <string name="max_valve_open_format">Max Valve Open: %1$ds</string>
+    <string name="max_status_time_format">Max Status Time: %1$ds</string>
+    <string name="select_wifi_network">Available Wi-Fi</string>
+    <string name="save">Save</string>
+    <string name="add">Add</string>
+    <string name="firmware_version">Firmware Version</string>
+    <string name="wifi_password_keep_hint">Wi-Fi Password (leave blank to keep)</string>
 </resources>

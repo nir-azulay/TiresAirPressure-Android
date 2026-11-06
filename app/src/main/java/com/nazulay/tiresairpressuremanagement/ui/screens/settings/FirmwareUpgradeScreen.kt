@@ -91,6 +91,20 @@ fun FirmwareUpgradeScreen(
         }
     }
 
+    // Keep the screen (and therefore the app's Wi-Fi socket) awake while an
+    // upgrade is running — the tablet turning its display off mid-flash can
+    // stall the upload to the controller.
+    val activity = remember(context) { context.findActivity() }
+    DisposableEffect(activity, upgradeState.isBusy) {
+        val window = activity?.window
+        if (upgradeState.isBusy) {
+            window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        onDispose {
+            window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
     LaunchedEffect(upgradeState) {
         if (upgradeState is UpgradeState.Completed) {
             completedSummaryAlert = (upgradeState as UpgradeState.Completed).summary
@@ -648,6 +662,13 @@ fun FirmwareUpgradeScreen(
         }
     }
 }
+
+private tailrec fun android.content.Context.findActivity(): android.app.Activity? =
+    when (this) {
+        is android.app.Activity -> this
+        is android.content.ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }
 
 @Composable
 private fun stateLabel(state: UpgradeState): String {

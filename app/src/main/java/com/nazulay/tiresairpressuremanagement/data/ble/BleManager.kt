@@ -42,9 +42,10 @@ import kotlinx.coroutines.delay
 import android.os.ParcelUuid
 
 class BleManager(
-    private val context: Context,
+    context: Context,
     val bleRepository: BleRepository? = null
 ) {
+    private val context: Context = context.applicationContext
     private val TAG = "BleManager"
     private var bluetoothGatt: BluetoothGatt? = null
     private var notifyCharacteristic: BluetoothGattCharacteristic? = null
@@ -53,9 +54,15 @@ class BleManager(
     // משתנה לעקוב אחרי פקודות ניפוח/הוצאת אוויר כדי להתעלם מהודעת הסטטוס הראשונה
     private var ignoreNextStatusUpdate = false
     
-    // Simplified message handling now that MTU size is correct
+    // Simplified message handling with chunk reassembly buffer
+    private val messageBuffer = StringBuilder()
     private var settingsRequestAttempts = 0
     private val MAX_SETTINGS_REQUEST_ATTEMPTS = 3
+    private var lastSettingsRequestMs = 0L
+
+    init {
+        bleRepository?.attachBleManager(this)
+    }
     
     private val moshi = Moshi.Builder()
         .add(KotlinJsonAdapterFactory())
@@ -431,9 +438,14 @@ class BleManager(
                     bluetoothGatt?.close()
                     bluetoothGatt = null
                     
-                    // Clear characteristics
+                    // Clear characteristics and message buffer
                     notifyCharacteristic = null
                     commandCharacteristic = null
+                    synchronized(messageBuffer) { messageBuffer.clear() }
+                    writeHandler.post {
+                        isWriting = false
+                        writeQueue.clear()
+                    }
                     
                     // ניסיון להתחבר מחדש אם יש כתובת שמורה
                     val sharedPreferences = context.getSharedPreferences("DeviceSettings", Context.MODE_PRIVATE)
@@ -600,12 +612,9 @@ class BleManager(
         override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
             super.onDescriptorWrite(gatt, descriptor, status)
             android.util.Log.d(TAG, "onDescriptorWrite: status=$status")
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                android.util.Log.d(TAG, "Descriptor write successful")
-            } else {
-                android.util.Log.e(TAG, "Descriptor write failed with status: $status")
-                disconnect()
-            }
+            writeHandler.postDelayed({
+                requestInitialAuthAndSettings()
+            }, 250)
         }
         
         @Deprecated("Deprecated in Java")
@@ -618,11 +627,9 @@ class BleManager(
             when (characteristic.uuid) {
                 BleConstants.NOTIFICATION_CHARACTERISTIC_UUID -> {
                     val value = characteristic.value
-                    val jsonString = String(value)
-                    Log.d(TAG, "Received JSON (deprecated API): $jsonString")
-                    
-                    // Process the complete message directly
-                    processMessage(jsonString)
+                    val chunk = String(value, Charsets.UTF_8)
+                    Log.d(TAG, "Received BLE chunk (deprecated API, ${chunk.length} chars): $chunk")
+                    handleReceivedChunk(chunk)
                 }
                 else -> {
                     android.util.Log.d(TAG, "Received notification from unknown characteristic: ${characteristic.uuid}")
@@ -639,11 +646,9 @@ class BleManager(
             
             when (characteristic.uuid) {
                 BleConstants.NOTIFICATION_CHARACTERISTIC_UUID -> {
-                    val jsonString = String(value)
-                    Log.d(TAG, "Received JSON (new API): $jsonString")
-                    
-                    // Process the complete message directly
-                    processMessage(jsonString)
+                    val chunk = String(value, Charsets.UTF_8)
+                    Log.d(TAG, "Received BLE chunk (new API, ${chunk.length} chars): $chunk")
+                    handleReceivedChunk(chunk)
                 }
                 else -> {
                     android.util.Log.d(TAG, "Received notification from unknown characteristic: ${characteristic.uuid}")
@@ -657,50 +662,34 @@ class BleManager(
             status: Int
         ) {
             Log.d(TAG, "onCharacteristicWrite callback - status: $status")
-            
-            // Mark write operation as complete
-            isWriting = false
-            
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                Log.d(TAG, "Write successful for characteristic: ${characteristic.uuid}")
-            } else {
-                Log.e(TAG, "Write failed for characteristic: ${characteristic.uuid}, status: $status")
-                // If write fails, you might want to retry or notify the user
-                when (status) {
-                    BluetoothGatt.GATT_WRITE_NOT_PERMITTED -> {
-                        Log.e(TAG, "Write not permitted - characteristic may not support write operations")
-                        // Check if we need to disconnect and reconnect
-                        if (_connectionState.value == ConnectionState.Connected) {
-                            Log.w(TAG, "Connection may be in invalid state, considering disconnect")
+            writeHandler.post {
+                writeHandler.removeCallbacks(writeWatchdogRunnable)
+                isWriting = false
+
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    Log.d(TAG, "Write successful for characteristic: ${characteristic.uuid}")
+                } else {
+                    Log.e(TAG, "Write failed for characteristic: ${characteristic.uuid}, status: $status")
+                    when (status) {
+                        133 -> {
+                            if (_connectionState.value == ConnectionState.Connected) {
+                                Log.w(TAG, "Status 133 detected - connection may be invalid, will disconnect")
+                                disconnect()
+                                return@post
+                            }
+                        }
+                        201 -> {
+                            Log.e(TAG, "Write failed with status 201 - prior command is not finished")
+                            writeHandler.postDelayed({ processWriteQueue() }, 200)
+                            return@post
                         }
                     }
-                    BluetoothGatt.GATT_INVALID_ATTRIBUTE_LENGTH -> Log.e(TAG, "Invalid attribute length")
-                    BluetoothGatt.GATT_FAILURE -> Log.e(TAG, "Write failed with GATT_FAILURE")
-                    133 -> {
-                        Log.e(TAG, "Write failed with status 133 - GATT_WRITE_NOT_PERMITTED or GATT_INSUFFICIENT_AUTHORIZATION")
-                        // This often happens when the device is in an invalid state
-                        // Consider disconnecting to force a clean reconnection
-                        if (_connectionState.value == ConnectionState.Connected) {
-                            Log.w(TAG, "Status 133 detected - connection may be invalid, will disconnect")
-                            disconnect()
-                        }
-                    }
-                    201 -> {
-                        Log.e(TAG, "Write failed with status 201 - prior command is not finished")
-                        // This is the specific error we're seeing - wait a bit longer before retrying
-                        writeHandler.postDelayed({
-                            processWriteQueue()
-                        }, 200) // Wait 200ms before trying next command
-                        return
-                    }
-                    else -> Log.e(TAG, "Write failed with status: $status")
                 }
+
+                writeHandler.postDelayed({
+                    processWriteQueue()
+                }, 40)
             }
-            
-            // Process next item in queue after a short delay
-            writeHandler.postDelayed({
-                processWriteQueue()
-            }, 50) // Small delay between writes
         }
     }
     
@@ -857,6 +846,12 @@ class BleManager(
         android.util.Log.d(TAG, "Connection state set to DISCONNECTED")
         
         // ניתוק מהמכשיר
+        writeHandler.post {
+            writeHandler.removeCallbacks(writeWatchdogRunnable)
+            isWriting = false
+            writeQueue.clear()
+        }
+        synchronized(messageBuffer) { messageBuffer.clear() }
         bluetoothGatt?.disconnect()
         bluetoothGatt?.close()
         bluetoothGatt = null
@@ -866,49 +861,57 @@ class BleManager(
     private val writeQueue = mutableListOf<ByteArray>()
     private var isWriting = false
     private val writeHandler = Handler(Looper.getMainLooper())
-    private val writeRunnable = object : Runnable {
-        override fun run() {
+    private val writeWatchdogRunnable = Runnable {
+        if (isWriting) {
+            Log.w(TAG, "BLE write watchdog triggered after 1500ms, unlocking writeQueue")
+            isWriting = false
             processWriteQueue()
         }
     }
 
-    // Add this new function to handle the write queue
+    // Add this new function to handle the write queue (always runs on writeHandler / Main looper)
     private fun processWriteQueue() {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            writeHandler.post { processWriteQueue() }
+            return
+        }
         if (isWriting || writeQueue.isEmpty()) return
-        
+
+        val currentCommandChar = commandCharacteristic
+        val currentGatt = bluetoothGatt
+        if (currentCommandChar == null || currentGatt == null) {
+            Log.e(TAG, "Cannot write: characteristic or GATT is null")
+            isWriting = false
+            writeQueue.clear()
+            return
+        }
+
         isWriting = true
         val data = writeQueue.removeAt(0)
-        
+
         try {
-            val currentCommandChar = commandCharacteristic
-            val currentGatt = bluetoothGatt
-            
-            if (currentCommandChar == null || currentGatt == null) {
-                Log.e(TAG, "Cannot write: characteristic or GATT is null")
-                isWriting = false
-                processWriteQueue() // Try next item
-                return
-            }
-            
-            // Check characteristic properties
             val properties = currentCommandChar.properties
             val writeType = if ((properties and BluetoothGattCharacteristic.PROPERTY_WRITE) != 0) {
                 BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
             } else {
                 BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
             }
-            
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                val success = currentGatt.writeCharacteristic(
+                val status = currentGatt.writeCharacteristic(
                     currentCommandChar,
                     data,
                     writeType
                 )
-                if (success != BluetoothStatusCodes.SUCCESS) {
-                    Log.e(TAG, "Failed to write characteristic, status: $success")
-                    // Don't retry immediately, wait for callback
+                if (status != BluetoothStatusCodes.SUCCESS) {
+                    Log.e(TAG, "Failed to write characteristic, status: $status")
                     isWriting = false
-                    processWriteQueue() // Try next item
+                    if (status == BluetoothStatusCodes.ERROR_GATT_WRITE_REQUEST_BUSY || status == 201) {
+                        writeQueue.add(0, data)
+                        writeHandler.postDelayed({ processWriteQueue() }, 180)
+                    } else {
+                        writeHandler.postDelayed({ processWriteQueue() }, 60)
+                    }
                     return
                 }
             } else {
@@ -920,20 +923,18 @@ class BleManager(
                 val success = currentGatt.writeCharacteristic(currentCommandChar)
                 if (!success) {
                     Log.e(TAG, "Failed to write characteristic")
-                    // Don't retry immediately, wait for callback
                     isWriting = false
-                    processWriteQueue() // Try next item
+                    writeHandler.postDelayed({ processWriteQueue() }, 150)
                     return
                 }
             }
-            
-            // Don't schedule next write here - wait for onCharacteristicWrite callback
-            // The callback will call processWriteQueue() when ready
-            
+
+            writeHandler.removeCallbacks(writeWatchdogRunnable)
+            writeHandler.postDelayed(writeWatchdogRunnable, 1500)
         } catch (e: Exception) {
             Log.e(TAG, "Error in processWriteQueue: ${e.message}")
             isWriting = false
-            processWriteQueue() // Try next item
+            writeHandler.postDelayed({ processWriteQueue() }, 60)
         }
     }
 
@@ -1072,21 +1073,23 @@ class BleManager(
                 Log.d(TAG, "Queueing command: $jsonString")
             }
             
-            // Add to write queue in <=180B chunks so large payloads (e.g. UpdateSettings) never fail GATT MTU limits
+            // Add to write queue in <=180B chunks on Main looper so large payloads never fail GATT MTU limits
             val fullBytes = jsonString.toByteArray(Charsets.UTF_8)
             val maxChunkSize = 180
-            if (fullBytes.size <= maxChunkSize) {
-                writeQueue.add(fullBytes)
-            } else {
-                var offset = 0
-                while (offset < fullBytes.size) {
-                    val end = minOf(offset + maxChunkSize, fullBytes.size)
-                    writeQueue.add(fullBytes.copyOfRange(offset, end))
-                    offset = end
+            writeHandler.post {
+                if (fullBytes.size <= maxChunkSize) {
+                    writeQueue.add(fullBytes)
+                } else {
+                    var offset = 0
+                    while (offset < fullBytes.size) {
+                        val end = minOf(offset + maxChunkSize, fullBytes.size)
+                        writeQueue.add(fullBytes.copyOfRange(offset, end))
+                        offset = end
+                    }
                 }
-            }
-            if (!isWriting) {
-                processWriteQueue()
+                if (!isWriting) {
+                    processWriteQueue()
+                }
             }
             
         } catch (e: Exception) {
@@ -1162,7 +1165,15 @@ class BleManager(
             }
         }
         
-        // Send a saved access code before asking for settings.
+        // Schedule a fallback settings request 600ms after descriptor write in case onDescriptorWrite is delayed
+        writeHandler.postDelayed({
+            if (_deviceSettings.value == null && _connectionState.value == ConnectionState.Connected) {
+                requestInitialAuthAndSettings()
+            }
+        }, 600)
+    }
+
+    private fun requestInitialAuthAndSettings() {
         try {
             val address = connectedAddress ?: bluetoothGatt?.device?.address
             val savedCode = address?.let { bleRepository?.getAccessCode(it) }.orEmpty()
@@ -1326,22 +1337,24 @@ class BleManager(
         // Preserve existing rawADC and voltage values if they exist
         val currentStatus = _deviceStatus.value
         Log.d(TAG, "Preserving debug values from current status: rawADC=${currentStatus?.rawADC}, voltage=${currentStatus?.voltage}")
-        _deviceStatus.value = DeviceStatus(
-            pressure = pressureValue,
-            operationMode = settingsResponse.operationMode,
-            rawADC = currentStatus?.rawADC, // Preserve existing rawADC
-            voltage = currentStatus?.voltage // Preserve existing voltage
-        )
-        Log.d(TAG, "Updated DeviceStatus from full settings: ${_deviceStatus.value}")
-        
-        // Also update the _currentPressure StateFlow
-        if (_currentPressure.value != pressureValue) {
-            android.util.Log.d(TAG, "Updating _currentPressure from settings to: $pressureValue")
-            _currentPressure.value = pressureValue
+        val parsedSettings = settingsResponse.toDeviceSettings()
+        CoroutineScope(Dispatchers.Main).launch {
+            _deviceStatus.value = DeviceStatus(
+                pressure = pressureValue,
+                operationMode = settingsResponse.operationMode,
+                rawADC = currentStatus?.rawADC,
+                voltage = currentStatus?.voltage
+            )
+            if (_currentPressure.value != pressureValue) {
+                _currentPressure.value = pressureValue
+            }
+            updateOperatingState(settingsResponse.operationMode)
+            if (parsedSettings.deviceName.isNotBlank()) {
+                _connectedDeviceName.value = parsedSettings.deviceName
+            }
+            _deviceSettings.value = parsedSettings
+            Log.d(TAG, "Updated _deviceSettings StateFlow on Main: $parsedSettings")
         }
-        updateOperatingState(settingsResponse.operationMode)
-        
-        _deviceSettings.value = settingsResponse.toDeviceSettings()
     }
     
     fun saveSelectedDevice(deviceAddress: String) {
@@ -1449,8 +1462,50 @@ class BleManager(
                bluetoothGatt?.device?.address == deviceAddress
     }
     
+    private fun handleReceivedChunk(chunk: String) {
+        val completeMessages = mutableListOf<String>()
+        synchronized(messageBuffer) {
+            messageBuffer.append(chunk)
+            while (true) {
+                val closeIdx = messageBuffer.indexOf("}")
+                if (closeIdx < 0) break
+                val openIdx = messageBuffer.lastIndexOf("{", closeIdx)
+                if (openIdx >= 0) {
+                    val extracted = messageBuffer.substring(openIdx, closeIdx + 1)
+                    completeMessages.add(extracted)
+                    if (extracted.contains("DeviceName") || openIdx == 0) {
+                        messageBuffer.delete(0, closeIdx + 1)
+                    } else {
+                        // Splicing out an interleaved status notification so outer multi-chunk message stays intact
+                        messageBuffer.delete(openIdx, closeIdx + 1)
+                    }
+                } else {
+                    messageBuffer.delete(0, closeIdx + 1)
+                }
+            }
+            if (messageBuffer.length > 8192) {
+                messageBuffer.clear()
+            }
+        }
+        for (msg in completeMessages) {
+            processMessage(msg)
+        }
+    }
+
+    private fun sanitizeJson(raw: String): String {
+        val singleQuotesReplaced = raw.replace("'", "\"")
+        return Regex("(?<=\\{|,)\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*:")
+            .replace(singleQuotesReplaced, " \"$1\":")
+    }
+
     // Simplified message processing now that we receive complete messages
-    private fun processMessage(jsonString: String) {
+    private fun processMessage(rawJsonString: String) {
+        val jsonString = try {
+            JSONObject(rawJsonString)
+            rawJsonString
+        } catch (_: Exception) {
+            sanitizeJson(rawJsonString)
+        }
         try {
             Log.d(TAG, "Processing JSON message: $jsonString")
             
@@ -1632,6 +1687,12 @@ class BleManager(
     
     // Method to manually request settings from the device
     fun requestDeviceSettings() {
+        val now = System.currentTimeMillis()
+        if (now - lastSettingsRequestMs < 600) {
+            Log.d(TAG, "Skipping duplicate settings request within 600ms")
+            return
+        }
+        lastSettingsRequestMs = now
         Log.d(TAG, "Manually requesting device settings")
         if (_connectionState.value == ConnectionState.Connected && commandCharacteristic != null) {
             try {
@@ -1833,6 +1894,20 @@ class BleManager(
     
     companion object {
         const val REQUEST_BLUETOOTH_PERMISSIONS = 1001
+
+        @Volatile
+        private var instance: BleManager? = null
+
+        fun getInstance(context: Context, bleRepository: BleRepository? = null): BleManager {
+            val appCtx = context.applicationContext
+            val repo = bleRepository ?: BleRepository.getInstance(appCtx)
+            return instance ?: synchronized(this) {
+                instance ?: BleManager(appCtx, repo).also {
+                    instance = it
+                    repo.attachBleManager(it)
+                }
+            }
+        }
     }
 
     private fun onDeviceConnected(device: BluetoothDevice) {
@@ -1876,42 +1951,46 @@ class BleManager(
 
 // Custom adapter for DeviceSettingsResponse to handle the specific JSON format
 class DeviceSettingsResponseAdapter {
+    private fun str(map: Map<String, Any?>, key: String, default: String): String {
+        val v = map[key] ?: return default
+        return v.toString()
+    }
+
     @FromJson
     fun fromJson(jsonObject: Map<String, Any?>): DeviceSettingsResponse {
-        // Get pressure from either "CurrentPressure" or "Pressure" field
         val pressure = when {
-            jsonObject.containsKey("Pressure") -> (jsonObject["Pressure"] as? String) ?: "0"
-            jsonObject.containsKey("CurrentPressure") -> (jsonObject["CurrentPressure"] as? String) ?: "0"
+            jsonObject.containsKey("Pressure") -> str(jsonObject, "Pressure", "0")
+            jsonObject.containsKey("CurrentPressure") -> str(jsonObject, "CurrentPressure", "0")
             else -> "0"
         }
-        
-        // Get sensor calibration values with proper null handling
-        val sensorValueAt0PSI = (jsonObject["SensorValueAt0PSI"] as? String) ?: "0.228"
-        val sensorValueAt50PSI = (jsonObject["SensorValueAt50PSI"] as? String) ?: "2.853"
-        
+
+        val sensorValueAt0PSI = str(jsonObject, "SensorValueAt0PSI", "0.228")
+        val sensorValueAt50PSI = str(jsonObject, "SensorValueAt50PSI", "2.853")
+
         return DeviceSettingsResponse(
-            operationMode = (jsonObject["operationMode"] as? Number)?.toInt() ?: 4,
-            deviceName = (jsonObject["DeviceName"] as? String) ?: "",
-            wifiSsid = (jsonObject["wifissid"] as? String) ?: "",
-            wifiPassword = (jsonObject["wifipassword"] as? String) ?: "",
-            relayCompressorPin = (jsonObject["RelayCompressorPin"] as? String) ?: "0",
-            relayFreePin = (jsonObject["RelayFreePin"] as? String) ?: "0",
-            sensorPin = (jsonObject["SensorPin"] as? String) ?: "0",
-            maxSecForStatus = (jsonObject["MaxSecForStatus"] as? String) ?: "30",
+            operationMode = (jsonObject["operationMode"] as? Number)?.toInt()
+                ?: str(jsonObject, "operationMode", "4").toIntOrNull() ?: 4,
+            deviceName = str(jsonObject, "DeviceName", ""),
+            wifiSsid = str(jsonObject, "wifissid", ""),
+            wifiPassword = str(jsonObject, "wifipassword", ""),
+            relayCompressorPin = str(jsonObject, "RelayCompressorPin", "16"),
+            relayFreePin = str(jsonObject, "RelayFreePin", "17"),
+            sensorPin = str(jsonObject, "SensorPin", "34"),
+            maxSecForStatus = str(jsonObject, "MaxSecForStatus", "30"),
             sensorValueAt0PSI = sensorValueAt0PSI,
             sensorValueAt50PSI = sensorValueAt50PSI,
-            measureWait = (jsonObject["MessureWait"] as? String) ?: "2",
-            precision = (jsonObject["Precision"] as? String) ?: "1",
+            measureWait = str(jsonObject, "MessureWait", "2"),
+            precision = str(jsonObject, "Precision", "1"),
             pressure = pressure,
-            softwareVersion = (jsonObject["Software_VER"] as? String) ?: "",
-            ipAddress = (jsonObject["IP"] as? String) ?: "",
-            simulationMode = (jsonObject["SimulationMode"] as? String) ?: "0",
-            pressureCalcMethod = (jsonObject["PressureCalcMethod"] as? String) ?: "1",
-            sensorFullScalePSI = (jsonObject["SensorFullScalePSI"] as? String) ?: "50.0",
-            maxPressurePSI = (jsonObject["MaxPressurePSI"] as? String) ?: "50.0",
-            maxValveOpenSec = (jsonObject["MaxValveOpenSec"] as? String) ?: "120",
-            accessPointPassword = (jsonObject["AccessPointPassword"] as? String) ?: "12345678",
-            hasAccessCode = (jsonObject["HasAccessCode"] as? String) ?: "0"
+            softwareVersion = str(jsonObject, "Software_VER", ""),
+            ipAddress = str(jsonObject, "IP", ""),
+            simulationMode = str(jsonObject, "SimulationMode", "0"),
+            pressureCalcMethod = str(jsonObject, "PressureCalcMethod", "1"),
+            sensorFullScalePSI = str(jsonObject, "SensorFullScalePSI", "50.0"),
+            maxPressurePSI = str(jsonObject, "MaxPressurePSI", "50.0"),
+            maxValveOpenSec = str(jsonObject, "MaxValveOpenSec", "120"),
+            accessPointPassword = str(jsonObject, "AccessPointPassword", "12345678"),
+            hasAccessCode = str(jsonObject, "HasAccessCode", "0")
         )
     }
 } 

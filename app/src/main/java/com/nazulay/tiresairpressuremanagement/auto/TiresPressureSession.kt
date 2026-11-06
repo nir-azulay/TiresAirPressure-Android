@@ -32,11 +32,9 @@ class TiresPressureSession : Session(), DefaultLifecycleObserver {
         // Add this session as a lifecycle observer to catch lifecycle events
         lifecycle.addObserver(this)
         
-        // Initialize the BLE Repository first
-        bleRepository = BleRepository(carContext)
-        
-        // Create BLE Manager with the repository
-        bleManager = BleManager(carContext, bleRepository)
+        // Initialize singleton BLE Repository & BLE Manager
+        bleRepository = BleRepository.getInstance(carContext)
+        bleManager = BleManager.getInstance(carContext, bleRepository)
         
         // Automatically try to connect to last saved device with enhanced reconnection logic
         connectWithRetry()

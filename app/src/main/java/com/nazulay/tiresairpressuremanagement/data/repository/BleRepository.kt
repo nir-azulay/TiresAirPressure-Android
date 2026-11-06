@@ -1,112 +1,108 @@
 package com.nazulay.tiresairpressuremanagement.data.repository
 
+import android.bluetooth.BluetoothDevice
 import android.content.Context
 import android.util.Log
 import com.nazulay.tiresairpressuremanagement.data.ble.BleManager
+import com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState
 import com.nazulay.tiresairpressuremanagement.data.local.SavedDevicesManager
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import com.nazulay.tiresairpressuremanagement.domain.models.BleCommand
 import com.nazulay.tiresairpressuremanagement.domain.models.BleDevice
 import com.nazulay.tiresairpressuremanagement.domain.models.DeviceSettings
 import com.nazulay.tiresairpressuremanagement.domain.models.DeviceStatus
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import android.bluetooth.BluetoothDevice
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.nazulay.tiresairpressuremanagement.data.ble.ConnectionState
 
 class BleRepository(
-    private val context: Context,
-    private val bleManager: BleManager? = null
+    context: Context,
+    initialBleManager: BleManager? = null
 ) {
-    private val savedDevicesManager = SavedDevicesManager(context)
+    private val appContext = context.applicationContext
+    private val savedDevicesManager = SavedDevicesManager(appContext)
     private var isAutoConnecting = false
-    
+    private var bleManager: BleManager? = null
+    private var collectJob: Job? = null
+
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    // Connection state - Restore internal state
-    private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
+    private val _connectionState = MutableStateFlow(ConnectionState.Disconnected)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
 
-    // Device settings
     private val _deviceSettings = MutableStateFlow<DeviceSettings?>(null)
     val deviceSettings: StateFlow<DeviceSettings?> = _deviceSettings.asStateFlow()
 
-    // Device status
     private val _deviceStatus = MutableStateFlow<DeviceStatus?>(null)
     val deviceStatus: StateFlow<DeviceStatus?> = _deviceStatus.asStateFlow()
 
-    // Scan results - Restore internal state (if needed, or keep direct)
-    // For simplicity, let's keep scanResults direct for now
-    val scanResults: StateFlow<List<BleDevice>> = bleManager?.scanResults 
-        ?: MutableStateFlow(emptyList())
-    
+    private val _scanResults = MutableStateFlow<List<BleDevice>>(emptyList())
+    val scanResults: StateFlow<List<BleDevice>> = _scanResults.asStateFlow()
+
     init {
         Log.d(TAG, "Initializing BleRepository")
-        // Restore observing all states from BleManager
-        bleManager?.let { manager ->
-            repositoryScope.launch {
-                Log.d(TAG, "Starting to collect connectionState from BleManager")
+        if (initialBleManager != null) {
+            attachBleManager(initialBleManager)
+        }
+    }
+
+    fun attachBleManager(manager: BleManager) {
+        if (this.bleManager === manager && collectJob?.isActive == true) return
+        this.bleManager = manager
+        collectJob?.cancel()
+        collectJob = repositoryScope.launch {
+            launch {
                 manager.connectionState.collect { stateFromManager ->
-                    Log.d(TAG, "Repository received state from Manager: $stateFromManager")
-                    if (_connectionState.value != stateFromManager) {
-                        _connectionState.value = stateFromManager
-                        Log.d(TAG, "Repository updated its connectionState to: $stateFromManager")
-                    } else {
-                        Log.d(TAG, "Repository state already matches Manager state ($stateFromManager), no update needed.")
-                    }
+                    _connectionState.value = stateFromManager
                 }
             }
-            
-            repositoryScope.launch {
-                Log.d(TAG, "Starting to collect deviceStatus from BleManager")
+            launch {
                 manager.deviceStatus.collect { status ->
                     _deviceStatus.value = status
                 }
             }
-            
-            repositoryScope.launch {
-                Log.d(TAG, "Starting to collect deviceSettings from BleManager")
+            launch {
                 manager.deviceSettings.collect { settings ->
                     _deviceSettings.value = settings
                 }
             }
-        } ?: run {
-            Log.w(TAG, "BleManager is null in BleRepository init, cannot observe states.")
+            launch {
+                manager.scanResults.collect { results ->
+                    _scanResults.value = results
+                }
+            }
         }
     }
-    
+
     fun startScan() {
         bleManager?.startScan()
     }
-    
+
     fun stopScan() {
         bleManager?.stopScan()
     }
-    
+
     fun connect(address: String) {
         bleManager?.connect(address)
     }
-    
+
     fun disconnect() {
         bleManager?.disconnect()
     }
-    
+
     fun sendCommand(command: BleCommand) {
         bleManager?.sendCommand(command)
     }
-    
+
     fun requestDeviceSettings() {
         bleManager?.requestDeviceSettings()
     }
-    
+
     fun connectToSavedDevice() {
         bleManager?.connectToSavedDevice()
     }
@@ -118,19 +114,19 @@ class BleRepository(
     fun getSavedDevices(): List<SavedDevicesManager.SavedDevice> {
         return savedDevicesManager.getSavedDevices()
     }
-    
+
     fun clearOldDevices() {
         savedDevicesManager.clearOldDevices()
     }
-    
+
     fun ensureOnlyRecentDevice(address: String, name: String) {
         savedDevicesManager.ensureOnlyRecentDevice(address, name)
     }
-    
+
     fun deleteDevice(address: String) {
         savedDevicesManager.deleteDevice(address)
     }
-    
+
     fun reorderDevices(deviceAddresses: List<String>) {
         savedDevicesManager.reorderDevices(deviceAddresses)
     }
@@ -145,40 +141,54 @@ class BleRepository(
 
     suspend fun connectToSavedDevices() {
         if (isAutoConnecting) {
-            Log.d("BleRepository", "Already attempting to connect to saved devices")
+            Log.d(TAG, "Already attempting to connect to saved devices")
             return
         }
 
         isAutoConnecting = true
         val savedDevices = getSavedDevices()
-        
+
         for (device in savedDevices) {
-            Log.d("BleRepository", "Attempting to connect to saved device: ${device.name} (${device.address})")
+            Log.d(TAG, "Attempting to connect to saved device: ${device.name} (${device.address})")
             try {
                 connect(device.address)
-                delay(5000) // Wait 5 seconds between connection attempts
-                
-                // Check the internal state flow's value again
-                if (_connectionState.value == ConnectionState.Connected) { 
-                    Log.d("BleRepository", "Successfully connected to saved device: ${device.name}")
+                delay(5000)
+
+                if (_connectionState.value == ConnectionState.Connected ||
+                    bleManager?.connectionState?.value == ConnectionState.Connected
+                ) {
+                    Log.d(TAG, "Successfully connected to saved device: ${device.name}")
                     break
                 }
             } catch (e: Exception) {
-                Log.e("BleRepository", "Failed to connect to saved device: ${device.name}", e)
+                Log.e(TAG, "Failed to connect to saved device: ${device.name}", e)
             }
         }
-        
+
         isAutoConnecting = false
     }
 
     fun onDeviceConnected(device: BluetoothDevice) {
         repositoryScope.launch {
-            Log.d("BleRepository", "Device connected: ${device.name} (${device.address})")
+            Log.d(TAG, "Device connected: ${device.name} (${device.address})")
             saveConnectedDevice(device.address, device.name ?: "Unknown Device")
         }
     }
 
     companion object {
         private const val TAG = "BleRepository"
+
+        @Volatile
+        private var instance: BleRepository? = null
+
+        fun getInstance(context: Context, bleManager: BleManager? = null): BleRepository {
+            val repo = instance ?: synchronized(this) {
+                instance ?: BleRepository(context.applicationContext, bleManager).also { instance = it }
+            }
+            if (bleManager != null) {
+                repo.attachBleManager(bleManager)
+            }
+            return repo
+        }
     }
-} 
+}

@@ -210,6 +210,17 @@
     <!-- Language -->
     <string name="language">שפה</string>
     <string name="language_change_notice">שינוי השפה יגרום להפעלה מחדש של האפליקציה</string>
+
+    <!-- Font Size -->
+    <string name="font_size">גודל גופן</string>
+    <string name="font_size_smallest">הקטן ביותר</string>
+    <string name="font_size_smaller">קטן יותר</string>
+    <string name="font_size_default">ברירת מחדל</string>
+    <string name="font_size_bigger">גדול יותר</string>
+    <string name="font_size_biggest">הגדול ביותר</string>
+    <string name="reset_to_defaults">אפס לברירות מחדל</string>
+    <string name="reset_defaults_message">פעולה זו תאפס את כל ההגדרות לערכי ברירת המחדל.</string>
+    <string name="reset">אפס</string>
     
     <!-- WiFi Network List -->
     <string name="show_list">הצג רשימה</string>
@@ -332,4 +343,32 @@
     <string name="upgrade_error_package_missing">חבילת הקושחה המובנית לא נמצאה באפליקציה.</string>
     <string name="upgrade_error_unreachable_format" formatted="false">לא ניתן להגיע לבקר דרך Wi-Fi. אנא התחבר לרשת \"%1$s\" או בדוק את הכתובת %2$s.</string>
     <string name="upgrade_error_upload_failed_format" formatted="false">העלאת הקובץ %1$s נכשלה (HTTP %2$d).</string>
+    <string name="device_configuration">הגדרות בקר</string>
+    <string name="general">כללי</string>
+    <string name="wifi_and_hotspot">Wi-Fi ונקודה חמה</string>
+    <string name="ble_security">אבטחת BLE</string>
+    <string name="safety_limits">מגבלות בטיחות</string>
+    <string name="hardware_pins">פיני חומרה</string>
+    <string name="calibration_and_timing">כיול ותזמון</string>
+    <string name="device_info">פרטי מכשיר</string>
+    <string name="ip_address">כתובת IP</string>
+    <string name="configure_device_settings">הגדר את הגדרות המכשיר</string>
+    <string name="unsaved_changes_warning">יש לך שינויים לא שמורים שיאבדו.</string>
+    <string name="saving_restarting">שומר ומפעיל מחדש את המכשיר...</string>
+    <string name="presets_count">הגדרות: %1$d/%2$d</string>
+    <string name="enter_pressure_hint">הזן ערך לחץ בין 1 ל-80 PSI</string>
+    <string name="sensor_at_0_psi">חיישן ב-0 PSI:</string>
+    <string name="sensor_at_50_psi">חיישן ב-50 PSI:</string>
+    <string name="measure_wait_label">זמן המתנה למדידה:</string>
+    <string name="precision_label">דיוק:</string>
+    <string name="compressor_pin_format">פין מדחס (GPIO): %1$d</string>
+    <string name="free_pin_format">פין שחרור אוויר (GPIO): %1$d</string>
+    <string name="sensor_pin_format">פין חיישן (ADC1 GPIO): %1$d</string>
+    <string name="max_valve_open_format">זמן שסתום מקסימלי: %1$d שניות</string>
+    <string name="max_status_time_format">זמן מקסימלי לסטטוס: %1$d שניות</string>
+    <string name="select_wifi_network">רשתות Wi-Fi זמינות</string>
+    <string name="save">שמור</string>
+    <string name="add">הוסף</string>
+    <string name="firmware_version">גרסת קושחה</string>
+    <string name="wifi_password_keep_hint">סיסמת Wi-Fi (השאר ריק לשמירת הקיימת)</string>
 </resources>

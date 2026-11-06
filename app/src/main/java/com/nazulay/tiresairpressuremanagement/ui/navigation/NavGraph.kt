@@ -28,13 +28,10 @@ fun NavGraph(
         startDestination = startDestination
     ) {
         composable(NavDestinations.MAIN_SCREEN) {
-            // Create BleManager instance
             val context = LocalContext.current
             val application = context.applicationContext as Application
-            // Initialize BLE Repository first
-            val bleRepository = BleRepository(application)
-            // Initialize BLE Manager with repository
-            val bleManager = BleManager(application, bleRepository)
+            val bleRepository = BleRepository.getInstance(application)
+            val bleManager = BleManager.getInstance(application, bleRepository)
             
             MainScreen(
                 bleManager = bleManager,
@@ -54,11 +51,10 @@ fun NavGraph(
         }
         
         composable(NavDestinations.SETTINGS_SCREEN) {
-            // Get the same BleManager instance for settings
             val context = LocalContext.current
             val application = context.applicationContext as Application
-            val bleRepository = BleRepository(application)
-            val bleManager = BleManager(application, bleRepository)
+            val bleRepository = BleRepository.getInstance(application)
+            val bleManager = BleManager.getInstance(application, bleRepository)
             
             val viewModel: SettingsViewModel = viewModel(
                 factory = SettingsViewModel.provideFactory(
